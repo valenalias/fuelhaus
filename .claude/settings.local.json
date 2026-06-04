@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-Command *)",
+      "WebFetch(domain:hgrowshop.com)",
+      "PowerShell($response = Invoke-WebRequest -Uri \"https://hgrowshop.com/\" -UseBasicParsing; $response.Content | Select-Object -First 50000)",
+      "PowerShell(New-Item *)",
+      "PowerShell(Start-Sleep -Seconds 2; Invoke-WebRequest -Uri \"http://localhost:3000/\" -UseBasicParsing | Select-Object StatusCode, StatusDescription)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://localhost:3000/\" -UseBasicParsing | Select-Object StatusCode; Invoke-WebRequest -Uri \"http://localhost:3000/css/style.css\" -UseBasicParsing | Select-Object StatusCode; Invoke-WebRequest -Uri \"http://localhost:3000/js/main.js\" -UseBasicParsing | Select-Object StatusCode)"
+    ]
+  }
+}

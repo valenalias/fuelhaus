@@ -1,0 +1,8 @@
+# FUELHAUS — robots.txt
+# Le dice a Google qué páginas puede indexar
+
+User-agent: *
+Allow: /
+
+# Ubicación del mapa del sitio (ayuda a Google a encontrar todas las páginas)
+Sitemap: https://fuelhaus.com/sitemap.xml
