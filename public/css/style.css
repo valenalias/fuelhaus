@@ -13,8 +13,8 @@
   --white:     #FFFFFF;
   --gray:      #88887E;
   --gray-l:    #C5BFB2;
-  --font-serif: 'Playfair Display', Georgia, serif;
-  --font-sans:  'DM Sans', system-ui, sans-serif;
+  --font-serif: 'Lora', Georgia, serif;
+  --font-sans:  'Be Vietnam Pro', system-ui, sans-serif;
   --hh:         76px;
   --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
   --ease-io:    cubic-bezier(0.45, 0, 0.55, 1);
@@ -261,19 +261,22 @@ em { font-style: italic; }
 }
 .reveal-inner {
   display: block;
-  font-family: var(--font-serif);
   font-size: clamp(56px, 6vw, 88px);
   line-height: 1.05;
-  letter-spacing: -1px;
+  letter-spacing: -1.5px;
 }
 .hero-italic {
+  font-family: var(--font-serif);
   font-style: italic;
   font-weight: 400;
   color: var(--black);
+  letter-spacing: -0.5px;
 }
 .hero-bold {
-  font-weight: 700;
+  font-family: var(--font-sans);
+  font-weight: 800;
   color: var(--green);
+  letter-spacing: -2px;
 }
 
 .hero-sub {
@@ -410,16 +413,22 @@ em { font-style: italic; }
 .section-header.center { text-align: center; }
 
 .section-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: clamp(38px, 4.5vw, 60px);
-  font-weight: 600;
+  font-weight: 800;
   line-height: 1.1;
-  letter-spacing: -0.5px;
+  letter-spacing: -1.5px;
   color: var(--black);
 }
 .section-title.light { color: var(--white); }
-.section-title em { font-weight: 400; color: var(--green); }
-.section-title.light em { color: rgba(255,255,255,0.7); }
+.section-title em {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-style: italic;
+  color: var(--green);
+  letter-spacing: -0.5px;
+}
+.section-title.light em { color: rgba(255,255,255,0.75); }
 
 .section-sub {
   margin-top: 18px;
@@ -474,9 +483,10 @@ em { font-style: italic; }
   margin-bottom: 4px;
 }
 .step-card h3 {
-  font-family: var(--font-serif);
-  font-size: 22px;
-  font-weight: 600;
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
   color: var(--black);
 }
 .step-card p {
@@ -557,9 +567,10 @@ em { font-style: italic; }
 
 .plan-top { display: flex; flex-direction: column; gap: 12px; }
 .plan-name {
-  font-family: var(--font-serif);
-  font-size: 26px;
-  font-weight: 600;
+  font-family: var(--font-sans);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
   color: var(--black);
 }
 .plan-featured .plan-name { color: var(--white); }
@@ -576,9 +587,9 @@ em { font-style: italic; }
 }
 .plan-featured .price-sign { color: rgba(255,255,255,0.7); }
 .price-num {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: 48px;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1;
   color: var(--black);
   letter-spacing: -2px;
@@ -728,9 +739,10 @@ em { font-style: italic; }
 .wc-d .why-icon { color: rgba(255,255,255,0.6); }
 
 .why-cell h3 {
-  font-family: var(--font-serif);
-  font-size: 20px;
-  font-weight: 600;
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
   color: var(--black);
   line-height: 1.2;
 }
@@ -781,9 +793,10 @@ em { font-style: italic; }
 }
 .about-stat { display: flex; flex-direction: column; gap: 4px; }
 .stat-num {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: 28px;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -1px;
   color: var(--green);
   line-height: 1;
 }
@@ -826,14 +839,20 @@ em { font-style: italic; }
   gap: 24px;
 }
 .cta-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: clamp(42px, 5vw, 64px);
-  font-weight: 600;
+  font-weight: 800;
   line-height: 1.1;
   color: var(--white);
-  letter-spacing: -1px;
+  letter-spacing: -2px;
 }
-.cta-title em { font-weight: 400; color: rgba(255,255,255,0.65); }
+.cta-title em {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-style: italic;
+  color: rgba(255,255,255,0.75);
+  letter-spacing: -0.5px;
+}
 .cta-sub {
   font-size: 16px;
   font-weight: 300;
@@ -1306,11 +1325,11 @@ em { font-style: italic; }
   color: var(--green);
 }
 .spin-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: clamp(44px, 5vw, 68px);
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1;
-  letter-spacing: -1px;
+  letter-spacing: -2px;
   color: var(--black);
 }
 .spin-desc {
@@ -1549,9 +1568,10 @@ em { font-style: italic; }
   background: linear-gradient(transparent, rgba(28,27,25,0.6) 40%);
 }
 .cleo-card-overlay h3 {
-  font-family: var(--font-serif);
-  font-size: 26px;
-  font-weight: 600;
+  font-family: var(--font-sans);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
   color: var(--white);
   margin-bottom: 10px;
   line-height: 1.2;
@@ -1632,14 +1652,20 @@ em { font-style: italic; }
   pointer-events: none;
 }
 .arch-heading {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: clamp(36px, 4.5vw, 60px);
-  font-weight: 600;
+  font-weight: 800;
   color: var(--white);
   line-height: 1.1;
+  letter-spacing: -1.5px;
   text-shadow: 0 4px 24px rgba(0,0,0,0.5);
 }
-.arch-heading em { font-weight: 400; color: rgba(255,255,255,0.7); }
+.arch-heading em {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-style: italic;
+  color: rgba(255,255,255,0.75);
+}
 
 /* Sección del título pasante */
 .arch-passing-section {
@@ -1656,15 +1682,22 @@ em { font-style: italic; }
   padding: 0 48px;
 }
 .passing-word {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: clamp(32px, 4vw, 56px);
-  font-weight: 600;
+  font-weight: 800;
+  letter-spacing: -1.5px;
   color: var(--black);
   opacity: 0;
   transform: translateY(40px);
   display: block;
 }
-.accent-word { color: var(--green); font-style: italic; font-weight: 400; }
+.accent-word {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  color: var(--green);
+}
 
 /* ============================================
    4. STATS — Contador (estilo Better Environment)
@@ -1699,18 +1732,18 @@ em { font-style: italic; }
   line-height: 1;
 }
 .stat-counter {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: clamp(56px, 7vw, 96px);
-  font-weight: 700;
+  font-weight: 800;
   color: var(--black);
   letter-spacing: -3px;
   line-height: 1;
   display: block;
 }
 .stat-suffix {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: clamp(28px, 3.5vw, 48px);
-  font-weight: 400;
+  font-weight: 300;
   color: var(--green);
   margin-top: 8px;
 }
@@ -1786,14 +1819,19 @@ em { font-style: italic; }
   gap: 20px;
 }
 .nl-title {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: clamp(36px, 4.5vw, 56px);
-  font-weight: 600;
+  font-weight: 800;
   color: var(--white);
   line-height: 1.15;
-  letter-spacing: -0.5px;
+  letter-spacing: -1.5px;
 }
-.nl-title em { font-weight: 400; color: rgba(255,255,255,0.65); }
+.nl-title em {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-style: italic;
+  color: rgba(255,255,255,0.75);
+}
 .nl-sub {
   font-size: 15px;
   font-weight: 300;
