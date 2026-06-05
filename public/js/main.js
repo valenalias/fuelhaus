@@ -440,6 +440,215 @@ function initNewsletter() {
   );
 }
 
+/* ─── CALCULADORA DE MACROS ──────────────── */
+function initCalc() {
+  /* Estado */
+  const data = { goal: null, gender: null, age: 25, weight: 70, height: 170, activity: null };
+  let currentStep = 1;
+  const totalSteps = 6;
+
+  /* Elementos */
+  const hook      = document.getElementById('calc-hook');
+  const wizard    = document.getElementById('calc-wizard');
+  const startBtn  = document.getElementById('calc-start-btn');
+  const progFill  = document.getElementById('calc-prog-fill');
+  const progTxt   = document.getElementById('calc-prog-txt');
+  const result    = document.getElementById('calc-result');
+  const restartBtn= document.getElementById('calc-restart');
+
+  if (!startBtn) return;
+
+  /* Arrancar wizard */
+  startBtn.addEventListener('click', () => {
+    gsap.to(hook, { opacity: 0, y: -20, duration: 0.4, ease: 'power2.in',
+      onComplete: () => {
+        hook.style.display = 'none';
+        wizard.style.display = 'block';
+        gsap.from(wizard, { opacity: 0, y: 30, duration: 0.5, ease: 'power3.out' });
+        showStep(1);
+      }
+    });
+  });
+
+  /* Mostrar paso */
+  function showStep(n) {
+    currentStep = n;
+    document.querySelectorAll('.calc-step').forEach(s => s.classList.remove('active'));
+    const step = document.getElementById('cstep-' + n);
+    if (!step) return;
+
+    step.style.display = 'block';
+    step.classList.add('active');
+    gsap.from(step, { opacity: 0, x: 40, duration: 0.45, ease: 'power3.out' });
+
+    const pct = ((n - 1) / totalSteps) * 100;
+    progFill.style.width = pct + '%';
+    progTxt.textContent = 'Paso ' + n + ' de ' + totalSteps;
+  }
+
+  /* Avanzar al siguiente paso */
+  function goNext(n) {
+    const current = document.getElementById('cstep-' + currentStep);
+    gsap.to(current, { opacity: 0, x: -30, duration: 0.3, ease: 'power2.in',
+      onComplete: () => {
+        current.style.display = 'none';
+        current.classList.remove('active');
+        if (n > totalSteps) {
+          showResult();
+        } else {
+          showStep(n);
+        }
+      }
+    });
+  }
+
+  /* Opciones de click */
+  document.querySelectorAll('.calc-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      const field = opt.dataset.field;
+      const val   = opt.dataset.val;
+      data[field] = val;
+
+      /* Feedback visual */
+      const siblings = opt.closest('.calc-opts').querySelectorAll('.calc-opt');
+      siblings.forEach(s => s.classList.remove('selected'));
+      opt.classList.add('selected');
+
+      gsap.from(opt, { scale: 0.96, duration: 0.2, ease: 'back.out(2)' });
+
+      /* Auto-avanzar */
+      const stepMap = { goal: 2, gender: 3, activity: 7 };
+      const next = stepMap[field];
+      if (next) setTimeout(() => goNext(next), 320);
+    });
+  });
+
+  /* Botones "Continuar" */
+  document.querySelectorAll('.calc-next-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const next = parseInt(btn.dataset.next);
+      goNext(next);
+    });
+  });
+
+  /* Ajustadores numéricos */
+  function setupNum(id, field, min, max) {
+    const display = document.getElementById(id + '-val');
+    document.getElementById(id + '-minus').addEventListener('click', () => {
+      if (data[field] > min) { data[field]--; display.textContent = data[field]; pulse(display); }
+    });
+    document.getElementById(id + '-plus').addEventListener('click', () => {
+      if (data[field] < max) { data[field]++; display.textContent = data[field]; pulse(display); }
+    });
+  }
+  function pulse(el) {
+    gsap.from(el, { scale: 1.2, duration: 0.2, ease: 'back.out(2)' });
+  }
+  setupNum('age',    'age',    10, 99);
+  setupNum('weight', 'weight', 30, 250);
+  setupNum('height', 'height', 100, 230);
+
+  /* Cálculo BMR (Mifflin-St Jeor) */
+  function calcBMR() {
+    const base = (10 * data.weight) + (6.25 * data.height) - (5 * data.age);
+    return data.gender === 'male' ? base + 5 : base - 161;
+  }
+
+  /* Splits de macros según objetivo */
+  const splits = {
+    lose:     { prot: 0.40, carb: 0.30, fat: 0.30, adj: -400 },
+    gain:     { prot: 0.30, carb: 0.45, fat: 0.25, adj:  300 },
+    maintain: { prot: 0.25, carb: 0.50, fat: 0.25, adj:    0 },
+    healthy:  { prot: 0.25, carb: 0.50, fat: 0.25, adj:    0 },
+  };
+
+  /* Planes recomendados por objetivo */
+  const planRec = {
+    lose:     { name: 'Plan Performance', price: '$190', desc: 'Controlás almuerzos y cenas — las dos comidas que más impactan en tu déficit calórico.' },
+    gain:     { name: 'Plan Full System', price: '$225', desc: 'Máxima cobertura calórica y proteica. Almuerzos, cenas, shots y snacks para construir músculo.' },
+    maintain: { name: 'Plan Performance', price: '$190', desc: 'El balance ideal entre consistencia y cobertura para mantener tu composición actual.' },
+    healthy:  { name: 'Plan Structure',   price: '$120', desc: 'Organizá tu almuerzo diario con comida real, fresca y equilibrada sin complicarte.' },
+  };
+
+  /* Mostrar resultado */
+  function showResult() {
+    const bmr    = calcBMR();
+    const tdee   = bmr * parseFloat(data.activity);
+    const split  = splits[data.goal] || splits.healthy;
+    const cals   = Math.round(tdee + split.adj);
+    const prot   = Math.round(cals * split.prot / 4);
+    const carb   = Math.round(cals * split.carb / 4);
+    const fat    = Math.round(cals * split.fat  / 9);
+    const plan   = planRec[data.goal] || planRec.healthy;
+
+    /* Ocultar último step */
+    const lastStep = document.getElementById('cstep-6');
+    if (lastStep) { lastStep.style.display = 'none'; lastStep.classList.remove('active'); }
+
+    /* Progreso completo */
+    progFill.style.width = '100%';
+    progTxt.textContent  = '¡Listo! Tu plan personalizado';
+
+    /* Mostrar resultado */
+    result.style.display = 'block';
+    gsap.from(result, { opacity: 0, y: 40, duration: 0.6, ease: 'power3.out' });
+
+    /* Animar números */
+    const calObj  = { v: 0 };
+    const protObj = { v: 0 };
+    const carbObj = { v: 0 };
+    const fatObj  = { v: 0 };
+
+    gsap.to(calObj,  { v: cals, duration: 1.4, ease: 'power2.out', onUpdate: () => { document.getElementById('res-cal').textContent  = Math.round(calObj.v).toLocaleString('es-AR'); }});
+    gsap.to(protObj, { v: prot, duration: 1.2, ease: 'power2.out', delay: 0.2, onUpdate: () => { document.getElementById('res-prot').textContent = Math.round(protObj.v) + 'g'; }});
+    gsap.to(carbObj, { v: carb, duration: 1.2, ease: 'power2.out', delay: 0.3, onUpdate: () => { document.getElementById('res-carb').textContent = Math.round(carbObj.v) + 'g'; }});
+    gsap.to(fatObj,  { v: fat,  duration: 1.2, ease: 'power2.out', delay: 0.4, onUpdate: () => { document.getElementById('res-fat').textContent  = Math.round(fatObj.v)  + 'g'; }});
+
+    /* Barras de macros */
+    setTimeout(() => {
+      document.getElementById('bar-prot').style.width = Math.round(split.prot * 100) + '%';
+      document.getElementById('bar-carb').style.width = Math.round(split.carb * 100) + '%';
+      document.getElementById('bar-fat').style.width  = Math.round(split.fat  * 100) + '%';
+    }, 600);
+
+    /* Plan recomendado */
+    document.getElementById('result-plan-rec').innerHTML = `
+      <span class="result-plan-title">Plan recomendado para vos</span>
+      <span class="result-plan-name">${plan.name} — ${plan.price}/semana</span>
+      <span class="result-plan-desc">${plan.desc}</span>
+    `;
+
+    /* CTA con scroll suave a planes */
+    document.getElementById('res-cta-btn').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('planes').scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+
+  /* Reiniciar */
+  restartBtn.addEventListener('click', () => {
+    data.goal = data.gender = data.activity = null;
+    data.age = 25; data.weight = 70; data.height = 170;
+    document.getElementById('age-val').textContent    = 25;
+    document.getElementById('weight-val').textContent = 70;
+    document.getElementById('height-val').textContent = 170;
+    document.querySelectorAll('.calc-opt').forEach(o => o.classList.remove('selected'));
+    result.style.display = 'none';
+    progFill.style.width = '0%';
+    showStep(1);
+  });
+
+  /* Animación de entrada del hook */
+  if (!reduced) {
+    gsap.fromTo('#calc-hook',
+      { opacity: 0, y: 36 },
+      { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
+        scrollTrigger: { trigger: '.calc-section', start: 'top 80%' }
+      }
+    );
+  }
+}
+
 /* ─── INIT ────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
   if (!reduced) {
@@ -464,6 +673,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initArch();
   initStats();
   initNewsletter();
+
+  // Calculadora de macros
+  initCalc();
 
   runLoader();
 });

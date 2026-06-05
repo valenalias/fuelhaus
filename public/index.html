@@ -584,6 +584,244 @@
       </div>
     </section>
 
+    <!-- ═══════════════════════════════ CALCULADORA DE MACROS -->
+    <section class="calc-section" id="calculadora">
+      <div class="calc-inner">
+
+        <!-- HOOK -->
+        <div class="calc-hook" id="calc-hook">
+          <div class="calc-hook-text">
+            <span class="eyebrow">Tu plan en 60 segundos</span>
+            <h2 class="section-title">¿Cuánto debería<br><em>comer cada día?</em></h2>
+            <p class="calc-hook-sub">La razón #1 por la que no ves resultados es no saber exactamente qué comer. Respondé 6 preguntas simples y calculamos tus calorías y macros ideales según tu cuerpo y objetivo.</p>
+            <div class="calc-proof-row">
+              <span><i class="fa-solid fa-clock"></i> 60 segundos</span>
+              <span><i class="fa-solid fa-sliders"></i> 100% personalizado</span>
+              <span><i class="fa-solid fa-circle-check"></i> Sin registro</span>
+            </div>
+            <button class="btn btn-primary btn-mag" id="calc-start-btn">
+              Calculá mis macros <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+          <div class="calc-hook-visual">
+            <div class="calc-preview-card">
+              <p class="preview-title">Ejemplo de resultado</p>
+              <div class="preview-cal">
+                <span class="preview-cal-num">2.140</span>
+                <span class="preview-cal-unit">kcal / día</span>
+              </div>
+              <div class="preview-macros">
+                <div class="preview-macro">
+                  <div class="pm-top">
+                    <span class="pm-name">Proteína</span>
+                    <span class="pm-val">178g</span>
+                  </div>
+                  <div class="pm-bar"><div class="pm-fill pm-prot" style="width:40%"></div></div>
+                </div>
+                <div class="preview-macro">
+                  <div class="pm-top">
+                    <span class="pm-name">Carbohidratos</span>
+                    <span class="pm-val">214g</span>
+                  </div>
+                  <div class="pm-bar"><div class="pm-fill pm-carb" style="width:35%"></div></div>
+                </div>
+                <div class="preview-macro">
+                  <div class="pm-top">
+                    <span class="pm-name">Grasas</span>
+                    <span class="pm-val">71g</span>
+                  </div>
+                  <div class="pm-bar"><div class="pm-fill pm-fat" style="width:25%"></div></div>
+                </div>
+              </div>
+              <p class="preview-disclaimer">* El tuyo será calculado para tu cuerpo exacto</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- WIZARD -->
+        <div class="calc-wizard" id="calc-wizard">
+
+          <!-- Progreso -->
+          <div class="calc-prog-wrap">
+            <div class="calc-prog-track">
+              <div class="calc-prog-fill" id="calc-prog-fill"></div>
+            </div>
+            <span class="calc-prog-txt" id="calc-prog-txt">Paso 1 de 6</span>
+          </div>
+
+          <!-- Paso 1: Objetivo -->
+          <div class="calc-step" id="cstep-1">
+            <div class="calc-q-head">
+              <span class="calc-step-num">01</span>
+              <h3 class="calc-q">¿Cuál es tu objetivo?</h3>
+              <p class="calc-q-sub">Esto define tu distribución de calorías y macros.</p>
+            </div>
+            <div class="calc-opts grid-2x2">
+              <button class="calc-opt" data-field="goal" data-val="lose">
+                <span class="opt-ico">🔥</span>
+                <span class="opt-name">Perder grasa</span>
+                <span class="opt-desc">Déficit calórico con alta proteína para preservar músculo</span>
+              </button>
+              <button class="calc-opt" data-field="goal" data-val="gain">
+                <span class="opt-ico">💪</span>
+                <span class="opt-name">Ganar músculo</span>
+                <span class="opt-desc">Superávit moderado y proteína elevada para construir masa</span>
+              </button>
+              <button class="calc-opt" data-field="goal" data-val="maintain">
+                <span class="opt-ico">⚖️</span>
+                <span class="opt-name">Mantenerme</span>
+                <span class="opt-desc">Balance exacto para sostener tu peso y composición actual</span>
+              </button>
+              <button class="calc-opt" data-field="goal" data-val="healthy">
+                <span class="opt-ico">🥗</span>
+                <span class="opt-name">Comer saludable</span>
+                <span class="opt-desc">Nutrición equilibrada para sentirte mejor cada día</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Paso 2: Género -->
+          <div class="calc-step" id="cstep-2">
+            <div class="calc-q-head">
+              <span class="calc-step-num">02</span>
+              <h3 class="calc-q">¿Con qué género te identificás?</h3>
+              <p class="calc-q-sub">Afecta la fórmula del metabolismo basal (BMR).</p>
+            </div>
+            <div class="calc-opts grid-2col">
+              <button class="calc-opt" data-field="gender" data-val="male">
+                <span class="opt-ico">♂</span>
+                <span class="opt-name">Masculino</span>
+              </button>
+              <button class="calc-opt" data-field="gender" data-val="female">
+                <span class="opt-ico">♀</span>
+                <span class="opt-name">Femenino</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Paso 3: Edad -->
+          <div class="calc-step" id="cstep-3">
+            <div class="calc-q-head">
+              <span class="calc-step-num">03</span>
+              <h3 class="calc-q">¿Cuántos años tenés?</h3>
+              <p class="calc-q-sub">El metabolismo basal disminuye aproximadamente 2% por década.</p>
+            </div>
+            <div class="calc-num-wrap">
+              <button class="num-adj" id="age-minus">−</button>
+              <div class="num-display">
+                <span class="num-val" id="age-val">25</span>
+                <span class="num-unit">años</span>
+              </div>
+              <button class="num-adj" id="age-plus">+</button>
+            </div>
+            <button class="btn btn-primary btn-mag calc-next-btn" data-next="4">Continuar <i class="fa-solid fa-arrow-right"></i></button>
+          </div>
+
+          <!-- Paso 4: Peso -->
+          <div class="calc-step" id="cstep-4">
+            <div class="calc-q-head">
+              <span class="calc-step-num">04</span>
+              <h3 class="calc-q">¿Cuánto pesás?</h3>
+              <p class="calc-q-sub">Tu peso actual, no el objetivo — eso ya lo sabemos por tu meta.</p>
+            </div>
+            <div class="calc-num-wrap">
+              <button class="num-adj" id="weight-minus">−</button>
+              <div class="num-display">
+                <span class="num-val" id="weight-val">70</span>
+                <span class="num-unit">kg</span>
+              </div>
+              <button class="num-adj" id="weight-plus">+</button>
+            </div>
+            <button class="btn btn-primary btn-mag calc-next-btn" data-next="5">Continuar <i class="fa-solid fa-arrow-right"></i></button>
+          </div>
+
+          <!-- Paso 5: Altura -->
+          <div class="calc-step" id="cstep-5">
+            <div class="calc-q-head">
+              <span class="calc-step-num">05</span>
+              <h3 class="calc-q">¿Cuánto medís?</h3>
+              <p class="calc-q-sub">Junto con tu peso, define tu índice metabólico.</p>
+            </div>
+            <div class="calc-num-wrap">
+              <button class="num-adj" id="height-minus">−</button>
+              <div class="num-display">
+                <span class="num-val" id="height-val">170</span>
+                <span class="num-unit">cm</span>
+              </div>
+              <button class="num-adj" id="height-plus">+</button>
+            </div>
+            <button class="btn btn-primary btn-mag calc-next-btn" data-next="6">Continuar <i class="fa-solid fa-arrow-right"></i></button>
+          </div>
+
+          <!-- Paso 6: Actividad -->
+          <div class="calc-step" id="cstep-6">
+            <div class="calc-q-head">
+              <span class="calc-step-num">06</span>
+              <h3 class="calc-q">¿Cuánto te movés por semana?</h3>
+              <p class="calc-q-sub">Sé honesto — subestimar la actividad es el error más común.</p>
+            </div>
+            <div class="calc-opts grid-list">
+              <button class="calc-opt" data-field="activity" data-val="1.2">
+                <span class="opt-name">😴 Sedentario</span>
+                <span class="opt-desc">Trabajo de oficina, poco o nada de ejercicio</span>
+              </button>
+              <button class="calc-opt" data-field="activity" data-val="1.375">
+                <span class="opt-name">🚶 Poco activo</span>
+                <span class="opt-desc">Caminata o ejercicio 1-2 días por semana</span>
+              </button>
+              <button class="calc-opt" data-field="activity" data-val="1.55">
+                <span class="opt-name">🏃 Moderado</span>
+                <span class="opt-desc">Ejercicio 3-4 días por semana</span>
+              </button>
+              <button class="calc-opt" data-field="activity" data-val="1.725">
+                <span class="opt-name">⚡ Muy activo</span>
+                <span class="opt-desc">Ejercicio 5-6 días o trabajo físico intenso</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Resultado -->
+          <div class="calc-result" id="calc-result">
+            <div class="result-header">
+              <span class="eyebrow light">Tu resultado personalizado</span>
+              <h3 class="result-title">Estos son tus<br><em>macros diarios</em></h3>
+            </div>
+            <div class="result-calories">
+              <span class="result-cal-num" id="res-cal">0</span>
+              <span class="result-cal-unit">calorías por día</span>
+            </div>
+            <div class="result-macros">
+              <div class="result-macro">
+                <span class="res-macro-num" id="res-prot">0g</span>
+                <span class="res-macro-label">Proteína</span>
+                <div class="res-macro-bar"><div class="res-macro-fill rprot" id="bar-prot"></div></div>
+              </div>
+              <div class="result-macro">
+                <span class="res-macro-num" id="res-carb">0g</span>
+                <span class="res-macro-label">Carbohidratos</span>
+                <div class="res-macro-bar"><div class="res-macro-fill rcarb" id="bar-carb"></div></div>
+              </div>
+              <div class="result-macro">
+                <span class="res-macro-num" id="res-fat">0g</span>
+                <span class="res-macro-label">Grasas</span>
+                <div class="res-macro-bar"><div class="res-macro-fill rfat" id="bar-fat"></div></div>
+              </div>
+            </div>
+            <div class="result-plan" id="result-plan-rec"></div>
+            <div class="result-actions">
+              <a href="#planes" class="btn btn-white btn-mag result-cta" id="res-cta-btn">
+                Ver mi plan ideal <i class="fa-solid fa-arrow-right"></i>
+              </a>
+              <button class="calc-restart" id="calc-restart">
+                <i class="fa-solid fa-rotate-left"></i> Recalcular
+              </button>
+            </div>
+          </div>
+
+        </div><!-- /calc-wizard -->
+      </div><!-- /calc-inner -->
+    </section>
+
     <!-- ═══════════════════════════════ 3. ARCH — Reveal (estilo Collabcapitolium) -->
     <section class="arch-section" id="arch">
       <div class="arch-scene" id="arch-scene">
