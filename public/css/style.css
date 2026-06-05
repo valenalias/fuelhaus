@@ -157,6 +157,10 @@ em { font-style: italic; }
   height: 40px;
   width: auto;
   display: block;
+  mix-blend-mode: multiply;
+}
+.loader-logo-img {
+  mix-blend-mode: multiply;
 }
 
 .nav { flex: 1; display: flex; justify-content: center; }
@@ -937,6 +941,30 @@ em { font-style: italic; }
   gap: 24px;
 }
 .footer-logo-img { height: 36px; width: auto; opacity: 0.85; }
+.footer-logo-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+  opacity: 0.85;
+  transition: opacity .2s ease;
+}
+.footer-logo-link:hover .footer-logo-text { opacity: 1; }
+.footer-logo-text em {
+  font-family: 'Lora', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 22px;
+  color: var(--white);
+  letter-spacing: -0.5px;
+}
+.footer-logo-text strong {
+  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--white);
+  letter-spacing: -0.5px;
+}
 .footer-nav {
   display: flex;
   gap: 32px;
