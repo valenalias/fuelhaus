@@ -125,6 +125,15 @@ em { font-style: italic; }
 }
 .btn-white:hover { background: transparent; color: var(--white); border-color: var(--white); }
 
+.btn-members {
+  background: transparent;
+  color: var(--black);
+  border-color: rgba(0,0,0,0.25);
+  font-size: 0.8rem;
+  padding: 0.45rem 1.1rem;
+}
+.btn-members:hover { background: var(--black); color: var(--white); border-color: var(--black); }
+
 /* ============================================
    HEADER
 ============================================ */

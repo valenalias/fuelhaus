@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fuelhaus — Mi cuenta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --sage:       #6B8A5E;
+      --dark-green: #2B3D26;
+      --cream:      #F2EDE4;
+      --cream-dark: #E8E2D8;
+      --white:      #ffffff;
+      --black:      #1C1B19;
+      --gray:       #8A8A86;
+      --border:     #DDD8CF;
+      --error:      #C0392B;
+      --amber:      #E67E22;
+      --green:      #27ae60;
+      --radius:     12px;
+      --shadow:     0 2px 14px rgba(0,0,0,0.08);
+    }
+    body {
+      font-family: 'Be Vietnam Pro', sans-serif;
+      background: var(--cream);
+      color: var(--black);
+      min-height: 100dvh;
+    }
+
+    /* ── HEADER ─── */
+    .home-header {
+      position: sticky;
+      top: 0;
+      background: var(--cream);
+      border-bottom: 1px solid var(--border);
+      z-index: 50;
+      padding: 0 1.5rem;
+    }
+    .header-inner {
+      max-width: 1080px;
+      margin: 0 auto;
+      height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-logo {
+      font-family: 'Lora', serif;
+      font-size: 1.35rem;
+      color: var(--dark-green);
+      text-decoration: none;
+    }
+    .header-logo em { font-style: italic; font-weight: 400; }
+    .header-logo strong { font-weight: 700; }
+    .header-right { display: flex; align-items: center; gap: 1rem; }
+    .header-user  { font-size: 0.85rem; color: var(--gray); font-weight: 500; }
+    .btn-logout {
+      background: none;
+      border: 1.5px solid var(--border);
+      color: var(--gray);
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.35rem 0.85rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-logout:hover { border-color: var(--dark-green); color: var(--dark-green); }
+
+    /* ── PROGRESS BAR ─── */
+    .progress-wrap {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 0.9rem 1.5rem;
+    }
+    .progress-inner {
+      max-width: 560px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+    .prog-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+      flex: 0 0 auto;
+    }
+    .prog-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--gray);
+      transition: all 0.3s;
+    }
+    .prog-step.done .prog-dot  { background: var(--sage); border-color: var(--sage); color: var(--white); }
+    .prog-step.done .prog-dot::after { content: '✓'; }
+    .prog-step.active .prog-dot { background: var(--dark-green); border-color: var(--dark-green); color: var(--white); }
+    .prog-label { font-size: 0.68rem; font-weight: 600; color: var(--gray); white-space: nowrap; }
+    .prog-step.active .prog-label { color: var(--dark-green); }
+    .prog-step.done .prog-label  { color: var(--sage); }
+    .prog-line {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      margin-bottom: 1.1rem;
+      transition: background 0.3s;
+    }
+    .prog-line.done { background: var(--sage); }
+
+    /* ── MAIN ─── */
+    .home-main { padding: 2rem 1.5rem 4rem; }
+    .step-wrap { display: none; }
+    .step-wrap.active { display: block; }
+
+    .step-content {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .step-content.wide { max-width: 1020px; }
+
+    .step-eyebrow {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--sage);
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    .step-title {
+      font-family: 'Lora', serif;
+      font-size: clamp(1.8rem, 4vw, 2.4rem);
+      font-weight: 600;
+      line-height: 1.15;
+      color: var(--black);
+      margin-bottom: 0.5rem;
+    }
+    .step-title em { font-style: italic; }
+    .step-sub { color: var(--gray); font-size: 0.95rem; margin-bottom: 2rem; }
+
+    /* ── STEP: CUENTA (ya tiene pedido) ─── */
+    .account-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .account-card-head {
+      background: var(--dark-green);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .account-order-num { font-family: 'Lora', serif; font-size: 1.25rem; color: var(--white); font-weight: 600; }
+    .account-card-body { padding: 1.5rem; }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem 2rem;
+    }
+    .info-item { display: flex; flex-direction: column; gap: 0.15rem; }
+    .info-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray); }
+    .info-value { font-size: 0.9rem; font-weight: 600; color: var(--black); }
+    .info-value.full { grid-column: 1 / -1; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+
+    .badge-status-paid      { background: rgba(39,174,96,0.1); color: var(--green); padding: 0.3rem 0.75rem; border-radius: 99px; font-size: 0.78rem; font-weight: 700; }
+    .badge-status-processing{ background: rgba(230,126,34,0.1); color: var(--amber); padding: 0.3rem 0.75rem; border-radius: 99px; font-size: 0.78rem; font-weight: 700; }
+    .badge-status-delivered { background: rgba(107,138,94,0.15); color: var(--dark-green); padding: 0.3rem 0.75rem; border-radius: 99px; font-size: 0.78rem; font-weight: 700; }
+    .badge-status-cancelled { background: rgba(192,57,43,0.08); color: var(--error); padding: 0.3rem 0.75rem; border-radius: 99px; font-size: 0.78rem; font-weight: 700; }
+
+    /* ── STEP: BIENVENIDA ─── */
+    .welcome-wrap { text-align: center; padding-top: 1rem; }
+    .welcome-icon {
+      width: 72px; height: 72px;
+      background: rgba(107,138,94,0.12);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-size: 2rem;
+    }
+    .welcome-steps-list {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin: 2rem 0;
+      flex-wrap: wrap;
+    }
+    .w-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      width: 120px;
+    }
+    .w-step-ico {
+      width: 48px; height: 48px;
+      border-radius: 10px;
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      color: var(--sage);
+    }
+    .w-step-label { font-size: 0.8rem; font-weight: 600; color: var(--gray); text-align: center; }
+
+    /* ── STEP: PLANES ─── */
+    .plans-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      margin-top: 0.5rem;
+    }
+    .plan-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      border: 2px solid var(--border);
+      padding: 1.75rem 1.5rem;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .plan-card:hover { border-color: var(--sage); box-shadow: var(--shadow); transform: translateY(-2px); }
+    .plan-card.selected { border-color: var(--dark-green); box-shadow: 0 0 0 3px rgba(43,61,38,0.12); }
+    .plan-card.featured { background: var(--dark-green); border-color: var(--dark-green); }
+
+    .plan-badge { position: absolute; top: -1px; right: 1.25rem; background: var(--sage); color: var(--white); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.25rem 0.7rem; border-radius: 0 0 8px 8px; }
+
+    .plan-name { font-family: 'Lora', serif; font-size: 1.5rem; font-weight: 600; color: var(--black); margin-bottom: 0.15rem; }
+    .plan-card.featured .plan-name { color: var(--white); }
+
+    .plan-price-row { margin-bottom: 1.25rem; }
+    .plan-price { font-size: 2rem; font-weight: 800; color: var(--black); line-height: 1; }
+    .plan-card.featured .plan-price { color: var(--white); }
+    .plan-per  { font-size: 0.82rem; color: var(--gray); font-weight: 500; }
+    .plan-card.featured .plan-per { color: rgba(255,255,255,0.6); }
+
+    .plan-includes {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      flex: 1;
+    }
+    .plan-includes li {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--black);
+    }
+    .plan-card.featured .plan-includes li { color: rgba(255,255,255,0.85); }
+    .plan-includes li i { color: var(--sage); font-size: 0.8rem; }
+    .plan-card.featured .plan-includes li i { color: #a8c49d; }
+
+    .plan-select-btn {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 8px;
+      border: 2px solid var(--dark-green);
+      background: transparent;
+      color: var(--dark-green);
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-top: auto;
+    }
+    .plan-select-btn:hover, .plan-card.selected .plan-select-btn {
+      background: var(--dark-green);
+      color: var(--white);
+    }
+    .plan-card.featured .plan-select-btn {
+      border-color: var(--white);
+      color: var(--white);
+    }
+    .plan-card.featured .plan-select-btn:hover,
+    .plan-card.featured.selected .plan-select-btn {
+      background: var(--white);
+      color: var(--dark-green);
+    }
+
+    /* ── STEP: DATOS ─── */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .field { margin-bottom: 1.1rem; }
+    .field label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--black); margin-bottom: 0.35rem; letter-spacing: 0.02em; }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 0.9rem;
+      color: var(--black);
+      background: var(--white);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--sage); }
+    .field input:disabled, .field input[readonly] { background: var(--cream-dark); color: var(--gray); cursor: not-allowed; }
+    .field-hint { font-size: 0.73rem; color: var(--gray); margin-top: 0.3rem; display: block; }
+    .field textarea { resize: vertical; }
+
+    /* ── STEP: PREFERENCIAS ─── */
+    .goal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .goal-card {
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      cursor: pointer;
+      background: var(--white);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: all 0.15s;
+    }
+    .goal-card:hover { border-color: var(--sage); }
+    .goal-card.selected { border-color: var(--dark-green); background: rgba(43,61,38,0.04); }
+    .goal-ico { font-size: 1.5rem; flex-shrink: 0; }
+    .goal-text-wrap { display: flex; flex-direction: column; }
+    .goal-name { font-weight: 700; font-size: 0.875rem; color: var(--black); }
+    .goal-desc { font-size: 0.75rem; color: var(--gray); margin-top: 0.1rem; }
+
+    .pref-section-title { font-size: 0.78rem; font-weight: 700; color: var(--black); letter-spacing: 0.02em; margin-bottom: 0.4rem; display: block; }
+
+    /* ── STEP: PAGO ─── */
+    .summary-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      border: 1.5px solid var(--border);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .summary-title { font-family: 'Lora', serif; font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      font-size: 0.9rem;
+    }
+    .summary-row.total {
+      border-top: 1.5px solid var(--border);
+      margin-top: 0.5rem;
+      padding-top: 0.75rem;
+      font-weight: 800;
+      font-size: 1.1rem;
+    }
+    .summary-label { color: var(--gray); }
+    .summary-value { font-weight: 600; }
+    .discount-val  { color: var(--green); font-weight: 700; }
+
+    .coupon-row { display: flex; gap: 0.6rem; margin-bottom: 0.5rem; }
+    .coupon-input-wrap { flex: 1; }
+    .coupon-input-wrap input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .coupon-input-wrap input:focus { border-color: var(--sage); }
+    .coupon-input-wrap input.valid   { border-color: var(--green); background: rgba(39,174,96,0.04); }
+    .coupon-input-wrap input.invalid { border-color: var(--error); }
+    .coupon-msg { font-size: 0.8rem; font-weight: 600; margin-top: 0.35rem; }
+    .coupon-msg.ok  { color: var(--green); }
+    .coupon-msg.err { color: var(--error); }
+
+    /* ── STEP: CONFIRMACIÓN ─── */
+    .confirm-wrap { text-align: center; padding-top: 1rem; }
+    .confirm-icon-big {
+      width: 80px; height: 80px;
+      background: var(--green);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-size: 2rem;
+      color: var(--white);
+    }
+    .confirm-order-num {
+      font-family: 'Lora', serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--dark-green);
+      letter-spacing: 0.04em;
+      margin: 0.5rem 0 1.5rem;
+    }
+    .confirm-list {
+      list-style: none;
+      display: inline-flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      text-align: left;
+      margin-bottom: 2.5rem;
+    }
+    .confirm-list li { display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; color: var(--gray); }
+    .confirm-list li i { color: var(--sage); }
+
+    /* ── BOTONES ─── */
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      padding: 0.85rem 1.75rem;
+      background: var(--dark-green); color: var(--white);
+      border: none; border-radius: 8px;
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 0.9rem; font-weight: 700;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-primary:hover { background: #1e2e1a; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary.full { width: 100%; justify-content: center; }
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      padding: 0.85rem 1.5rem;
+      background: transparent; color: var(--black);
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-outline:hover { border-color: var(--black); }
+    .btn-whatsapp {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      padding: 1rem 2rem;
+      background: #25d366; color: var(--white);
+      border: none; border-radius: 8px;
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 1rem; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      transition: background 0.15s;
+      margin-bottom: 1rem;
+    }
+    .btn-whatsapp:hover { background: #1ebe59; }
+    .btn-apply {
+      padding: 0.75rem 1.25rem;
+      background: var(--sage); color: var(--white);
+      border: none; border-radius: 8px;
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 0.875rem; font-weight: 700;
+      cursor: pointer; white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn-apply:hover { background: var(--dark-green); }
+
+    .form-actions {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 2rem; gap: 1rem;
+    }
+    .form-actions.center { justify-content: center; }
+
+    .link-site { color: var(--gray); font-size: 0.85rem; text-decoration: none; transition: color 0.15s; }
+    .link-site:hover { color: var(--dark-green); }
+
+    .error-msg {
+      display: none; color: var(--error); font-size: 0.82rem;
+      padding: 0.65rem 1rem; background: rgba(192,57,43,0.08);
+      border-radius: 6px; font-weight: 500; margin-top: 0.5rem;
+    }
+    .error-msg.visible { display: block; }
+
+    /* ── MOBILE ─── */
+    @media (max-width: 768px) {
+      .plans-grid { grid-template-columns: 1fr; }
+      .form-row   { grid-template-columns: 1fr; }
+      .goal-grid  { grid-template-columns: 1fr; }
+      .info-grid  { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 540px) {
+      .welcome-steps-list { gap: 0.75rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="home-header">
+    <div class="header-inner">
+      <a href="/" class="header-logo"><em>fuel</em><strong>haus</strong></a>
+      <div class="header-right">
+        <span class="header-user" id="header-greeting"></span>
+        <button class="btn-logout" id="logout-btn">Salir</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- PROGRESS BAR -->
+  <div class="progress-wrap" id="progress-wrap" style="display:none">
+    <div class="progress-inner">
+      <div class="prog-step" id="ps-1">
+        <div class="prog-dot" id="pd-1">1</div>
+        <span class="prog-label">Plan</span>
+      </div>
+      <div class="prog-line" id="pl-1"></div>
+      <div class="prog-step" id="ps-2">
+        <div class="prog-dot" id="pd-2">2</div>
+        <span class="prog-label">Datos</span>
+      </div>
+      <div class="prog-line" id="pl-2"></div>
+      <div class="prog-step" id="ps-3">
+        <div class="prog-dot" id="pd-3">3</div>
+        <span class="prog-label">Preferencias</span>
+      </div>
+      <div class="prog-line" id="pl-3"></div>
+      <div class="prog-step" id="ps-4">
+        <div class="prog-dot" id="pd-4">4</div>
+        <span class="prog-label">Pago</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="home-main">
+
+    <!-- STEP: CUENTA (ya tiene pedido) -->
+    <div class="step-wrap" id="step-account">
+      <div class="step-content">
+        <span class="step-eyebrow">Mi cuenta</span>
+        <h1 class="step-title" id="account-greeting">Tu pedido</h1>
+        <p class="step-sub">Aquí está el resumen de tu pedido activo.</p>
+
+        <div class="account-card" id="account-order-card">
+          <div class="account-card-head">
+            <span class="account-order-num" id="acc-order-num">FH-0001</span>
+            <span id="acc-status-badge"></span>
+          </div>
+          <div class="account-card-body">
+            <div class="info-grid">
+              <div class="info-item"><span class="info-label">Plan</span><span class="info-value" id="acc-plan">—</span></div>
+              <div class="info-item"><span class="info-label">Precio</span><span class="info-value" id="acc-price">—</span></div>
+              <div class="info-item"><span class="info-label">Fecha</span><span class="info-value" id="acc-date">—</span></div>
+              <div class="info-item"><span class="info-label">Cupón</span><span class="info-value" id="acc-coupon">—</span></div>
+            </div>
+            <hr class="divider">
+            <div class="info-grid">
+              <div class="info-item"><span class="info-label">Objetivo</span><span class="info-value" id="acc-goal">—</span></div>
+              <div class="info-item"><span class="info-label">Dieta</span><span class="info-value" id="acc-diet">—</span></div>
+              <div class="info-item" style="grid-column:1/-1"><span class="info-label">Alergias / restricciones</span><span class="info-value" id="acc-allergies">—</span></div>
+              <div class="info-item" style="grid-column:1/-1"><span class="info-label">Alimentos a evitar</span><span class="info-value" id="acc-avoid">—</span></div>
+            </div>
+            <hr class="divider">
+            <div class="info-grid">
+              <div class="info-item"><span class="info-label">WhatsApp</span><span class="info-value" id="acc-phone">—</span></div>
+              <div class="info-item"><span class="info-label">Email</span><span class="info-value" id="acc-email">—</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <a id="acc-whatsapp-btn" class="btn-whatsapp" href="#" target="_blank" rel="noopener">
+            <i class="fa-brands fa-whatsapp"></i> Comunicarme con Fuelhaus
+          </a>
+        </div>
+        <div style="text-align:center;margin-top:1rem">
+          <a href="/" class="link-site">← Volver al sitio</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP: BIENVENIDA -->
+    <div class="step-wrap" id="step-welcome">
+      <div class="step-content">
+        <div class="welcome-wrap">
+          <div class="welcome-icon">🥗</div>
+          <span class="step-eyebrow">Bienvenido a Fuelhaus</span>
+          <h1 class="step-title">¡Hola, <em id="welcome-name">!</em></h1>
+          <p class="step-sub" style="max-width:480px;margin:0.5rem auto 1.5rem">
+            Estás a cuatro pasos de tener tu semana de comida resuelta.<br>
+            Todo fresco, personalizado y listo para comer.
+          </p>
+          <div class="welcome-steps-list">
+            <div class="w-step">
+              <div class="w-step-ico"><i class="fa-solid fa-star"></i></div>
+              <span class="w-step-label">Elegís tu plan</span>
+            </div>
+            <div class="w-step">
+              <div class="w-step-ico"><i class="fa-solid fa-user"></i></div>
+              <span class="w-step-label">Completás tus datos</span>
+            </div>
+            <div class="w-step">
+              <div class="w-step-ico"><i class="fa-solid fa-sliders"></i></div>
+              <span class="w-step-label">Configurás tus preferencias</span>
+            </div>
+            <div class="w-step">
+              <div class="w-step-ico"><i class="fa-solid fa-check-circle"></i></div>
+              <span class="w-step-label">Confirmás tu pedido</span>
+            </div>
+          </div>
+          <button class="btn-primary" id="start-btn" style="font-size:1rem;padding:1rem 2.5rem">
+            Empezar <i class="fa-solid fa-arrow-right"></i>
+          </button>
+          <br><br>
+          <a href="/" class="link-site">← Volver al sitio</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP: PLANES -->
+    <div class="step-wrap" id="step-plans">
+      <div class="step-content wide">
+        <span class="step-eyebrow">Paso 1 de 4</span>
+        <h2 class="step-title">Elegí tu <em>plan</em></h2>
+        <p class="step-sub">Todos incluyen 35–50g de proteína por porción. Ingredientes frescos, sin conservantes, entrega dominical.</p>
+
+        <div class="plans-grid">
+
+          <div class="plan-card" data-plan="structure" onclick="selectPlan('structure', this)">
+            <div class="plan-name">Structure</div>
+            <div class="plan-price-row">
+              <span class="plan-price">$120</span>
+              <span class="plan-per"> / semana</span>
+            </div>
+            <ul class="plan-includes">
+              <li><i class="fa-solid fa-check"></i> 5 almuerzos semanales</li>
+              <li><i class="fa-solid fa-check"></i> 5 activate shots</li>
+              <li><i class="fa-solid fa-check"></i> Personalizado por macros</li>
+              <li><i class="fa-solid fa-check"></i> Entrega el domingo</li>
+            </ul>
+            <button class="plan-select-btn">Elegir Structure</button>
+          </div>
+
+          <div class="plan-card featured" data-plan="performance" onclick="selectPlan('performance', this)">
+            <div class="plan-badge">Más elegido</div>
+            <div class="plan-name">Performance</div>
+            <div class="plan-price-row">
+              <span class="plan-price">$190</span>
+              <span class="plan-per"> / semana</span>
+            </div>
+            <ul class="plan-includes">
+              <li><i class="fa-solid fa-check"></i> 5 almuerzos semanales</li>
+              <li><i class="fa-solid fa-check"></i> 5 cenas semanales</li>
+              <li><i class="fa-solid fa-check"></i> 5 activate shots</li>
+              <li><i class="fa-solid fa-check"></i> Personalizado por macros</li>
+              <li><i class="fa-solid fa-check"></i> Entrega el domingo</li>
+            </ul>
+            <button class="plan-select-btn">Elegir Performance</button>
+          </div>
+
+          <div class="plan-card" data-plan="full_system" onclick="selectPlan('full_system', this)">
+            <div class="plan-name">Full System</div>
+            <div class="plan-price-row">
+              <span class="plan-price">$225</span>
+              <span class="plan-per"> / semana</span>
+            </div>
+            <ul class="plan-includes">
+              <li><i class="fa-solid fa-check"></i> 5 almuerzos semanales</li>
+              <li><i class="fa-solid fa-check"></i> 5 cenas semanales</li>
+              <li><i class="fa-solid fa-check"></i> 5 activate shots</li>
+              <li><i class="fa-solid fa-check"></i> 3 snacks semanales</li>
+              <li><i class="fa-solid fa-check"></i> Personalizado por macros</li>
+              <li><i class="fa-solid fa-check"></i> Entrega el domingo</li>
+            </ul>
+            <button class="plan-select-btn">Elegir Full System</button>
+          </div>
+
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-outline" onclick="goStep('welcome')"><i class="fa-solid fa-arrow-left"></i> Atrás</button>
+          <span style="font-size:0.8rem;color:var(--gray)">Hacé clic en el plan para seleccionarlo</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP: DATOS PERSONALES -->
+    <div class="step-wrap" id="step-data">
+      <div class="step-content">
+        <span class="step-eyebrow">Paso 2 de 4</span>
+        <h2 class="step-title">Tus datos de <em>contacto</em></h2>
+        <p class="step-sub">Así sabemos a quién entregarle las viandas y por dónde comunicarnos.</p>
+
+        <form id="data-form" novalidate>
+          <div class="form-row">
+            <div class="field">
+              <label for="d-name">Nombre *</label>
+              <input type="text" id="d-name" placeholder="Juan" required autocomplete="given-name">
+            </div>
+            <div class="field">
+              <label for="d-lastname">Apellido *</label>
+              <input type="text" id="d-lastname" placeholder="Pérez" required autocomplete="family-name">
+            </div>
+          </div>
+          <div class="field">
+            <label for="d-email">Email</label>
+            <input type="email" id="d-email" readonly>
+            <span class="field-hint">Este es el email de tu cuenta</span>
+          </div>
+          <div class="field">
+            <label for="d-phone">WhatsApp *</label>
+            <input type="tel" id="d-phone" placeholder="+1 (305) 000-0000" required autocomplete="tel">
+            <span class="field-hint">Lo usamos para coordinar tu entrega del domingo</span>
+          </div>
+          <div class="error-msg" id="data-error"></div>
+          <div class="form-actions">
+            <button type="button" class="btn-outline" onclick="goStep('plans')"><i class="fa-solid fa-arrow-left"></i> Atrás</button>
+            <button type="submit" class="btn-primary">Continuar <i class="fa-solid fa-arrow-right"></i></button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- STEP: PREFERENCIAS -->
+    <div class="step-wrap" id="step-prefs">
+      <div class="step-content">
+        <span class="step-eyebrow">Paso 3 de 4</span>
+        <h2 class="step-title">Configurá tus <em>viandas</em></h2>
+        <p class="step-sub">Con esta información preparamos comidas que se adaptan exactamente a tu cuerpo y objetivos.</p>
+
+        <div style="margin-bottom:1.5rem">
+          <span class="pref-section-title">¿Cuál es tu objetivo? *</span>
+          <div class="goal-grid">
+            <div class="goal-card" data-goal="fat_loss" onclick="selectGoal('fat_loss',this)">
+              <span class="goal-ico">🔥</span>
+              <div class="goal-text-wrap">
+                <span class="goal-name">Perder grasa</span>
+                <span class="goal-desc">Déficit calórico con alta proteína</span>
+              </div>
+            </div>
+            <div class="goal-card" data-goal="muscle_gain" onclick="selectGoal('muscle_gain',this)">
+              <span class="goal-ico">💪</span>
+              <div class="goal-text-wrap">
+                <span class="goal-name">Ganar músculo</span>
+                <span class="goal-desc">Superávit moderado, proteína elevada</span>
+              </div>
+            </div>
+            <div class="goal-card" data-goal="maintenance" onclick="selectGoal('maintenance',this)">
+              <span class="goal-ico">⚖️</span>
+              <div class="goal-text-wrap">
+                <span class="goal-name">Mantenerme</span>
+                <span class="goal-desc">Balance exacto para tu composición</span>
+              </div>
+            </div>
+            <div class="goal-card" data-goal="healthy" onclick="selectGoal('healthy',this)">
+              <span class="goal-ico">🥗</span>
+              <div class="goal-text-wrap">
+                <span class="goal-name">Comer saludable</span>
+                <span class="goal-desc">Nutrición equilibrada para sentirte mejor</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="pref-diet">¿Seguís algún tipo de dieta?</label>
+          <select id="pref-diet">
+            <option value="none">Sin preferencia especial</option>
+            <option value="high_protein">Alta proteína</option>
+            <option value="low_carb">Baja en carbohidratos</option>
+            <option value="keto">Keto</option>
+            <option value="vegan">Vegano</option>
+            <option value="vegetarian">Vegetariano</option>
+            <option value="paleo">Paleo</option>
+            <option value="mediterranean">Mediterránea</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="pref-allergies">¿Tenés alergias o restricciones alimentarias?</label>
+          <textarea id="pref-allergies" rows="2" placeholder="Ej: lactosa, gluten, maní... o escribí 'Ninguna'"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="pref-avoid">¿Qué alimentos preferís evitar?</label>
+          <textarea id="pref-avoid" rows="2" placeholder="Ej: brócoli, picante, mariscos..."></textarea>
+        </div>
+
+        <div class="error-msg" id="prefs-error"></div>
+        <div class="form-actions">
+          <button class="btn-outline" onclick="goStep('data')"><i class="fa-solid fa-arrow-left"></i> Atrás</button>
+          <button class="btn-primary" id="prefs-next-btn" onclick="submitPrefs()">Continuar <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP: PAGO -->
+    <div class="step-wrap" id="step-payment">
+      <div class="step-content">
+        <span class="step-eyebrow">Paso 4 de 4</span>
+        <h2 class="step-title">Confirmá tu <em>pedido</em></h2>
+        <p class="step-sub">Revisá el resumen y confirmá. ¡Ya casi está!</p>
+
+        <div class="summary-card">
+          <div class="summary-title">Resumen del pedido</div>
+          <div class="summary-row">
+            <span class="summary-label">Plan seleccionado</span>
+            <span class="summary-value" id="pay-plan-name">—</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Precio semanal</span>
+            <span class="summary-value" id="pay-base-price">—</span>
+          </div>
+          <div class="summary-row" id="pay-discount-row" style="display:none">
+            <span class="summary-label">Descuento (<span id="pay-discount-pct"></span>%)</span>
+            <span class="summary-value discount-val" id="pay-discount-val">— </span>
+          </div>
+          <div class="summary-row total">
+            <span>Total</span>
+            <span id="pay-total">—</span>
+          </div>
+        </div>
+
+        <div style="margin-bottom:1.5rem">
+          <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:0.5rem;letter-spacing:0.02em">Cupón de descuento</label>
+          <div class="coupon-row">
+            <div class="coupon-input-wrap">
+              <input type="text" id="coupon-input" placeholder="TUCODIGO" maxlength="30">
+              <div class="coupon-msg" id="coupon-msg"></div>
+            </div>
+            <button class="btn-apply" id="apply-coupon-btn" onclick="applyCoupon()">Aplicar</button>
+          </div>
+        </div>
+
+        <div class="error-msg" id="payment-error"></div>
+        <div class="form-actions">
+          <button class="btn-outline" onclick="goStep('prefs')"><i class="fa-solid fa-arrow-left"></i> Atrás</button>
+          <button class="btn-primary" id="confirm-btn" onclick="confirmOrder()">
+            <i class="fa-solid fa-check"></i> Confirmar pedido
+          </button>
+        </div>
+        <p style="text-align:center;font-size:0.75rem;color:var(--gray);margin-top:1rem">
+          Al confirmar aceptás recibir tu plan semanal con entrega dominical en Miami.
+        </p>
+      </div>
+    </div>
+
+    <!-- STEP: CONFIRMACIÓN -->
+    <div class="step-wrap" id="step-confirm">
+      <div class="step-content">
+        <div class="confirm-wrap">
+          <div class="confirm-icon-big"><i class="fa-solid fa-check"></i></div>
+          <span class="step-eyebrow">¡Pedido confirmado!</span>
+          <h1 class="step-title">Tu semana está <em>resuelta.</em></h1>
+          <p class="step-sub">Guardá tu número de pedido para cualquier consulta.</p>
+          <div class="confirm-order-num" id="confirm-order-num">FH-0001</div>
+          <ul class="confirm-list">
+            <li><i class="fa-solid fa-calendar-check"></i> Recibís tus viandas el próximo domingo</li>
+            <li><i class="fa-solid fa-box"></i> Todo fresco, preparado esa semana</li>
+            <li><i class="fa-brands fa-whatsapp"></i> Avisanos por WhatsApp que ya abonaste</li>
+          </ul>
+          <a id="confirm-whatsapp-btn" class="btn-whatsapp" href="#" target="_blank" rel="noopener" style="font-size:1.05rem">
+            <i class="fa-brands fa-whatsapp"></i> Avisar que ya pagué
+          </a>
+          <br>
+          <a href="/" class="link-site">← Volver al sitio</a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    /* ── Datos del flujo ─────────────────────────────────────────────────────*/
+    const WHATSAPP_NUMBER = '18184288427';
+    const PLAN_NAMES  = { structure: 'Structure', performance: 'Performance', full_system: 'Full System' };
+    const PLAN_PRICES = { structure: 120, performance: 190, full_system: 225 };
+    const GOAL_NAMES  = { fat_loss: 'Perder grasa', muscle_gain: 'Ganar músculo', maintenance: 'Mantenerme', healthy: 'Comer saludable' };
+    const DIET_NAMES  = { none: 'Sin preferencia', high_protein: 'Alta proteína', low_carb: 'Baja en carbos', keto: 'Keto', vegan: 'Vegano', vegetarian: 'Vegetariano', paleo: 'Paleo', mediterranean: 'Mediterránea' };
+    const STATUS_LABELS = { paid: 'Pagado', processing: 'En proceso', delivered: 'Entregado', cancelled: 'Cancelado' };
+    const STATUS_CLASSES = { paid: 'paid', processing: 'processing', delivered: 'delivered', cancelled: 'cancelled' };
+
+    const flow = {
+      selectedPlan:  null,
+      selectedGoal:  null,
+      appliedCoupon: null,
+      discountPct:   0,
+      discountAmt:   0,
+      finalPrice:    0,
+      userData:      {},
+    };
+
+    let currentUser = null;
+
+    function token() { return localStorage.getItem('fh_token') || ''; }
+    function authHeader() { return { 'Authorization': 'Bearer ' + token(), 'Content-Type': 'application/json' }; }
+
+    async function apiFetch(method, path, body) {
+      const opts = { method, headers: authHeader() };
+      if (body) opts.body = JSON.stringify(body);
+      const r = await fetch(path, opts);
+      return { ok: r.ok, data: await r.json() };
+    }
+
+    /* ── Navegación de pasos ─────────────────────────────────────────────────*/
+    const PROGRESS_STEPS = { plans: 1, data: 2, prefs: 3, payment: 4 };
+
+    function goStep(name) {
+      document.querySelectorAll('.step-wrap').forEach(s => s.classList.remove('active'));
+      const el = document.getElementById('step-' + name);
+      if (el) el.classList.add('active');
+
+      const progressWrap = document.getElementById('progress-wrap');
+      const stepNum = PROGRESS_STEPS[name];
+
+      if (stepNum) {
+        progressWrap.style.display = 'block';
+        updateProgress(stepNum);
+      } else {
+        progressWrap.style.display = 'none';
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updateProgress(active) {
+      for (let i = 1; i <= 4; i++) {
+        const step = document.getElementById('ps-' + i);
+        const dot  = document.getElementById('pd-' + i);
+        const line = document.getElementById('pl-' + i);
+        step.classList.remove('active', 'done');
+        if (i < active) { step.classList.add('done'); dot.innerHTML = ''; }
+        else if (i === active) { step.classList.add('active'); dot.textContent = i; }
+        else { dot.textContent = i; }
+        if (line) line.classList.toggle('done', i < active);
+      }
+    }
+
+    /* ── Selección de plan ───────────────────────────────────────────────────*/
+    function selectPlan(plan, el) {
+      document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      flow.selectedPlan = plan;
+      flow.appliedCoupon = null;
+      flow.discountPct = 0;
+      flow.discountAmt = 0;
+      flow.finalPrice  = PLAN_PRICES[plan];
+      setTimeout(() => goStep('data'), 280);
+    }
+
+    /* ── Selección de objetivo ───────────────────────────────────────────────*/
+    function selectGoal(goal, el) {
+      document.querySelectorAll('.goal-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      flow.selectedGoal = goal;
+    }
+
+    /* ── Submit datos personales ─────────────────────────────────────────────*/
+    document.getElementById('data-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name     = document.getElementById('d-name').value.trim();
+      const lastName = document.getElementById('d-lastname').value.trim();
+      const phone    = document.getElementById('d-phone').value.trim();
+      const errEl    = document.getElementById('data-error');
+
+      errEl.classList.remove('visible');
+      if (!name || !lastName || !phone) {
+        errEl.textContent = 'Completá todos los campos obligatorios';
+        errEl.classList.add('visible');
+        return;
+      }
+      flow.userData = { name, lastName, phone };
+      goStep('prefs');
+    });
+
+    /* ── Submit preferencias ─────────────────────────────────────────────────*/
+    function submitPrefs() {
+      const errEl = document.getElementById('prefs-error');
+      errEl.classList.remove('visible');
+      if (!flow.selectedGoal) {
+        errEl.textContent = 'Seleccioná tu objetivo antes de continuar';
+        errEl.classList.add('visible');
+        return;
+      }
+      updatePaymentSummary();
+      goStep('payment');
+    }
+
+    /* ── Resumen de pago ─────────────────────────────────────────────────────*/
+    function updatePaymentSummary() {
+      const base = PLAN_PRICES[flow.selectedPlan] || 0;
+      document.getElementById('pay-plan-name').textContent  = PLAN_NAMES[flow.selectedPlan] || '—';
+      document.getElementById('pay-base-price').textContent = '$' + base + '/sem';
+
+      const discRow = document.getElementById('pay-discount-row');
+      if (flow.discountAmt > 0) {
+        discRow.style.display = 'flex';
+        document.getElementById('pay-discount-pct').textContent = flow.discountPct;
+        document.getElementById('pay-discount-val').textContent  = '−$' + flow.discountAmt;
+      } else {
+        discRow.style.display = 'none';
+      }
+      document.getElementById('pay-total').textContent = '$' + flow.finalPrice + '/sem';
+    }
+
+    /* ── Aplicar cupón ───────────────────────────────────────────────────────*/
+    async function applyCoupon() {
+      const code  = document.getElementById('coupon-input').value.trim();
+      const inp   = document.getElementById('coupon-input');
+      const msg   = document.getElementById('coupon-msg');
+      const btn   = document.getElementById('apply-coupon-btn');
+
+      if (!code) return;
+      inp.classList.remove('valid', 'invalid');
+      msg.textContent = '';
+      btn.disabled = true;
+      btn.textContent = '…';
+
+      const { ok, data } = await apiFetch('POST', '/api/coupons/validate', { code, plan: flow.selectedPlan });
+
+      btn.disabled = false;
+      btn.textContent = 'Aplicar';
+
+      if (!ok) {
+        inp.classList.add('invalid');
+        msg.className = 'coupon-msg err';
+        msg.textContent = data.error || 'Cupón inválido';
+        flow.appliedCoupon = null;
+        flow.discountPct   = 0;
+        flow.discountAmt   = 0;
+        flow.finalPrice    = PLAN_PRICES[flow.selectedPlan];
+      } else {
+        inp.classList.add('valid');
+        msg.className = 'coupon-msg ok';
+        msg.textContent = '✓ ' + data.coupon.discountPercent + '% de descuento aplicado';
+        flow.appliedCoupon = data.coupon.code;
+        flow.discountPct   = data.coupon.discountPercent;
+        flow.discountAmt   = data.discount;
+        flow.finalPrice    = data.final;
+      }
+      updatePaymentSummary();
+    }
+
+    /* ── Confirmar pedido ────────────────────────────────────────────────────*/
+    async function confirmOrder() {
+      const btn   = document.getElementById('confirm-btn');
+      const errEl = document.getElementById('payment-error');
+      errEl.classList.remove('visible');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Confirmando…';
+
+      const payload = {
+        plan:        flow.selectedPlan,
+        lastName:    flow.userData.lastName,
+        phone:       flow.userData.phone,
+        couponCode:  flow.appliedCoupon || undefined,
+        preferences: {
+          goal:      flow.selectedGoal,
+          diet:      document.getElementById('pref-diet').value,
+          allergies: document.getElementById('pref-allergies').value.trim() || 'Ninguna',
+          avoid:     document.getElementById('pref-avoid').value.trim() || 'Ninguno',
+        },
+      };
+
+      // Actualizar nombre si cambió
+      if (flow.userData.name && currentUser) {
+        payload.name = flow.userData.name;
+      }
+
+      const { ok, data } = await apiFetch('POST', '/api/orders', payload);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar pedido';
+
+      if (!ok) {
+        errEl.textContent = data.error || 'Error al confirmar el pedido';
+        errEl.classList.add('visible');
+        return;
+      }
+
+      // Pantalla de confirmación
+      const orderNum = data.order.orderNumber;
+      document.getElementById('confirm-order-num').textContent = orderNum;
+
+      const waMsg  = encodeURIComponent('Ya aboné mi pedido número ' + orderNum);
+      document.getElementById('confirm-whatsapp-btn').href =
+        'https://api.whatsapp.com/send?phone=' + WHATSAPP_NUMBER + '&text=' + waMsg;
+
+      goStep('confirm');
+    }
+
+    /* ── Logout ──────────────────────────────────────────────────────────────*/
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      localStorage.removeItem('fh_token');
+      localStorage.removeItem('fh_user');
+      window.location.href = '/login';
+    });
+
+    /* ── Init ────────────────────────────────────────────────────────────────*/
+    (async function init() {
+      const t = token();
+      if (!t) return (window.location.href = '/login');
+
+      const { ok, data } = await apiFetch('GET', '/api/auth/me');
+      if (!ok || !data.user) return (window.location.href = '/login');
+      if (data.user.role === 'admin') return (window.location.href = '/admin/');
+
+      currentUser = data.user;
+      const firstName = data.user.name.split(' ')[0];
+      document.getElementById('header-greeting').textContent = 'Hola, ' + firstName;
+      document.getElementById('welcome-name').textContent    = firstName + '!';
+      // Separar nombre y apellido: si ya tiene lastName guardado, usarlo
+      const parts = data.user.name.trim().split(' ');
+      document.getElementById('d-name').value  = parts[0] || '';
+      document.getElementById('d-email').value = data.user.email;
+      if (data.user.phone) document.getElementById('d-phone').value = data.user.phone;
+
+      if (data.user.lastName) {
+        document.getElementById('d-lastname').value = data.user.lastName;
+      } else if (parts.length > 1) {
+        document.getElementById('d-lastname').value = parts.slice(1).join(' ');
+      }
+
+      // Verificar si ya tiene pedidos
+      const ord = await apiFetch('GET', '/api/orders/mine');
+      if (ord.ok && ord.data.orders && ord.data.orders.length > 0) {
+        renderAccountView(ord.data.orders[0], data.user);
+        goStep('account');
+      } else {
+        goStep('welcome');
+      }
+    })();
+
+    document.getElementById('start-btn').addEventListener('click', () => goStep('plans'));
+
+    /* ── Vista de cuenta (pedido existente) ──────────────────────────────────*/
+    function renderAccountView(order, user) {
+      const firstName = user.name.split(' ')[0];
+      document.getElementById('account-greeting').textContent = '¡Hola, ' + firstName + '!';
+      document.getElementById('acc-order-num').textContent = order.orderNumber;
+
+      const statusLabel = STATUS_LABELS[order.status] || order.status;
+      const statusClass = STATUS_CLASSES[order.status] || 'paid';
+      document.getElementById('acc-status-badge').innerHTML =
+        '<span class="badge-status-' + statusClass + '">' + statusLabel + '</span>';
+
+      document.getElementById('acc-plan').textContent   = PLAN_NAMES[order.plan]  || '—';
+      document.getElementById('acc-price').textContent  = '$' + (order.finalPrice || order.planPrice) + '/sem';
+      document.getElementById('acc-date').textContent   = new Date(order.createdAt).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
+      document.getElementById('acc-coupon').textContent = order.coupon || 'Sin cupón';
+      document.getElementById('acc-phone').textContent  = order.userPhone || user.phone || '—';
+      document.getElementById('acc-email').textContent  = order.userEmail || user.email;
+
+      const prefs = order.preferences || {};
+      document.getElementById('acc-goal').textContent     = GOAL_NAMES[prefs.goal]  || '—';
+      document.getElementById('acc-diet').textContent     = DIET_NAMES[prefs.diet]  || '—';
+      document.getElementById('acc-allergies').textContent= prefs.allergies || 'Ninguna';
+      document.getElementById('acc-avoid').textContent    = prefs.avoid     || 'Ninguno';
+
+      const waMsg = encodeURIComponent('Hola! Tengo el pedido número ' + order.orderNumber + ' y quería consultarte algo.');
+      document.getElementById('acc-whatsapp-btn').href =
+        'https://api.whatsapp.com/send?phone=' + WHATSAPP_NUMBER + '&text=' + waMsg;
+    }
+  </script>
+</body>
+</html>

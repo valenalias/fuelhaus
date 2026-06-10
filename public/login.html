@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fuelhaus — Ingresar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --sage:       #6B8A5E;
+      --dark-green: #2B3D26;
+      --cream:      #F2EDE4;
+      --black:      #1C1B19;
+      --white:      #ffffff;
+      --gray:       #9A9690;
+      --light-gray: #E8E3DB;
+      --error:      #C0392B;
+      --success:    #27ae60;
+    }
+
+    body {
+      font-family: 'Be Vietnam Pro', sans-serif;
+      background: var(--cream);
+      min-height: 100dvh;
+      display: flex;
+    }
+
+    /* ── Panel izquierdo ────────────────────────────────────────────────────── */
+    .left-panel {
+      width: 52%;
+      background: var(--dark-green);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 3rem;
+    }
+
+    .left-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('/img/MENU-PLANES-COMIDA2.jpeg');
+      background-size: cover;
+      background-position: center;
+      opacity: 0.25;
+    }
+
+    .left-content {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .left-logo {
+      font-family: 'Lora', serif;
+      font-size: 2rem;
+      color: var(--white);
+      letter-spacing: -0.02em;
+    }
+    .left-logo em  { font-style: italic; font-weight: 400; }
+    .left-logo strong { font-weight: 700; }
+
+    .left-heading {
+      font-family: 'Lora', serif;
+      font-size: clamp(2.4rem, 4vw, 3.4rem);
+      color: var(--white);
+      line-height: 1.15;
+      font-weight: 400;
+    }
+    .left-heading em { font-style: italic; color: #a8c49d; }
+
+    .left-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+    .left-tag {
+      background: rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.85);
+      padding: 0.35rem 0.85rem;
+      border-radius: 99px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .left-footer {
+      color: rgba(255,255,255,0.4);
+      font-size: 0.8rem;
+    }
+
+    /* ── Panel derecho ──────────────────────────────────────────────────────── */
+    .right-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 3rem;
+      background: var(--cream);
+    }
+
+    .right-inner {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .right-logo {
+      font-family: 'Lora', serif;
+      font-size: 1.4rem;
+      color: var(--dark-green);
+      margin-bottom: 2.5rem;
+      display: block;
+      text-decoration: none;
+    }
+    .right-logo em { font-style: italic; font-weight: 400; }
+    .right-logo strong { font-weight: 700; }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: var(--light-gray);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 2rem;
+      gap: 4px;
+    }
+    .tab {
+      flex: 1;
+      padding: 0.6rem 1rem;
+      border: none;
+      background: transparent;
+      border-radius: 7px;
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--gray);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      background: var(--white);
+      color: var(--black);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    /* Formularios */
+    .form-section { display: none; }
+    .form-section.active { display: block; }
+
+    .form-title {
+      font-family: 'Lora', serif;
+      font-size: 1.6rem;
+      color: var(--black);
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    .form-sub {
+      color: var(--gray);
+      font-size: 0.875rem;
+      margin-bottom: 1.8rem;
+    }
+
+    .field {
+      margin-bottom: 1.1rem;
+    }
+    .field label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--black);
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.02em;
+    }
+    .field input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--light-gray);
+      border-radius: 8px;
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 0.9rem;
+      color: var(--black);
+      background: var(--white);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    .field input:focus {
+      border-color: var(--sage);
+      box-shadow: 0 0 0 3px rgba(107,138,94,0.15);
+    }
+    .field input.error { border-color: var(--error); }
+
+    .error-msg {
+      display: none;
+      color: var(--error);
+      font-size: 0.8rem;
+      margin-top: 0.8rem;
+      padding: 0.6rem 0.9rem;
+      background: rgba(192,57,43,0.08);
+      border-radius: 6px;
+      font-weight: 500;
+    }
+    .error-msg.visible { display: block; }
+
+    .btn-submit {
+      width: 100%;
+      padding: 0.85rem 1.5rem;
+      background: var(--dark-green);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 1.2rem;
+      transition: background 0.2s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .btn-submit:hover { background: #1e2e1a; }
+    .btn-submit:active { transform: scale(0.99); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 1.8rem;
+      color: var(--gray);
+      font-size: 0.82rem;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--dark-green); }
+
+    /* ── Mobile ─────────────────────────────────────────────────────────────── */
+    @media (max-width: 760px) {
+      body { flex-direction: column; }
+      .left-panel { display: none; }
+      .right-panel {
+        padding: 2rem 1.5rem;
+        justify-content: flex-start;
+        padding-top: 3rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Panel izquierdo: identidad de marca -->
+  <div class="left-panel">
+    <div class="left-bg"></div>
+    <div class="left-content">
+      <div class="left-logo"><em>fuel</em><strong>haus</strong></div>
+      <div>
+        <h1 class="left-heading">Tu semana,<br><em>resuelta.</em></h1>
+        <div class="left-tags">
+          <span class="left-tag">Alta proteína</span>
+          <span class="left-tag">100% orgánico</span>
+          <span class="left-tag">Entrega dominical</span>
+          <span class="left-tag">Sin conservantes</span>
+        </div>
+      </div>
+      <div class="left-footer">Fuelhaus &reg; 2025 · Meal prep premium · Miami, FL</div>
+    </div>
+  </div>
+
+  <!-- Panel derecho: formulario -->
+  <div class="right-panel">
+    <div class="right-inner">
+
+      <a href="/" class="right-logo"><em>fuel</em><strong>haus</strong></a>
+
+      <!-- Tabs: Ingresar / Crear cuenta -->
+      <div class="tabs">
+        <button class="tab active" data-tab="login">Ingresar</button>
+        <button class="tab" data-tab="register">Crear cuenta</button>
+      </div>
+
+      <!-- Formulario: Ingresar -->
+      <div class="form-section active" id="form-login">
+        <h2 class="form-title">Bienvenido de vuelta</h2>
+        <p class="form-sub">Ingresá con tu email y contraseña.</p>
+        <form id="login-form" autocomplete="on" novalidate>
+          <div class="field">
+            <label for="l-email">Email</label>
+            <input type="email" id="l-email" placeholder="tu@email.com" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="l-pass">Contraseña</label>
+            <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password" required>
+          </div>
+          <div class="error-msg" id="login-error"></div>
+          <button type="submit" class="btn-submit" id="login-btn">
+            Ingresar <span>→</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Formulario: Crear cuenta -->
+      <div class="form-section" id="form-register">
+        <h2 class="form-title">Creá tu cuenta</h2>
+        <p class="form-sub">Registrate para gestionar tu plan.</p>
+        <form id="register-form" autocomplete="on" novalidate>
+          <div class="field">
+            <label for="r-name">Nombre completo</label>
+            <input type="text" id="r-name" placeholder="Juan Pérez" autocomplete="name" required>
+          </div>
+          <div class="field">
+            <label for="r-email">Email</label>
+            <input type="email" id="r-email" placeholder="tu@email.com" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="r-pass">Contraseña</label>
+            <input type="password" id="r-pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required>
+          </div>
+          <div class="error-msg" id="register-error"></div>
+          <button type="submit" class="btn-submit" id="register-btn">
+            Crear cuenta <span>→</span>
+          </button>
+        </form>
+      </div>
+
+      <a href="/" class="back-link">← Volver al sitio</a>
+
+    </div>
+  </div>
+
+  <script>
+    // Si ya está logueado, redirigir
+    const token = localStorage.getItem('fh_token');
+    if (token) {
+      fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
+        .then(r => r.json())
+        .then(d => {
+          if (d.user) {
+            window.location.href = d.user.role === 'admin' ? '/admin/' : '/';
+          }
+        })
+        .catch(() => {});
+    }
+
+    // Tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('form-' + tab.dataset.tab).classList.add('active');
+        clearErrors();
+      });
+    });
+
+    function clearErrors() {
+      document.querySelectorAll('.error-msg').forEach(el => {
+        el.textContent = '';
+        el.classList.remove('visible');
+      });
+    }
+
+    function showError(id, msg) {
+      const el = document.getElementById(id);
+      el.textContent = msg;
+      el.classList.add('visible');
+    }
+
+    async function apiPost(url, body) {
+      const res  = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      return { ok: res.ok, data: await res.json() };
+    }
+
+    // Login
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearErrors();
+      const btn = document.getElementById('login-btn');
+      btn.disabled = true;
+      btn.textContent = 'Ingresando…';
+
+      const email    = document.getElementById('l-email').value.trim();
+      const password = document.getElementById('l-pass').value;
+
+      const { ok, data } = await apiPost('/api/auth/login', { email, password });
+
+      if (!ok) {
+        showError('login-error', data.error || 'Error al ingresar');
+        btn.disabled = false;
+        btn.innerHTML = 'Ingresar <span>→</span>';
+        return;
+      }
+
+      localStorage.setItem('fh_token', data.token);
+      localStorage.setItem('fh_user',  JSON.stringify(data.user));
+      window.location.href = data.user.role === 'admin' ? '/admin/' : '/home';
+    });
+
+    // Registro
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearErrors();
+      const btn = document.getElementById('register-btn');
+      btn.disabled = true;
+      btn.textContent = 'Creando cuenta…';
+
+      const name     = document.getElementById('r-name').value.trim();
+      const email    = document.getElementById('r-email').value.trim();
+      const password = document.getElementById('r-pass').value;
+
+      const { ok, data } = await apiPost('/api/auth/register', { name, email, password });
+
+      if (!ok) {
+        showError('register-error', data.error || 'Error al crear cuenta');
+        btn.disabled = false;
+        btn.innerHTML = 'Crear cuenta <span>→</span>';
+        return;
+      }
+
+      localStorage.setItem('fh_token', data.token);
+      localStorage.setItem('fh_user',  JSON.stringify(data.user));
+      window.location.href = '/';
+    });
+  </script>
+</body>
+</html>
