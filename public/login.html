@@ -339,19 +339,6 @@
   </div>
 
   <script>
-    // Si ya está logueado, redirigir
-    const token = localStorage.getItem('fh_token');
-    if (token) {
-      fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
-        .then(r => r.json())
-        .then(d => {
-          if (d.user) {
-            window.location.href = d.user.role === 'admin' ? '/admin/' : '/';
-          }
-        })
-        .catch(() => {});
-    }
-
     // Tabs
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
