@@ -146,6 +146,38 @@ function initGallery() {
   );
 }
 
+/* ─── STRIP INGREDIENTES ─────────────────── */
+function initStrip() {
+  if (reduced) return;
+  gsap.fromTo('.strip-quote',
+    { opacity: 0, y: 30 },
+    {
+      opacity: 1, y: 0,
+      duration: 1, ease: 'power3.out',
+      scrollTrigger: { trigger: '.strip-section', start: 'top 70%' },
+    }
+  );
+  gsap.fromTo('.strip-tags',
+    { opacity: 0, y: 16 },
+    {
+      opacity: 1, y: 0,
+      duration: 0.7, ease: 'power3.out',
+      scrollTrigger: { trigger: '.strip-section', start: 'top 65%' },
+      delay: 0.3,
+    }
+  );
+  gsap.to('.strip-inner', {
+    backgroundPosition: 'center 55%',
+    ease: 'none',
+    scrollTrigger: {
+      trigger: '.strip-section',
+      start: 'top bottom',
+      end: 'bottom top',
+      scrub: true,
+    },
+  });
+}
+
 /* ─── FOOD SECTION ────────────────────────── */
 function initFood() {
   if (reduced) return;
@@ -239,6 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initFloat();
   initBadges();
+  initStrip();
   initProcess();
   initPlans();
   initGallery();

@@ -838,10 +838,27 @@ em { font-style: italic; }
    CTA / CONTACTO
 ============================================ */
 .cta-section {
-  background: var(--green-bg);
+  position: relative;
   padding: 120px 0;
+  overflow: hidden;
+}
+.cta-bg {
+  position: absolute;
+  inset: 0;
+  background-image: url('https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1600&q=80');
+  background-size: cover;
+  background-position: center;
+  background-color: var(--green-bg);
+  filter: brightness(0.35) saturate(0.7);
+  transform: scale(1.05);
+  transition: transform 8s ease;
+}
+.cta-section:hover .cta-bg {
+  transform: scale(1);
 }
 .cta-inner {
+  position: relative;
+  z-index: 1;
   max-width: 680px;
   margin: 0 auto;
   padding: 0 48px;
@@ -2342,6 +2359,77 @@ em { font-style: italic; }
 }
 .nl-input::placeholder { color: rgba(255,255,255,0.35); }
 .nl-input:focus { border-color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.12); }
+
+/* ============================================
+   STRIP — Ingredientes (cinematic full-bleed)
+============================================ */
+.strip-section {
+  position: relative;
+  height: 420px;
+  overflow: hidden;
+}
+.strip-inner {
+  position: absolute;
+  inset: 0;
+  background-image: url('https://images.unsplash.com/photo-1507048331197-7d4ac70811cf?auto=format&fit=crop&w=1600&q=80');
+  background-size: cover;
+  background-position: center 40%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.strip-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(28,27,25,0.78) 0%,
+    rgba(43,61,38,0.65) 100%
+  );
+}
+.strip-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 0 48px;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+.strip-quote {
+  font-family: var(--font-serif);
+  font-size: clamp(26px, 3.5vw, 44px);
+  font-weight: 400;
+  font-style: italic;
+  color: var(--white);
+  line-height: 1.35;
+  letter-spacing: -0.5px;
+}
+.strip-quote em {
+  color: rgba(255,255,255,0.65);
+}
+.strip-tags {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.strip-tags span {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+}
+
+@media (max-width: 768px) {
+  .strip-section { height: 320px; }
+  .strip-content { padding: 0 24px; }
+  .strip-quote { font-size: clamp(20px, 5vw, 30px); }
+}
 
 /* ============================================
    BADGES DE CALIDAD
