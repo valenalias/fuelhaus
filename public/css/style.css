@@ -785,6 +785,30 @@ thead .compare-featured-col { background: var(--green); color: var(--white); }
   .trust-bar { gap: 16px 24px; margin-top: 36px; padding-top: 24px; }
 }
 
+@media (max-width: 600px) {
+  /* La tabla completa no entra en pantallas de teléfono: la achicamos
+     en vez de dejarla con scroll horizontal sin ninguna pista visual. */
+  .compare-table { min-width: 0; }
+  .compare-table th,
+  .compare-table td {
+    padding: 8px 4px;
+    font-size: 11px;
+  }
+  .compare-table thead th {
+    font-size: 11px;
+    padding-top: 12px;
+    padding-bottom: 8px;
+  }
+  .compare-feature-col,
+  .compare-feature {
+    font-size: 10.5px;
+    white-space: normal;
+    line-height: 1.25;
+    padding-left: 10px;
+  }
+  .compare-table td i.fa-check { font-size: 11px; }
+}
+
 /* ============================================
    COMIDA REAL
 ============================================ */
