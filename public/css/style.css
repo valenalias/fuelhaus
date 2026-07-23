@@ -1305,7 +1305,7 @@ thead .compare-featured-col { background: var(--green); color: var(--white); }
   /* About */
   .about-section { padding: 80px 0; }
   .about-inner { grid-template-columns: 1fr; gap: 40px; }
-  .about-img-col img { height: 360px; object-position: center 55%; }
+  .about-img-col img { height: 460px; object-position: center 20%; }
 
   /* CTA */
   .cta-fields { grid-template-columns: 1fr; }
@@ -1361,7 +1361,7 @@ thead .compare-featured-col { background: var(--green); color: var(--white); }
 
   /* About */
   .about-section { padding: 72px 0; }
-  .about-img-col img { height: 300px; }
+  .about-img-col img { height: 360px; }
   .about-stats { flex-direction: row; flex-wrap: wrap; gap: 20px; }
   .about-stat { flex: 1 1 calc(50% - 10px); }
 
