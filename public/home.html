@@ -629,7 +629,7 @@
     <div class="step-wrap" id="step-plans">
       <div class="step-content wide">
         <span class="step-eyebrow">Paso 1 de 4</span>
-        <h2 class="step-title">Elegí tu <em>plan</em></h2>
+        <h2 class="step-title">Elige tu <em>plan</em></h2>
         <p class="step-sub">Todos incluyen 35–50g de proteína por porción. Ingredientes frescos, sin conservantes, entrega dominical.</p>
 
         <div class="plans-grid">
@@ -697,7 +697,7 @@
       <div class="step-content">
         <span class="step-eyebrow">Paso 2 de 4</span>
         <h2 class="step-title">Tus datos de <em>contacto</em></h2>
-        <p class="step-sub">Así sabemos a quién entregarle las viandas y por dónde comunicarnos.</p>
+        <p class="step-sub">Así sabemos a quién entregarle las comidas y por dónde comunicarnos.</p>
 
         <form id="data-form" novalidate>
           <div class="form-row">
@@ -733,7 +733,7 @@
     <div class="step-wrap" id="step-prefs">
       <div class="step-content">
         <span class="step-eyebrow">Paso 3 de 4</span>
-        <h2 class="step-title">Configurá tus <em>viandas</em></h2>
+        <h2 class="step-title">Configura tus <em>comidas</em></h2>
         <p class="step-sub">Con esta información preparamos comidas que se adaptan exactamente a tu cuerpo y objetivos.</p>
 
         <div style="margin-bottom:1.5rem">
@@ -863,7 +863,7 @@
           <p class="step-sub">Guardá tu número de pedido para cualquier consulta.</p>
           <div class="confirm-order-num" id="confirm-order-num">FH-0001</div>
           <ul class="confirm-list">
-            <li><i class="fa-solid fa-calendar-check"></i> Recibís tus viandas el próximo domingo</li>
+            <li><i class="fa-solid fa-calendar-check"></i> Recibes tus comidas el próximo domingo</li>
             <li><i class="fa-solid fa-box"></i> Todo fresco, preparado esa semana</li>
             <li><i class="fa-brands fa-whatsapp"></i> Avisanos por WhatsApp que ya abonaste</li>
           </ul>
@@ -1152,7 +1152,7 @@
 
       document.getElementById('acc-plan').textContent   = PLAN_NAMES[order.plan]  || '—';
       document.getElementById('acc-price').textContent  = '$' + (order.finalPrice || order.planPrice) + '/sem';
-      document.getElementById('acc-date').textContent   = new Date(order.createdAt).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' });
+      document.getElementById('acc-date').textContent   = new Date(order.createdAt).toLocaleDateString('es-US', { day:'2-digit', month:'2-digit', year:'numeric' });
       document.getElementById('acc-coupon').textContent = order.coupon || 'Sin cupón';
       document.getElementById('acc-phone').textContent  = order.userPhone || user.phone || '—';
       document.getElementById('acc-email').textContent  = order.userEmail || user.email;

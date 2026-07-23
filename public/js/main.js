@@ -212,6 +212,28 @@ function initAbout() {
   );
 }
 
+/* ─── ABOUT STATS COUNTER ─────────────────── */
+function initAboutStats() {
+  if (reduced) return;
+  document.querySelectorAll('.stat-num').forEach((el) => {
+    const match = el.textContent.trim().match(/^(\d+)(.*)$/);
+    if (!match) return;
+    const target = parseInt(match[1], 10);
+    const suffix = match[2];
+    if (target === 0) return;
+
+    el.textContent = '0' + suffix;
+    const counter = { val: 0 };
+    gsap.to(counter, {
+      val: target,
+      duration: 1.4,
+      ease: 'power2.out',
+      scrollTrigger: { trigger: '.about-stats', start: 'top 85%', once: true },
+      onUpdate: () => { el.textContent = Math.round(counter.val) + suffix; },
+    });
+  });
+}
+
 /* ─── CTA ─────────────────────────────────── */
 function initCta() {
   if (reduced) return;
@@ -277,6 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initGallery();
   initFood();
   initAbout();
+  initAboutStats();
   initCta();
   initMagnetic();
 
