@@ -219,7 +219,8 @@ em { font-style: italic; }
   display: none;
   flex-direction: column;
   gap: 5px;
-  padding: 6px;
+  padding: 13px;
+  margin: -13px;
 }
 .hamburger span {
   display: block;
@@ -1118,7 +1119,7 @@ thead .compare-featured-col { background: var(--green); color: var(--white); }
   border: 1px solid rgba(255,255,255,0.15);
   color: var(--white);
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: 16px;
   outline: none;
   border-radius: 8px;
   transition: border-color .25s ease, background .25s ease;

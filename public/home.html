@@ -31,6 +31,7 @@
       background: var(--cream);
       color: var(--black);
       min-height: 100dvh;
+      overflow-x: hidden;
     }
 
     /* ── HEADER ─── */
@@ -312,7 +313,7 @@
       border: 1.5px solid var(--border);
       border-radius: 8px;
       font-family: 'Be Vietnam Pro', sans-serif;
-      font-size: 0.9rem;
+      font-size: 1rem;
       color: var(--black);
       background: var(--white);
       outline: none;
@@ -385,7 +386,7 @@
       border: 1.5px solid var(--border);
       border-radius: 8px;
       font-family: 'Be Vietnam Pro', sans-serif;
-      font-size: 0.9rem;
+      font-size: 1rem;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       outline: none;
@@ -499,6 +500,21 @@
     }
     @media (max-width: 540px) {
       .welcome-steps-list { gap: 0.75rem; }
+
+      /* Barra de progreso: en pantallas angostas "Preferencias" (el label
+         más largo) no entra en 4 pasos + 3 líneas sin achicar todo. Se
+         reduce dot/label/gap para que entre sin cortar contenido ni
+         empujar la página con scroll horizontal. */
+      .progress-wrap { padding: 0.75rem 1rem; }
+      .prog-dot { width: 22px; height: 22px; font-size: 0.62rem; }
+      .prog-label { font-size: 0.58rem; }
+      .prog-line { margin-bottom: 0.85rem; }
+    }
+    @media (max-width: 360px) {
+      /* Teléfonos muy angostos (iPhone SE, Android chicos): los labels
+         de texto largo se ocultan y quedan solo los números en los dots
+         para garantizar que la barra completa entre sin desbordar. */
+      .prog-label { display: none; }
     }
   </style>
 </head>
