@@ -1354,6 +1354,7 @@ thead .compare-featured-col { background: var(--green); color: var(--white); }
     width: 100%;
     max-width: none;
     aspect-ratio: 4 / 5;
+    max-height: 46vh;
     border-radius: 0;
     box-shadow: none;
     transform: none !important;
@@ -1373,12 +1374,13 @@ thead .compare-featured-col { background: var(--green); color: var(--white); }
     margin: 0;
   }
 
-  .hero-text { padding: 28px 20px 0; text-align: left; }
+  .hero-text { padding: 18px 20px 0; text-align: left; }
+  .hero-eyebrow { margin-bottom: 12px; }
   .hero-sub { max-width: 100%; }
   .hero-actions { justify-content: flex-start; }
   .hero-proof { justify-content: flex-start; gap: 12px; }
   .proof-num { font-size: 18px; }
-  .hero-title .reveal-inner { font-size: clamp(40px, 11vw, 60px); }
+  .hero-title .reveal-inner { font-size: clamp(36px, 10vw, 56px); }
 
   /* Plans */
   .plan-card { padding: 28px 24px; }
