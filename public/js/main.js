@@ -5,6 +5,10 @@
 gsap.registerPlugin(ScrollTrigger);
 
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* Hero mobile (≤768px) usa una foto a sangre completa: la rotación y el
+   deslizamiento lateral pensados para la card angulada de escritorio se
+   ven rotos ahí, así que se desactivan y se reemplazan por un fade simple. */
+const heroMobile = window.matchMedia('(max-width: 768px)').matches;
 
 /* ─── LOADER ──────────────────────────────── */
 function runLoader() {
@@ -63,8 +67,12 @@ function initHero() {
       '-=0.4'
     )
     .fromTo('.hero-img-wrap',
-      { opacity: 0, x: 40, rotate: 3 },
-      { opacity: 1, x: 0, rotate: 1.5, duration: 1.1, ease: 'power3.out' },
+      heroMobile
+        ? { opacity: 0, y: 24 }
+        : { opacity: 0, x: 40, rotate: 3 },
+      heroMobile
+        ? { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out' }
+        : { opacity: 1, x: 0, rotate: 1.5, duration: 1.1, ease: 'power3.out' },
       0.2
     )
     .fromTo('.hero-badge',
@@ -76,7 +84,7 @@ function initHero() {
 
 /* ─── HERO IMG FLOAT ──────────────────────── */
 function initFloat() {
-  if (reduced) return;
+  if (reduced || heroMobile) return;
   gsap.to('.hero-img-wrap', {
     y: -10,
     rotation: 2.5,
@@ -287,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!reduced) {
     gsap.set('.hero-eyebrow, .hero-sub, .hero-actions, .hero-proof', { opacity: 0, y: 16 });
     gsap.set('.reveal-inner', { y: '110%' });
-    gsap.set('.hero-img-wrap', { opacity: 0, x: 40 });
+    gsap.set('.hero-img-wrap', heroMobile ? { opacity: 0, y: 24 } : { opacity: 0, x: 40 });
     gsap.set('.hero-badge', { opacity: 0 });
   }
 

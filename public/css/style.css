@@ -1335,12 +1335,50 @@ thead .compare-featured-col { background: var(--green); color: var(--white); }
   .cta-inner { padding: 0 20px; }
   .footer-inner { padding: 48px 20px 32px; }
 
-  /* Hero */
-  .hero-inner { padding: 32px 20px 48px; }
-  .hero-img-wrap { max-width: 280px; }
-  .hero-proof { gap: 12px; }
+  /* Hero — diseño propio para mobile, no la versión de escritorio apretada.
+     La foto pasa a sangre completa (edge-to-edge) pegada al header, la
+     insignia se superpone sobre la foto, y el texto queda alineado a la
+     izquierda con tono editorial en vez de centrado genérico. */
+  .hero { min-height: 0; align-items: flex-start; }
+  .hero-inner { min-height: 0; padding: 0 0 48px; gap: 28px; }
+
+  .hero-visual {
+    order: -1;
+    width: auto;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    justify-content: stretch;
+  }
+  .hero-img-wrap {
+    position: relative;
+    width: 100%;
+    max-width: none;
+    aspect-ratio: 4 / 5;
+    border-radius: 0;
+    box-shadow: none;
+    transform: none !important;
+    margin: 0;
+  }
+  .hero-img-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(28,27,25,0.55) 0%, rgba(28,27,25,0) 40%);
+    pointer-events: none;
+  }
+  .hero-badge {
+    position: absolute;
+    left: 20px;
+    bottom: 20px;
+    margin: 0;
+  }
+
+  .hero-text { padding: 28px 20px 0; text-align: left; }
+  .hero-sub { max-width: 100%; }
+  .hero-actions { justify-content: flex-start; }
+  .hero-proof { justify-content: flex-start; gap: 12px; }
   .proof-num { font-size: 18px; }
-  .hero-title .reveal-inner { font-size: clamp(44px, 12vw, 64px); }
+  .hero-title .reveal-inner { font-size: clamp(40px, 11vw, 60px); }
 
   /* Plans */
   .plan-card { padding: 28px 24px; }
@@ -1380,10 +1418,8 @@ thead .compare-featured-col { background: var(--green); color: var(--white); }
 ============================================ */
 @media (max-width: 480px) {
   /* Hero */
-  .hero-img-wrap { max-width: 240px; }
-  .hero-actions { flex-direction: column; align-items: center; gap: 10px; }
+  .hero-actions { flex-direction: column; align-items: flex-start; gap: 10px; }
   .hero-actions .btn { width: 100%; justify-content: center; }
-  .hero-proof { justify-content: center; }
   .proof-divider { display: none; }
 
   /* Plans */
