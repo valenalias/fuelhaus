@@ -110,25 +110,37 @@ function initProcess() {
   });
   tl
     .fromTo('.step-card',
-      { y: 40, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.75, stagger: 0.15, ease: 'power3.out' }
+      { y: 60, opacity: 0, scale: 0.94 },
+      { y: 0, opacity: 1, scale: 1, duration: 0.9, stagger: 0.18, ease: 'power3.out' }
     )
-    /* Los íconos hacen un pequeño rebote propio, superpuesto a la
-       aparición de la card — solo escala/rotación, sin tocar opacity,
-       para no sumarse a la opacity ya animada de la card (se verían
-       más lentos si se dejan competir por el mismo canal). */
+    /* Los íconos hacen un rebote propio, superpuesto a la aparición de
+       la card — solo escala/rotación, sin tocar opacity, para no
+       sumarse a la opacity ya animada de la card (se verían más lentos
+       si compiten por el mismo canal). */
     .fromTo('.step-icon',
-      { scale: 0.4, rotate: -8 },
-      { scale: 1, rotate: 0, duration: 0.55, stagger: 0.15, ease: 'back.out(1.6)' },
-      '-=0.55'
+      { scale: 0.3, rotate: -15 },
+      { scale: 1, rotate: 0, duration: 0.6, stagger: 0.18, ease: 'back.out(1.8)' },
+      '-=0.7'
     )
     /* Las flechas descansan a opacity:0.4 por diseño (ver style.css) —
        el reveal tiene que terminar ahí, no en 1. */
     .fromTo('.step-arrow',
-      { opacity: 0, scale: 0.5 },
-      { opacity: 0.4, scale: 1, duration: 0.5, stagger: 0.15, ease: 'power2.out' },
-      '-=0.5'
-    );
+      { opacity: 0, scale: 0.3 },
+      { opacity: 0.4, scale: 1, duration: 0.55, stagger: 0.18, ease: 'back.out(2)' },
+      '-=0.55'
+    )
+    /* Después de entrar, las flechas quedan con un pulso suave e
+       infinito — un "latido" sutil que sugiere el flujo entre pasos
+       en vez de quedar estáticas. */
+    .to('.step-arrow', {
+      scale: 1.25,
+      opacity: 0.7,
+      duration: 1,
+      ease: 'sine.inOut',
+      repeat: -1,
+      yoyo: true,
+      stagger: { each: 0.25, repeat: -1 },
+    });
 }
 
 /* ─── PLANES ──────────────────────────────── */
