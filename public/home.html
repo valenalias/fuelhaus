@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="google" content="notranslate">
   <title>Fuelhaus — Mi cuenta</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1033,7 +1034,7 @@
     function updatePaymentSummary() {
       const base = PLAN_PRICES[flow.selectedPlan] || 0;
       document.getElementById('pay-plan-name').textContent  = planName(flow.selectedPlan) || '—';
-      document.getElementById('pay-base-price').textContent = '$' + base + '/sem';
+      document.getElementById('pay-base-price').textContent = '$' + base + t('home.per_week_suffix');
 
       const discRow = document.getElementById('pay-discount-row');
       if (flow.discountAmt > 0) {
@@ -1043,7 +1044,7 @@
       } else {
         discRow.style.display = 'none';
       }
-      document.getElementById('pay-total').textContent = '$' + flow.finalPrice + '/sem';
+      document.getElementById('pay-total').textContent = '$' + flow.finalPrice + t('home.per_week_suffix');
     }
 
     /* ── Aplicar cupón ───────────────────────────────────────────────────────*/
@@ -1187,7 +1188,7 @@
         '<span class="badge-status-' + statusClass + '">' + statusText + '</span>';
 
       document.getElementById('acc-plan').textContent   = planName(order.plan)  || '—';
-      document.getElementById('acc-price').textContent  = '$' + (order.finalPrice || order.planPrice) + '/sem';
+      document.getElementById('acc-price').textContent  = '$' + (order.finalPrice || order.planPrice) + t('home.per_week_suffix');
       document.getElementById('acc-date').textContent   = new Date(order.createdAt).toLocaleDateString(currentLang() === 'en' ? 'en-US' : 'es-US', { day:'2-digit', month:'2-digit', year:'numeric' });
       document.getElementById('acc-coupon').textContent = order.coupon || t('home.no_coupon');
       document.getElementById('acc-phone').textContent  = order.userPhone || user.phone || '—';
