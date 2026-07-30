@@ -166,14 +166,18 @@ function initProcess() {
     delay: 1.6,
     stagger: { each: 0.25, repeat: -1 },
   });
+  /* A diferencia de la flecha, el ícono respira solo un par de veces
+     y se queda quieto (repeat finito) — un pulso eterno en un ícono
+     tan grande se leía como que la página estaba trabada, no como
+     un detalle sutil. */
   gsap.to('.step-icon', {
     scale: 1.08,
     duration: 1.4,
     ease: 'sine.inOut',
-    repeat: -1,
+    repeat: 3,
     yoyo: true,
     delay: 1.6,
-    stagger: { each: 0.2, repeat: -1 },
+    stagger: 0.2,
   });
 }
 
