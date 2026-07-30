@@ -651,13 +651,17 @@ em { font-style: italic; }
   gap: 28px;
   position: relative;
   border: 1.5px solid var(--cream-d);
-  transition: box-shadow .3s ease, transform .3s ease;
+  transition: box-shadow .3s ease;
   will-change: transform;
 }
 .plan-card:hover {
   box-shadow: 0 20px 60px rgba(28,27,25,0.09);
-  transform: translateY(-4px);
 }
+/* El levantamiento (antes acá, translateY en hover) y la inclinación
+   siguiendo el mouse ahora los maneja GSAP (main.js, initTilt) — sin
+   transition de transform en la regla base para no competir con esas
+   actualizaciones cuadro a cuadro. En touch, initTilt nunca se activa:
+   la card se queda exactamente como está definida acá. */
 
 .plan-card.plan-featured {
   background: var(--green);
@@ -871,9 +875,11 @@ thead .compare-featured-col { background: var(--green); color: var(--white); }
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform .8s var(--ease-out);
 }
-.food-img-col:hover .food-photo { transform: scale(1.04); }
+/* El zoom ahora es un "Ken Burns" lento y continuo manejado por GSAP
+   (main.js, initFood) en vez de un hover — así se ve también en mobile,
+   donde el hover no existe. Sin transition acá para no competir con el
+   tween de GSAP frame a frame. */
 
 .food-text-col {
   padding: 80px 72px;
@@ -1098,12 +1104,11 @@ thead .compare-featured-col { background: var(--green); color: var(--white); }
   background-position: center 30%;
   background-color: var(--green-bg);
   filter: brightness(0.35) saturate(0.7);
-  transform: scale(1.05);
-  transition: transform 8s ease;
 }
-.cta-section:hover .cta-bg {
-  transform: scale(1);
-}
+/* El zoom lento ahora lo dispara el scroll (main.js, initCta), no el
+   hover: casi nadie llegaba a verlo antes porque hay que scrollear
+   hasta acá Y quedarse con el mouse quieto encima — y en mobile el
+   hover directamente no existe, así que el efecto era invisible ahí. */
 .cta-inner {
   position: relative;
   z-index: 1;

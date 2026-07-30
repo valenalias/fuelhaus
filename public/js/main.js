@@ -93,6 +93,22 @@ function initFloat() {
     repeat: -1,
     yoyo: true,
   });
+
+  /* Parallax contenido: la foto interna se agranda un poco (scale) para
+     tener margen de sobra dentro del marco con overflow:hidden, y ese
+     margen se recorre con el scroll — nunca se ve un borde ni un hueco.
+     Solo desktop: en mobile la foto vive sin recorte a propósito. */
+  gsap.set('.hero-img', { scale: 1.14 });
+  gsap.to('.hero-img', {
+    y: 26,
+    ease: 'none',
+    scrollTrigger: {
+      trigger: '.hero',
+      start: 'top top',
+      end: 'bottom top',
+      scrub: true,
+    },
+  });
 }
 
 /* ─── HEADER SCROLL ───────────────────────── */
@@ -143,6 +159,19 @@ function initProcess() {
     });
 }
 
+/* ─── MENÚ (PREVIEW SIN LOGIN) ─────────────── */
+function initMenuPreview() {
+  if (reduced) return;
+  gsap.fromTo('.menu-preview-card',
+    { y: 40, opacity: 0, scale: 0.96 },
+    {
+      y: 0, opacity: 1, scale: 1,
+      duration: 0.8, stagger: 0.15, ease: 'power3.out',
+      scrollTrigger: { trigger: '.menu-preview-grid', start: 'top 85%' },
+    }
+  );
+}
+
 /* ─── PLANES ──────────────────────────────── */
 function initPlans() {
   if (reduced) return;
@@ -152,6 +181,47 @@ function initPlans() {
       y: 0, opacity: 1,
       duration: 0.8, stagger: 0.12, ease: 'power3.out',
       scrollTrigger: { trigger: '.plans-grid', start: 'top 82%' },
+    }
+  );
+
+  /* Los precios cuentan desde 0 al aparecer — mismo recurso que ya usa
+     "Nosotros" para 50+/100%/0, aplicado acá donde el usuario está
+     mirando el precio con más atención. */
+  document.querySelectorAll('.price-num').forEach((el) => {
+    const target = parseInt(el.textContent.trim(), 10);
+    if (!target) return;
+    el.textContent = '0';
+    const counter = { val: 0 };
+    gsap.to(counter, {
+      val: target,
+      duration: 1.1,
+      ease: 'power2.out',
+      delay: 0.15,
+      scrollTrigger: { trigger: '.plans-grid', start: 'top 82%', once: true },
+      onUpdate: () => { el.textContent = Math.round(counter.val); },
+    });
+  });
+}
+
+/* ─── COMPARADOR DE PLANES ─────────────────── */
+function initCompareTable() {
+  if (reduced) return;
+  gsap.fromTo('.compare-wrap',
+    { y: 30, opacity: 0 },
+    {
+      y: 0, opacity: 1, duration: 0.8, ease: 'power3.out',
+      scrollTrigger: { trigger: '.compare-wrap', start: 'top 85%' },
+    }
+  );
+  /* Brillo único (no en loop) sobre la columna destacada, para guiar el
+     ojo hacia el plan recomendado apenas se termina de revelar la tabla. */
+  gsap.fromTo('.compare-featured-col',
+    { filter: 'brightness(1)' },
+    {
+      filter: 'brightness(1.35)', duration: 0.5, ease: 'power2.out',
+      yoyo: true, repeat: 1,
+      scrollTrigger: { trigger: '.compare-wrap', start: 'top 80%', once: true },
+      delay: 0.5,
     }
   );
 }
@@ -169,17 +239,48 @@ function initBadges() {
   );
 }
 
+/* ─── TRUST BAR ───────────────────────────── */
+function initTrustBar() {
+  if (reduced) return;
+  gsap.fromTo('.trust-item',
+    { opacity: 0, y: 14 },
+    {
+      opacity: 1, y: 0,
+      duration: 0.55, stagger: 0.08, ease: 'power3.out',
+      scrollTrigger: { trigger: '.trust-bar', start: 'top 92%' },
+    }
+  );
+}
+
 /* ─── GALLERY ─────────────────────────────── */
 function initGallery() {
   if (reduced) return;
-  gsap.fromTo('.gallery-img',
-    { opacity: 0, scale: 1.04 },
+  /* Ojo: el selector .gallery-img era de una versión anterior con 4
+     fotos — la sección actual es un banner único (.gallery-banner) y
+     esta animación nunca se ejecutaba. Se corrige y de paso se agrega
+     parallax: la foto se agranda un poco (scale, gestionado por GSAP
+     para no pisar el resto de las propiedades) para tener margen
+     dentro del overflow:hidden de la sección, y ese margen se recorre
+     con el scroll. */
+  gsap.set('.gallery-banner', { scale: 1.1 });
+  gsap.fromTo('.gallery-banner',
+    { opacity: 0 },
     {
-      opacity: 1, scale: 1,
-      duration: 0.75, stagger: 0.1, ease: 'power3.out',
+      opacity: 1,
+      duration: 0.9, ease: 'power3.out',
       scrollTrigger: { trigger: '.gallery-section', start: 'top 82%' },
     }
   );
+  gsap.to('.gallery-banner', {
+    y: 30,
+    ease: 'none',
+    scrollTrigger: {
+      trigger: '.gallery-section',
+      start: 'top bottom',
+      end: 'bottom top',
+      scrub: true,
+    },
+  });
 }
 
 /* ─── STRIP INGREDIENTES ─────────────────── */
@@ -225,6 +326,24 @@ function initFood() {
       scrollTrigger: { trigger: '.food-section', start: 'top 75%' },
     }
   );
+  /* La foto no tenía ninguna entrada — solo el texto. Se le suma un
+     fade, y un zoom lento tipo "Ken Burns" (imperceptible salvo que te
+     quedes mirando) mientras la sección está en pantalla. Reemplaza el
+     hover-zoom anterior, que en mobile no existía. */
+  gsap.fromTo('.food-photo',
+    { opacity: 0 },
+    {
+      opacity: 1,
+      duration: 0.9, ease: 'power3.out',
+      scrollTrigger: { trigger: '.food-section', start: 'top 75%' },
+    }
+  );
+  gsap.to('.food-photo', {
+    scale: 1.06,
+    duration: 14,
+    ease: 'none',
+    scrollTrigger: { trigger: '.food-section', start: 'top bottom', once: true },
+  });
 }
 
 /* ─── NOSOTROS ────────────────────────────── */
@@ -281,6 +400,60 @@ function initCta() {
       scrollTrigger: { trigger: '.cta-section', start: 'top 82%' },
     }
   );
+  /* El zoom de fondo pasa de "al pasar el mouse" a "al entrar en
+     pantalla" — mismo efecto, dispara solo con scroll, visible en
+     mobile también (antes dependía de hover). */
+  gsap.set('.cta-bg', { scale: 1.05 });
+  gsap.to('.cta-bg', {
+    scale: 1,
+    duration: 8,
+    ease: 'power1.out',
+    scrollTrigger: { trigger: '.cta-section', start: 'top 85%', once: true },
+  });
+}
+
+/* ─── FOOTER ──────────────────────────────── */
+function initFooter() {
+  if (reduced) return;
+  gsap.fromTo('.footer-top, .footer-bottom',
+    { opacity: 0, y: 20 },
+    {
+      opacity: 1, y: 0,
+      duration: 0.7, stagger: 0.1, ease: 'power3.out',
+      scrollTrigger: { trigger: '#footer', start: 'top 92%' },
+    }
+  );
+}
+
+/* ─── WHATSAPP FLOTANTE ───────────────────── */
+function initWhatsApp() {
+  const el = document.querySelector('.whatsapp-float');
+  if (!el || reduced) return;
+
+  gsap.set(el, { scale: 0, opacity: 0 });
+  gsap.to(el, {
+    scale: 1, opacity: 1,
+    duration: 0.6, delay: 1.1,
+    ease: 'back.out(1.6)',
+  });
+
+  /* Pulso de atención bien espaciado — un respiro suave cada ~7s, no
+     un rebote constante. Es el botón de contacto principal del sitio
+     y hoy es 100% estático; con el tiempo se vuelve invisible a la
+     vista ("ceguera a los banners"). */
+  gsap.timeline({ repeat: -1, repeatDelay: 6, delay: 2.6 })
+    .to(el, { scale: 1.15, duration: 0.4, ease: 'sine.out' })
+    .to(el, { scale: 1, duration: 0.5, ease: 'sine.inOut' });
+
+  /* El hover pasa a manejarlo GSAP (en vez del :hover de CSS) porque
+     va a competir por la misma propiedad transform que el pulso de
+     arriba — así GSAP puede resolver el conflicto entre ambos. */
+  el.addEventListener('mouseenter', () => {
+    gsap.to(el, { scale: 1.15, duration: 0.2, ease: 'power2.out' });
+  });
+  el.addEventListener('mouseleave', () => {
+    gsap.to(el, { scale: 1, duration: 0.3, ease: 'power2.out' });
+  });
 }
 
 /* ─── MAGNETIC BUTTONS ────────────────────── */
@@ -295,6 +468,33 @@ function initMagnetic() {
     });
     btn.addEventListener('mouseleave', () => {
       gsap.to(btn, { x: 0, y: 0, duration: 0.65, ease: 'elastic.out(1, 0.4)' });
+    });
+  });
+}
+
+/* ─── TILT DE LAS CARDS DE PLANES ─────────── */
+function initTilt() {
+  if (reduced) return;
+  document.querySelectorAll('.plan-card').forEach((card) => {
+    /* Se apaga solo en touch: mousemove no dispara sin mouse, así que
+       en celular la card queda tal cual está en el CSS, sin código
+       aparte para "desactivarlo". */
+    card.addEventListener('mousemove', (e) => {
+      const r  = card.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width - 0.5;
+      const py = (e.clientY - r.top) / r.height - 0.5;
+      gsap.to(card, {
+        rotateY: px * 9,
+        rotateX: -py * 9,
+        y: -4,
+        transformPerspective: 700,
+        transformOrigin: 'center',
+        duration: 0.4,
+        ease: 'power2.out',
+      });
+    });
+    card.addEventListener('mouseleave', () => {
+      gsap.to(card, { rotateY: 0, rotateX: 0, y: 0, duration: 0.5, ease: 'power2.out' });
     });
   });
 }
@@ -331,13 +531,19 @@ document.addEventListener('DOMContentLoaded', () => {
   initBadges();
   initStrip();
   initProcess();
+  initMenuPreview();
   initPlans();
+  initCompareTable();
+  initTrustBar();
   initGallery();
   initFood();
   initAbout();
   initAboutStats();
   initCta();
+  initFooter();
+  initWhatsApp();
   initMagnetic();
+  initTilt();
 
   runLoader();
 });
