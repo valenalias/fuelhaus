@@ -146,16 +146,14 @@ function initProcess() {
       '-=0.55'
     );
 
-  /* Los pulsos infinitos van AFUERA de tl, como tweens propias con su
-     propio delay — no encadenadas dentro del timeline de entrada. Dos
-     tweens con repeat:-1 conviviendo en el mismo timeline (aunque
-     arranquen en la misma etiqueta) generan estados inconsistentes al
-     buscar una posición puntual; como tweens sueltas, cada una calcula
-     su propio ciclo de forma independiente sin ambigüedad — mismo
-     patrón ya probado en el pulso del botón de WhatsApp. Nada de esto
-     depende de mouse ni touch, así que se ve igual en mobile y
-     desktop — la inclinación con el mouse (initTilt) es la única parte
-     de esta sección que sí es solo desktop. */
+  /* El pulso de la flecha va AFUERA de tl, como tween propia con su
+     propio delay — no encadenada dentro del timeline de entrada. Nada
+     de esto depende de mouse ni touch, así que se ve igual en mobile
+     y desktop — la inclinación con el mouse (initTilt) es la única
+     parte de esta sección que sí es solo desktop.
+     El ícono NO tiene pulso ambiental: quedaba mal ubicado dentro de
+     la tarjeta al escalar. La única animación de la card es su
+     deslizamiento de entrada (arriba en tl). */
   gsap.to('.step-arrow', {
     scale: 1.15,
     opacity: 0.7,
@@ -165,19 +163,6 @@ function initProcess() {
     yoyo: true,
     delay: 1.6,
     stagger: 0.25,
-  });
-  /* A diferencia de la flecha, el ícono respira solo un par de veces
-     y se queda quieto (repeat finito) — un pulso eterno en un ícono
-     tan grande se leía como que la página estaba trabada, no como
-     un detalle sutil. */
-  gsap.to('.step-icon', {
-    scale: 1.08,
-    duration: 1.4,
-    ease: 'sine.inOut',
-    repeat: 3,
-    yoyo: true,
-    delay: 1.6,
-    stagger: 0.2,
   });
 }
 
