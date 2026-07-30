@@ -539,6 +539,7 @@ em { font-style: italic; }
   background: var(--cream);
   border-radius: var(--r);
   position: relative;
+  z-index: 1;
   will-change: transform;
   transition: box-shadow .3s ease;
 }
@@ -588,6 +589,8 @@ em { font-style: italic; }
   color: var(--green);
   font-size: 18px;
   opacity: 0.4;
+  position: relative;
+  z-index: 2;
 }
 
 /* ============================================

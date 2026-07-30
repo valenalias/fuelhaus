@@ -157,14 +157,14 @@ function initProcess() {
      desktop — la inclinación con el mouse (initTilt) es la única parte
      de esta sección que sí es solo desktop. */
   gsap.to('.step-arrow', {
-    scale: 1.4,
-    opacity: 0.85,
-    duration: 0.85,
+    scale: 1.15,
+    opacity: 0.7,
+    duration: 1.2,
     ease: 'sine.inOut',
-    repeat: -1,
+    repeat: 3,
     yoyo: true,
     delay: 1.6,
-    stagger: { each: 0.25, repeat: -1 },
+    stagger: 0.25,
   });
   /* A diferencia de la flecha, el ícono respira solo un par de veces
      y se queda quieto (repeat finito) — un pulso eterno en un ícono
