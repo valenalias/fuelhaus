@@ -144,21 +144,37 @@ function initProcess() {
       { opacity: 0, scale: 0.3 },
       { opacity: 0.4, scale: 1, duration: 0.55, stagger: 0.18, ease: 'back.out(2)' },
       '-=0.55'
-    )
-    /* Después de entrar, las flechas quedan con un pulso infinito que
-       sugiere el flujo entre pasos en vez de quedar estáticas. Más
-       amplitud que la primera versión — con la sección entera ahora
-       más viva (cards con tilt incluido), el pulso original quedaba
-       demasiado sutil como para notarse. */
-    .to('.step-arrow', {
-      scale: 1.4,
-      opacity: 0.85,
-      duration: 0.85,
-      ease: 'sine.inOut',
-      repeat: -1,
-      yoyo: true,
-      stagger: { each: 0.25, repeat: -1 },
-    });
+    );
+
+  /* Los pulsos infinitos van AFUERA de tl, como tweens propias con su
+     propio delay — no encadenadas dentro del timeline de entrada. Dos
+     tweens con repeat:-1 conviviendo en el mismo timeline (aunque
+     arranquen en la misma etiqueta) generan estados inconsistentes al
+     buscar una posición puntual; como tweens sueltas, cada una calcula
+     su propio ciclo de forma independiente sin ambigüedad — mismo
+     patrón ya probado en el pulso del botón de WhatsApp. Nada de esto
+     depende de mouse ni touch, así que se ve igual en mobile y
+     desktop — la inclinación con el mouse (initTilt) es la única parte
+     de esta sección que sí es solo desktop. */
+  gsap.to('.step-arrow', {
+    scale: 1.4,
+    opacity: 0.85,
+    duration: 0.85,
+    ease: 'sine.inOut',
+    repeat: -1,
+    yoyo: true,
+    delay: 1.6,
+    stagger: { each: 0.25, repeat: -1 },
+  });
+  gsap.to('.step-icon', {
+    scale: 1.08,
+    duration: 1.4,
+    ease: 'sine.inOut',
+    repeat: -1,
+    yoyo: true,
+    delay: 1.6,
+    stagger: { each: 0.2, repeat: -1 },
+  });
 }
 
 /* ─── MENÚ (PREVIEW SIN LOGIN) ─────────────── */

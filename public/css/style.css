@@ -538,6 +538,11 @@ em { font-style: italic; }
   transition: box-shadow .3s ease;
 }
 .step-card:hover { box-shadow: 0 18px 44px rgba(28,27,25,0.08); }
+/* Respuesta táctil para touch — donde no hay mouse para el tilt, al
+   menos la card responde cuando la tocás. Sin conflicto con el tilt de
+   GSAP: en touch, mousemove nunca dispara, así que GSAP nunca toca el
+   transform inline acá. */
+.step-card:active { transform: scale(0.97); transition: transform .15s ease; }
 /* La inclinación con mouse la maneja GSAP (main.js, initTilt) — sin
    transition de transform acá para no competir con esas actualizaciones
    cuadro a cuadro. En touch nunca se activa. */
