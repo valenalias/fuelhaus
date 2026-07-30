@@ -105,14 +105,30 @@ ScrollTrigger.create({
 /* ─── PROCESS STEPS ───────────────────────── */
 function initProcess() {
   if (reduced) return;
-  gsap.fromTo('.step-card',
-    { y: 40, opacity: 0 },
-    {
-      y: 0, opacity: 1,
-      duration: 0.75, stagger: 0.15, ease: 'power3.out',
-      scrollTrigger: { trigger: '.process-section', start: 'top 80%' },
-    }
-  );
+  const tl = gsap.timeline({
+    scrollTrigger: { trigger: '.process-section', start: 'top 80%' },
+  });
+  tl
+    .fromTo('.step-card',
+      { y: 40, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.75, stagger: 0.15, ease: 'power3.out' }
+    )
+    /* Los íconos hacen un pequeño rebote propio, superpuesto a la
+       aparición de la card — solo escala/rotación, sin tocar opacity,
+       para no sumarse a la opacity ya animada de la card (se verían
+       más lentos si se dejan competir por el mismo canal). */
+    .fromTo('.step-icon',
+      { scale: 0.4, rotate: -8 },
+      { scale: 1, rotate: 0, duration: 0.55, stagger: 0.15, ease: 'back.out(1.6)' },
+      '-=0.55'
+    )
+    /* Las flechas descansan a opacity:0.4 por diseño (ver style.css) —
+       el reveal tiene que terminar ahí, no en 1. */
+    .fromTo('.step-arrow',
+      { opacity: 0, scale: 0.5 },
+      { opacity: 0.4, scale: 1, duration: 0.5, stagger: 0.15, ease: 'power2.out' },
+      '-=0.5'
+    );
 }
 
 /* ─── PLANES ──────────────────────────────── */
