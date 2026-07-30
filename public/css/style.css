@@ -1393,16 +1393,13 @@ thead .compare-featured-col { background: var(--green); color: var(--white); }
     width: 100%;
     max-width: none;
     aspect-ratio: 4 / 5;
-    max-height: 46vh;
     border-radius: 0;
     box-shadow: none;
     transform: none !important;
     margin: 0;
   }
-  /* La foto se recorta en vertical para respetar el tope de 46vh (ver
-     comentario más abajo): el punto de foco se sube para que el recorte
-     salga siempre del pie de la foto y nunca de la cara. */
-  .hero-img { object-position: center 20%; }
+  /* La foto se ve completa, sin recortar (prioridad del cliente por
+     sobre que el subtítulo entre sin hacer scroll). */
   .hero-img-wrap::after {
     content: '';
     position: absolute;
@@ -1450,8 +1447,12 @@ thead .compare-featured-col { background: var(--green); color: var(--white); }
   .about-stats { flex-direction: row; flex-wrap: wrap; gap: 20px; }
   .about-stat { flex: 1 1 calc(50% - 10px); }
 
-  /* CTA */
+  /* CTA — foto distinta a la de escritorio: la panorámica de 3 personas
+     recortada a lo angosto del celular dejaba ver solo a una persona en
+     el centro. Se usa una foto vertical de una sola persona, que
+     sobrevive mejor ese recorte. */
   .cta-section { padding: 80px 0; }
+  .cta-bg { background-image: url('/img/cta-lifestyle-mobile.jpg'); background-position: center 20%; }
   .cta-title { font-size: clamp(32px, 9vw, 52px); }
 
   /* Footer */
