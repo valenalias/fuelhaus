@@ -8,9 +8,6 @@
 
 const I18N = {
   es: {
-    lang_name: 'ES',
-    toggle_to: 'EN',
-
     nav: {
       como_funciona: 'Cómo funciona',
       planes: 'Planes',
@@ -350,9 +347,6 @@ const I18N = {
   },
 
   en: {
-    lang_name: 'EN',
-    toggle_to: 'ES',
-
     nav: {
       como_funciona: 'How it works',
       planes: 'Plans',
@@ -759,9 +753,13 @@ const I18N = {
       if (val !== undefined) el.setAttribute('aria-label', val);
     });
     document.documentElement.lang = lang === 'en' ? 'en' : 'es-US';
-    document.querySelectorAll('.lang-toggle').forEach((btn) => {
-      btn.textContent = I18N[lang].toggle_to;
-      btn.setAttribute('aria-label', lang === 'es' ? 'Switch to English' : 'Cambiar a español');
+    /* El selector muestra "ES / EN" siempre visibles, marcando cuál está
+       activo — mostrar solo el idioma "al que cambiás" confundía, porque
+       parecía indicar el idioma actual en vez de la acción del botón. */
+    document.querySelectorAll('.lang-toggle [data-lang]').forEach((btn) => {
+      const isActive = btn.getAttribute('data-lang') === lang;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-current', isActive ? 'true' : 'false');
     });
     document.dispatchEvent(new CustomEvent('fh:langchange', { detail: { lang } }));
   }
@@ -776,10 +774,8 @@ const I18N = {
 
   document.addEventListener('DOMContentLoaded', () => {
     applyToDom(getLang());
-    document.querySelectorAll('.lang-toggle').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        setLanguage(getLang() === 'es' ? 'en' : 'es');
-      });
+    document.querySelectorAll('.lang-toggle [data-lang]').forEach((btn) => {
+      btn.addEventListener('click', () => setLanguage(btn.getAttribute('data-lang')));
     });
   });
 })();

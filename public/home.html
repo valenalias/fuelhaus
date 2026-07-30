@@ -78,19 +78,29 @@
     .btn-logout:hover { border-color: var(--dark-green); color: var(--dark-green); }
 
     .lang-toggle {
-      background: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
       border: 1.5px solid var(--border);
+      border-radius: 99px;
+      padding: 0.2rem;
+    }
+    .lang-toggle button {
+      background: none;
+      border: none;
       color: var(--gray);
       font-family: 'Be Vietnam Pro', sans-serif;
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       font-weight: 700;
       letter-spacing: 0.03em;
-      padding: 0.35rem 0.7rem;
+      padding: 0.35rem 0.6rem;
       border-radius: 99px;
       cursor: pointer;
       transition: all 0.15s;
     }
-    .lang-toggle:hover { border-color: var(--dark-green); color: var(--dark-green); }
+    .lang-toggle button.active { background: var(--dark-green); color: var(--white); }
+    .lang-toggle button:not(.active):hover { color: var(--dark-green); }
+    .lang-toggle span { color: var(--border); font-size: 0.68rem; }
 
     /* ── PROGRESS BAR ─── */
     .progress-wrap {
@@ -542,7 +552,7 @@
     <div class="header-inner">
       <a href="/" class="header-logo"><em>fuel</em><strong>haus</strong></a>
       <div class="header-right">
-        <button class="lang-toggle" type="button">EN</button>
+        <div class="lang-toggle"><button type="button" data-lang="es">ES</button><span>/</span><button type="button" data-lang="en">EN</button></div>
         <span class="header-user" id="header-greeting"></span>
         <button class="btn-logout" id="logout-btn" data-i18n="home.logout">Salir</button>
       </div>

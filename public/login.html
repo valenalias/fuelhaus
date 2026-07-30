@@ -129,19 +129,29 @@
     .right-logo strong { font-weight: 700; }
 
     .lang-toggle {
-      background: transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
       border: 1.5px solid var(--light-gray);
       border-radius: 99px;
+      padding: 0.2rem;
+    }
+    .lang-toggle button {
+      background: transparent;
+      border: none;
       color: var(--gray);
       font-family: 'Be Vietnam Pro', sans-serif;
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       font-weight: 700;
       letter-spacing: 0.03em;
-      padding: 0.4rem 0.7rem;
+      padding: 0.35rem 0.6rem;
+      border-radius: 99px;
       cursor: pointer;
       transition: all 0.2s;
     }
-    .lang-toggle:hover { border-color: var(--dark-green); color: var(--dark-green); }
+    .lang-toggle button.active { background: var(--dark-green); color: var(--white); }
+    .lang-toggle button:not(.active):hover { color: var(--dark-green); }
+    .lang-toggle span { color: var(--light-gray); font-size: 0.68rem; }
 
     /* Tabs */
     .tabs {
@@ -300,7 +310,7 @@
 
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2.5rem">
         <a href="/" class="right-logo" style="margin-bottom:0"><em>fuel</em><strong>haus</strong></a>
-        <button class="lang-toggle" type="button">EN</button>
+        <div class="lang-toggle"><button type="button" data-lang="es">ES</button><span>/</span><button type="button" data-lang="en">EN</button></div>
       </div>
 
       <!-- Tabs: Ingresar / Crear cuenta -->

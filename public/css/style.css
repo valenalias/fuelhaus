@@ -139,27 +139,36 @@ em { font-style: italic; }
 .lang-toggle {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  background: transparent;
-  color: var(--black);
+  gap: 2px;
   border: 1.5px solid rgba(0,0,0,0.25);
   border-radius: 99px;
+  padding: 3px;
+}
+.lang-toggle button {
+  background: transparent;
+  border: none;
+  color: var(--gray);
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  padding: 7px 12px;
+  padding: 5px 9px;
+  border-radius: 99px;
   cursor: pointer;
-  transition: background .2s ease, color .2s ease, border-color .2s ease;
+  transition: background .2s ease, color .2s ease;
 }
-.lang-toggle:hover { background: var(--black); color: var(--white); border-color: var(--black); }
+.lang-toggle button.active { background: var(--black); color: var(--white); }
+.lang-toggle button:not(.active):hover { color: var(--black); }
+.lang-toggle span { color: rgba(0,0,0,0.2); font-size: 10px; }
 
 .footer-social .lang-toggle {
   border-color: rgba(255,255,255,0.25);
-  color: rgba(255,255,255,0.75);
   margin-right: 4px;
 }
-.footer-social .lang-toggle:hover { background: rgba(255,255,255,0.12); color: var(--white); border-color: rgba(255,255,255,0.4); }
+.footer-social .lang-toggle button { color: rgba(255,255,255,0.55); }
+.footer-social .lang-toggle button.active { background: var(--white); color: var(--black); }
+.footer-social .lang-toggle button:not(.active):hover { color: var(--white); }
+.footer-social .lang-toggle span { color: rgba(255,255,255,0.2); }
 
 /* ============================================
    HEADER
@@ -1390,17 +1399,22 @@ thead .compare-featured-col { background: var(--green); color: var(--white); }
     transform: none !important;
     margin: 0;
   }
+  /* La foto se recorta en vertical para respetar el tope de 46vh (ver
+     comentario más abajo): el punto de foco se sube para que el recorte
+     salga siempre del pie de la foto y nunca de la cara. */
+  .hero-img { object-position: center 20%; }
   .hero-img-wrap::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, rgba(28,27,25,0.55) 0%, rgba(28,27,25,0) 40%);
+    background: linear-gradient(to bottom, rgba(28,27,25,0.5) 0%, rgba(28,27,25,0) 35%);
     pointer-events: none;
   }
   .hero-badge {
     position: absolute;
     left: 20px;
-    bottom: 20px;
+    top: 20px;
+    bottom: auto;
     margin: 0;
   }
 
