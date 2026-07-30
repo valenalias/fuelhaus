@@ -127,6 +127,21 @@
     .right-logo em { font-style: italic; font-weight: 400; }
     .right-logo strong { font-weight: 700; }
 
+    .lang-toggle {
+      background: transparent;
+      border: 1.5px solid var(--light-gray);
+      border-radius: 99px;
+      color: var(--gray);
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      padding: 0.4rem 0.7rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .lang-toggle:hover { border-color: var(--dark-green); color: var(--dark-green); }
+
     /* Tabs */
     .tabs {
       display: flex;
@@ -266,15 +281,15 @@
     <div class="left-content">
       <div class="left-logo"><em>fuel</em><strong>haus</strong></div>
       <div>
-        <h1 class="left-heading">Tu semana,<br><em>resuelta.</em></h1>
+        <h1 class="left-heading" data-i18n-html="login.left_heading_html">Tu semana,<br><em>resuelta.</em></h1>
         <div class="left-tags">
-          <span class="left-tag">Alta proteína</span>
-          <span class="left-tag">100% orgánico</span>
-          <span class="left-tag">Entrega cada domingo</span>
-          <span class="left-tag">Sin conservantes</span>
+          <span class="left-tag" data-i18n="login.tag1">Alta proteína</span>
+          <span class="left-tag" data-i18n="login.tag2">100% orgánico</span>
+          <span class="left-tag" data-i18n="login.tag3">Entrega cada domingo</span>
+          <span class="left-tag" data-i18n="login.tag4">Sin conservantes</span>
         </div>
       </div>
-      <div class="left-footer">Fuelhaus &reg; 2025 · Meal prep premium · Miami, FL</div>
+      <div class="left-footer" data-i18n-html="login.left_footer">Fuelhaus &reg; 2025 · Meal prep premium · Miami, FL</div>
     </div>
   </div>
 
@@ -282,62 +297,67 @@
   <div class="right-panel">
     <div class="right-inner">
 
-      <a href="/" class="right-logo"><em>fuel</em><strong>haus</strong></a>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2.5rem">
+        <a href="/" class="right-logo" style="margin-bottom:0"><em>fuel</em><strong>haus</strong></a>
+        <button class="lang-toggle" type="button">EN</button>
+      </div>
 
       <!-- Tabs: Ingresar / Crear cuenta -->
       <div class="tabs">
-        <button class="tab active" data-tab="login">Ingresar</button>
-        <button class="tab" data-tab="register">Crear cuenta</button>
+        <button class="tab active" data-tab="login" data-i18n="login.tab_login">Ingresar</button>
+        <button class="tab" data-tab="register" data-i18n="login.tab_register">Crear cuenta</button>
       </div>
 
       <!-- Formulario: Ingresar -->
       <div class="form-section active" id="form-login">
-        <h2 class="form-title">Bienvenido de vuelta</h2>
-        <p class="form-sub">Ingresá con tu email y contraseña.</p>
+        <h2 class="form-title" data-i18n="login.login_title">Bienvenido de vuelta</h2>
+        <p class="form-sub" data-i18n="login.login_sub">Ingresá con tu email y contraseña.</p>
         <form id="login-form" autocomplete="on" novalidate>
           <div class="field">
-            <label for="l-email">Email</label>
-            <input type="email" id="l-email" placeholder="tu@email.com" autocomplete="email" required>
+            <label for="l-email" data-i18n="login.label_email">Email</label>
+            <input type="email" id="l-email" placeholder="tu@email.com" data-i18n-placeholder="login.email_placeholder" autocomplete="email" required>
           </div>
           <div class="field">
-            <label for="l-pass">Contraseña</label>
+            <label for="l-pass" data-i18n="login.label_password">Contraseña</label>
             <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password" required>
           </div>
           <div class="error-msg" id="login-error"></div>
           <button type="submit" class="btn-submit" id="login-btn">
-            Ingresar <span>→</span>
+            <span data-i18n="login.login_btn">Ingresar</span> <span>→</span>
           </button>
         </form>
       </div>
 
       <!-- Formulario: Crear cuenta -->
       <div class="form-section" id="form-register">
-        <h2 class="form-title">Creá tu cuenta</h2>
-        <p class="form-sub">Registrate para gestionar tu plan.</p>
+        <h2 class="form-title" data-i18n="login.register_title">Creá tu cuenta</h2>
+        <p class="form-sub" data-i18n="login.register_sub">Registrate para gestionar tu plan.</p>
         <form id="register-form" autocomplete="on" novalidate>
           <div class="field">
-            <label for="r-name">Nombre completo</label>
-            <input type="text" id="r-name" placeholder="Juan Pérez" autocomplete="name" required>
+            <label for="r-name" data-i18n="login.label_name">Nombre completo</label>
+            <input type="text" id="r-name" placeholder="Juan Pérez" data-i18n-placeholder="login.name_placeholder" autocomplete="name" required>
           </div>
           <div class="field">
-            <label for="r-email">Email</label>
-            <input type="email" id="r-email" placeholder="tu@email.com" autocomplete="email" required>
+            <label for="r-email" data-i18n="login.label_email">Email</label>
+            <input type="email" id="r-email" placeholder="tu@email.com" data-i18n-placeholder="login.email_placeholder" autocomplete="email" required>
           </div>
           <div class="field">
-            <label for="r-pass">Contraseña</label>
-            <input type="password" id="r-pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required>
+            <label for="r-pass" data-i18n="login.label_password">Contraseña</label>
+            <input type="password" id="r-pass" placeholder="Mínimo 6 caracteres" data-i18n-placeholder="login.password_placeholder_min" autocomplete="new-password" required>
           </div>
           <div class="error-msg" id="register-error"></div>
           <button type="submit" class="btn-submit" id="register-btn">
-            Crear cuenta <span>→</span>
+            <span data-i18n="login.register_btn">Crear cuenta</span> <span>→</span>
           </button>
         </form>
       </div>
 
-      <a href="/" class="back-link">← Volver al sitio</a>
+      <a href="/" class="back-link" data-i18n="login.back_link">← Volver al sitio</a>
 
     </div>
   </div>
+
+  <script src="js/i18n.js"></script>
 
   <script>
     // Tabs
@@ -379,7 +399,7 @@
       clearErrors();
       const btn = document.getElementById('login-btn');
       btn.disabled = true;
-      btn.textContent = 'Ingresando…';
+      btn.textContent = t('login.login_btn_loading');
 
       const email    = document.getElementById('l-email').value.trim();
       const password = document.getElementById('l-pass').value;
@@ -387,9 +407,9 @@
       const { ok, data } = await apiPost('/api/auth/login', { email, password });
 
       if (!ok) {
-        showError('login-error', data.error || 'Error al ingresar');
+        showError('login-error', tApiError(data.error) || t('login.login_btn') + ' error');
         btn.disabled = false;
-        btn.innerHTML = 'Ingresar <span>→</span>';
+        btn.innerHTML = '<span data-i18n="login.login_btn">' + t('login.login_btn') + '</span> <span>→</span>';
         return;
       }
 
@@ -404,7 +424,7 @@
       clearErrors();
       const btn = document.getElementById('register-btn');
       btn.disabled = true;
-      btn.textContent = 'Creando cuenta…';
+      btn.textContent = t('login.register_btn_loading');
 
       const name     = document.getElementById('r-name').value.trim();
       const email    = document.getElementById('r-email').value.trim();
@@ -413,9 +433,9 @@
       const { ok, data } = await apiPost('/api/auth/register', { name, email, password });
 
       if (!ok) {
-        showError('register-error', data.error || 'Error al crear cuenta');
+        showError('register-error', tApiError(data.error) || t('login.register_btn') + ' error');
         btn.disabled = false;
-        btn.innerHTML = 'Crear cuenta <span>→</span>';
+        btn.innerHTML = '<span data-i18n="login.register_btn">' + t('login.register_btn') + '</span> <span>→</span>';
         return;
       }
 

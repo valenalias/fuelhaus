@@ -181,15 +181,16 @@
       </a>
       <nav class="nav" id="nav" aria-label="Navegación principal">
         <ul>
-          <li><a href="#como-funciona">Cómo funciona</a></li>
-          <li><a href="#planes">Planes</a></li>
-          <li><a href="#nosotros">Nosotros</a></li>
-          <li><a href="#contacto">Contacto</a></li>
+          <li><a href="#como-funciona" data-i18n="nav.como_funciona">Cómo funciona</a></li>
+          <li><a href="#planes" data-i18n="nav.planes">Planes</a></li>
+          <li><a href="#nosotros" data-i18n="nav.nosotros">Nosotros</a></li>
+          <li><a href="#contacto" data-i18n="nav.contacto">Contacto</a></li>
         </ul>
       </nav>
       <div class="header-actions">
-        <a href="/home" class="btn btn-members">Miembros</a>
-        <a href="#planes" class="btn btn-primary btn-mag">Elige tu plan</a>
+        <button class="lang-toggle" type="button">EN</button>
+        <a href="/home" class="btn btn-members" data-i18n="nav.miembros">Miembros</a>
+        <a href="#planes" class="btn btn-primary btn-mag" data-i18n="nav.elige_plan">Elige tu plan</a>
         <button class="hamburger" id="hamburger" aria-label="Menú" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
@@ -203,41 +204,41 @@
     <section class="hero" id="hero">
       <div class="hero-inner">
         <div class="hero-text">
-          <span class="hero-eyebrow">Meal prep · Miami, FL</span>
+          <span class="hero-eyebrow" data-i18n="hero.eyebrow">Meal prep · Miami, FL</span>
           <h1 class="hero-title">
-            <span class="reveal-line"><span class="reveal-inner hero-italic">Tu semana,</span></span>
-            <span class="reveal-line"><span class="reveal-inner hero-bold">resuelta.</span></span>
+            <span class="reveal-line"><span class="reveal-inner hero-italic" data-i18n="hero.title_line1">Tu semana,</span></span>
+            <span class="reveal-line"><span class="reveal-inner hero-bold" data-i18n="hero.title_line2">resuelta.</span></span>
           </h1>
-          <p class="hero-sub">Comida diseñada para tu cuerpo y tus metas. Preparada con ingredientes de primera, lista para comer. En tu puerta cada domingo.</p>
+          <p class="hero-sub" data-i18n="hero.sub">Comida diseñada para tu cuerpo y tus metas. Preparada con ingredientes de primera, lista para comer. En tu puerta cada domingo.</p>
           <div class="hero-actions">
-            <a href="#planes" class="btn btn-primary btn-mag">Ver los planes</a>
-            <a href="#como-funciona" class="btn btn-ghost btn-mag">Cómo funciona</a>
+            <a href="#planes" class="btn btn-primary btn-mag" data-i18n="hero.cta_planes">Ver los planes</a>
+            <a href="#como-funciona" class="btn btn-ghost btn-mag" data-i18n="hero.cta_como">Cómo funciona</a>
           </div>
           <div class="hero-proof">
             <div class="proof-item">
-              <span class="proof-num">35–50g</span>
-              <span class="proof-label">proteína por porción</span>
+              <span class="proof-num" data-i18n="hero.proof1_num">35–50g</span>
+              <span class="proof-label" data-i18n="hero.proof1_label">proteína por porción</span>
             </div>
             <div class="proof-divider"></div>
             <div class="proof-item">
-              <span class="proof-num">Sin</span>
-              <span class="proof-label">conservantes</span>
+              <span class="proof-num" data-i18n="hero.proof2_num">Sin</span>
+              <span class="proof-label" data-i18n="hero.proof2_label">conservantes</span>
             </div>
             <div class="proof-divider"></div>
             <div class="proof-item">
-              <span class="proof-num">Entrega</span>
-              <span class="proof-label">cada domingo</span>
+              <span class="proof-num" data-i18n="hero.proof3_num">Entrega</span>
+              <span class="proof-label" data-i18n="hero.proof3_label">cada domingo</span>
             </div>
           </div>
         </div>
         <div class="hero-visual">
           <div class="hero-img-wrap">
-            <img class="hero-img" src="/img/hero-bowl.jpg" alt="Mujer sonriendo con un bowl Fuelhaus de pollo grillado, quinoa y vegetales, en una terraza de Miami">
+            <img class="hero-img" src="/img/hero-bowl.jpg" data-i18n-alt="hero.img_alt" alt="Mujer sonriendo con un bowl Fuelhaus de pollo grillado, quinoa y vegetales, en una terraza de Miami">
           </div>
           <div class="hero-badge">
-            <span class="badge-line">Tu comida</span>
-            <span class="badge-big">Lista.</span>
-            <span class="badge-sub">Personalizada · Fresca · Natural</span>
+            <span class="badge-line" data-i18n="hero.badge_line">Tu comida</span>
+            <span class="badge-big" data-i18n="hero.badge_big">Lista.</span>
+            <span class="badge-sub" data-i18n="hero.badge_sub">Personalizada · Fresca · Natural</span>
           </div>
         </div>
       </div>
@@ -248,32 +249,32 @@
       <div class="badges-inner">
         <div class="badge-item">
           <i class="fa-solid fa-dumbbell"></i>
-          <span>Alta proteína</span>
+          <span data-i18n="badges.protein">Alta proteína</span>
         </div>
         <div class="badge-sep">·</div>
         <div class="badge-item">
           <i class="fa-solid fa-leaf"></i>
-          <span>100% orgánico</span>
+          <span data-i18n="badges.organic">100% orgánico</span>
         </div>
         <div class="badge-sep">·</div>
         <div class="badge-item">
           <i class="fa-solid fa-circle-xmark"></i>
-          <span>Sin conservantes</span>
+          <span data-i18n="badges.no_preservatives">Sin conservantes</span>
         </div>
         <div class="badge-sep">·</div>
         <div class="badge-item">
           <i class="fa-solid fa-calendar-check"></i>
-          <span>Entrega cada domingo</span>
+          <span data-i18n="badges.delivery">Entrega cada domingo</span>
         </div>
         <div class="badge-sep">·</div>
         <div class="badge-item">
           <i class="fa-solid fa-sliders"></i>
-          <span>100% personalizado</span>
+          <span data-i18n="badges.custom">100% personalizado</span>
         </div>
         <div class="badge-sep">·</div>
         <div class="badge-item">
           <i class="fa-solid fa-fire-burner"></i>
-          <span>Listo para comer</span>
+          <span data-i18n="badges.ready">Listo para comer</span>
         </div>
       </div>
     </section>
@@ -283,13 +284,13 @@
       <div class="strip-inner">
         <div class="strip-overlay"></div>
         <div class="strip-content">
-          <p class="strip-quote">"Ingredientes reales,<br>cocinados esta semana,<br><em>en tu puerta el domingo."</em></p>
+          <p class="strip-quote" data-i18n-html="strip.quote_html">"Ingredientes reales,<br>cocinados esta semana,<br><em>en tu puerta el domingo."</em></p>
           <div class="strip-tags">
-            <span>Sin procesar</span>
+            <span data-i18n="strip.tag1">Sin procesar</span>
             <span>·</span>
-            <span>Sin conservantes</span>
+            <span data-i18n="strip.tag2">Sin conservantes</span>
             <span>·</span>
-            <span>Alta proteína</span>
+            <span data-i18n="strip.tag3">Alta proteína</span>
           </div>
         </div>
       </div>
@@ -299,29 +300,29 @@
     <section class="process-section" id="como-funciona">
       <div class="process-inner">
         <div class="section-header">
-          <span class="eyebrow">El proceso</span>
-          <h2 class="section-title">Tres pasos.<br><em>Toda la semana.</em></h2>
+          <span class="eyebrow" data-i18n="process.eyebrow">El proceso</span>
+          <h2 class="section-title" data-i18n-html="process.title_html">Tres pasos.<br><em>Toda la semana.</em></h2>
         </div>
         <div class="process-steps">
           <div class="step-card">
             <div class="step-num">01</div>
             <div class="step-icon"><i class="fa-regular fa-clipboard"></i></div>
-            <h3>Nos cuentas</h3>
-            <p>Objetivos, gustos, alergias y rutina. Con esa información construimos tu plan exacto — no uno genérico.</p>
+            <h3 data-i18n="process.step1_title">Nos cuentas</h3>
+            <p data-i18n="process.step1_p">Objetivos, gustos, alergias y rutina. Con esa información construimos tu plan exacto — no uno genérico.</p>
           </div>
           <div class="step-arrow"><i class="fa-solid fa-arrow-right"></i></div>
           <div class="step-card">
             <div class="step-num">02</div>
             <div class="step-icon"><i class="fa-solid fa-fire-burner"></i></div>
-            <h3>Cocinamos</h3>
-            <p>Ingredientes frescos y orgánicos, seleccionados con criterio. Cada macro calculado. Nada improvisado.</p>
+            <h3 data-i18n="process.step2_title">Cocinamos</h3>
+            <p data-i18n="process.step2_p">Ingredientes frescos y orgánicos, seleccionados con criterio. Cada macro calculado. Nada improvisado.</p>
           </div>
           <div class="step-arrow"><i class="fa-solid fa-arrow-right"></i></div>
           <div class="step-card">
             <div class="step-num">03</div>
             <div class="step-icon"><i class="fa-solid fa-bag-shopping"></i></div>
-            <h3>Recibes el domingo</h3>
-            <p>Tu semana entera, en una sola entrega. Abres, calientas y comes. Así de simple es comer bien.</p>
+            <h3 data-i18n="process.step3_title">Recibes el domingo</h3>
+            <p data-i18n="process.step3_p">Tu semana entera, en una sola entrega. Abres, calientas y comes. Así de simple es comer bien.</p>
           </div>
         </div>
       </div>
@@ -331,18 +332,18 @@
     <section class="menu-preview-section">
       <div class="menu-preview-inner">
         <div class="section-header center">
-          <span class="eyebrow">Antes de elegir</span>
-          <h2 class="section-title">Así llega<br><em>tu semana.</em></h2>
-          <p class="section-sub">Fotos reales de pedidos entregados. Sin retoques, sin promesas que no cumplimos.</p>
+          <span class="eyebrow" data-i18n="menu.eyebrow">Antes de elegir</span>
+          <h2 class="section-title" data-i18n-html="menu.title_html">Así llega<br><em>tu semana.</em></h2>
+          <p class="section-sub" data-i18n="menu.sub">Fotos reales de pedidos entregados. Sin retoques, sin promesas que no cumplimos.</p>
         </div>
         <div class="menu-preview-grid">
           <div class="menu-preview-card">
-            <img src="/img/MENU-PLANES-COMIDA3.jpeg" alt="Variedad de proteínas y vegetales de la semana" loading="lazy">
-            <span class="menu-preview-label">Variedad de la semana</span>
+            <img src="/img/MENU-PLANES-COMIDA3.jpeg" data-i18n-alt="menu.card1_alt" alt="Variedad de proteínas y vegetales de la semana" loading="lazy">
+            <span class="menu-preview-label" data-i18n="menu.card1_label">Variedad de la semana</span>
           </div>
           <div class="menu-preview-card">
-            <img src="/img/MENU-PLANES-COMIDA4-CONSHOTS.jpeg" alt="Semana completa con activate shots" loading="lazy">
-            <span class="menu-preview-label">Tu semana + Activate shots</span>
+            <img src="/img/MENU-PLANES-COMIDA4-CONSHOTS.jpeg" data-i18n-alt="menu.card2_alt" alt="Semana completa con activate shots" loading="lazy">
+            <span class="menu-preview-label" data-i18n="menu.card2_label">Tu semana + Activate shots</span>
           </div>
         </div>
       </div>
@@ -352,117 +353,117 @@
     <section class="plans-section" id="planes">
       <div class="plans-inner">
         <div class="section-header center">
-          <span class="eyebrow">Los planes</span>
-          <h2 class="section-title">Encontrá<br><em>el tuyo.</em></h2>
-          <p class="section-sub">35–50g de proteína por porción. Sin conservantes, sin procesados. Entrega cada domingo en Miami. Solo eliges cuánto quieres cubrir.</p>
+          <span class="eyebrow" data-i18n="plans.eyebrow">Los planes</span>
+          <h2 class="section-title" data-i18n-html="plans.title_html">Encontrá<br><em>el tuyo.</em></h2>
+          <p class="section-sub" data-i18n="plans.sub">35–50g de proteína por porción. Sin conservantes, sin procesados. Entrega cada domingo en Miami. Solo eliges cuánto quieres cubrir.</p>
         </div>
         <div class="plans-grid">
           <div class="plan-card">
             <div class="plan-top">
-              <span class="plan-name">Structure</span>
+              <span class="plan-name" data-i18n="plans.structure_name">Structure</span>
               <div class="plan-price">
                 <span class="price-sign">$</span>
                 <span class="price-num">120</span>
-                <span class="price-per">/ semana</span>
+                <span class="price-per" data-i18n="plans.per_week">/ semana</span>
               </div>
             </div>
             <ul class="plan-includes">
-              <li><i class="fa-solid fa-check"></i><span>5 almuerzos</span></li>
-              <li><i class="fa-solid fa-check"></i><span>5 activate shots</span></li>
+              <li><i class="fa-solid fa-check"></i><span data-i18n="plans.structure_i1">5 almuerzos</span></li>
+              <li><i class="fa-solid fa-check"></i><span data-i18n="plans.structure_i2">5 activate shots</span></li>
             </ul>
-            <p class="plan-desc">Para quien quiere organizar sus almuerzos sin pensar. Consistencia simple, resultados reales.</p>
-            <a href="#contacto" class="btn btn-outline btn-mag btn-full">Elegir Structure</a>
+            <p class="plan-desc" data-i18n="plans.structure_desc">Para quien quiere organizar sus almuerzos sin pensar. Consistencia simple, resultados reales.</p>
+            <a href="#contacto" class="btn btn-outline btn-mag btn-full" data-i18n="plans.structure_cta">Elegir Structure</a>
           </div>
           <div class="plan-card plan-featured">
-            <div class="plan-badge-top">Más elegido</div>
+            <div class="plan-badge-top" data-i18n="plans.most_chosen">Más elegido</div>
             <div class="plan-top">
-              <span class="plan-name">Performance</span>
+              <span class="plan-name" data-i18n="plans.performance_name">Performance</span>
               <div class="plan-price">
                 <span class="price-sign">$</span>
                 <span class="price-num">190</span>
-                <span class="price-per">/ semana</span>
+                <span class="price-per" data-i18n="plans.per_week">/ semana</span>
               </div>
             </div>
             <ul class="plan-includes">
-              <li><i class="fa-solid fa-check"></i><span>5 almuerzos</span></li>
-              <li><i class="fa-solid fa-check"></i><span>5 cenas</span></li>
-              <li><i class="fa-solid fa-check"></i><span>5 activate shots</span></li>
+              <li><i class="fa-solid fa-check"></i><span data-i18n="plans.performance_i1">5 almuerzos</span></li>
+              <li><i class="fa-solid fa-check"></i><span data-i18n="plans.performance_i2">5 cenas</span></li>
+              <li><i class="fa-solid fa-check"></i><span data-i18n="plans.performance_i3">5 activate shots</span></li>
             </ul>
-            <p class="plan-desc">Almuerzos y cenas de alta proteína bajo control. El plan de quienes van en serio con sus objetivos.</p>
-            <a href="#contacto" class="btn btn-white btn-mag btn-full">Elegir Performance</a>
+            <p class="plan-desc" data-i18n="plans.performance_desc">Almuerzos y cenas de alta proteína bajo control. El plan de quienes van en serio con sus objetivos.</p>
+            <a href="#contacto" class="btn btn-white btn-mag btn-full" data-i18n="plans.performance_cta">Elegir Performance</a>
           </div>
           <div class="plan-card">
             <div class="plan-top">
-              <span class="plan-name">Full System</span>
+              <span class="plan-name" data-i18n="plans.full_system_name">Full System</span>
               <div class="plan-price">
                 <span class="price-sign">$</span>
                 <span class="price-num">225</span>
-                <span class="price-per">/ semana</span>
+                <span class="price-per" data-i18n="plans.per_week">/ semana</span>
               </div>
             </div>
             <ul class="plan-includes">
-              <li><i class="fa-solid fa-check"></i><span>5 almuerzos</span></li>
-              <li><i class="fa-solid fa-check"></i><span>5 cenas</span></li>
-              <li><i class="fa-solid fa-check"></i><span>5 activate shots</span></li>
-              <li><i class="fa-solid fa-check"></i><span>3 snacks</span></li>
+              <li><i class="fa-solid fa-check"></i><span data-i18n="plans.full_system_i1">5 almuerzos</span></li>
+              <li><i class="fa-solid fa-check"></i><span data-i18n="plans.full_system_i2">5 cenas</span></li>
+              <li><i class="fa-solid fa-check"></i><span data-i18n="plans.full_system_i3">5 activate shots</span></li>
+              <li><i class="fa-solid fa-check"></i><span data-i18n="plans.full_system_i4">3 snacks</span></li>
             </ul>
-            <p class="plan-desc">Tu semana cubierta por completo. Sin improvisaciones, sin compromisos. El sistema definitivo.</p>
-            <a href="#contacto" class="btn btn-outline btn-mag btn-full">Elegir Full System</a>
+            <p class="plan-desc" data-i18n="plans.full_system_desc">Tu semana cubierta por completo. Sin improvisaciones, sin compromisos. El sistema definitivo.</p>
+            <a href="#contacto" class="btn btn-outline btn-mag btn-full" data-i18n="plans.full_system_cta">Elegir Full System</a>
           </div>
         </div>
-        <p class="plans-note">Cada plan se adapta a tus objetivos, gustos y alergias. Sin excepciones. <a href="#contacto">Habla con nosotros →</a></p>
+        <p class="plans-note" data-i18n-html="plans.note_html">Cada plan se adapta a tus objetivos, gustos y alergias. Sin excepciones. <a href="#contacto">Habla con nosotros →</a></p>
 
         <div class="compare-wrap">
-          <h3 class="compare-title">Compará en detalle</h3>
+          <h3 class="compare-title" data-i18n="compare.title">Compará en detalle</h3>
           <div class="compare-scroll">
             <table class="compare-table">
               <thead>
                 <tr>
                   <th class="compare-feature-col"></th>
-                  <th>Structure</th>
-                  <th class="compare-featured-col">Performance</th>
-                  <th>Full System</th>
+                  <th data-i18n="plans.structure_name">Structure</th>
+                  <th class="compare-featured-col" data-i18n="plans.performance_name">Performance</th>
+                  <th data-i18n="plans.full_system_name">Full System</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td class="compare-feature">Precio por semana</td>
+                  <td class="compare-feature" data-i18n="compare.row_price">Precio por semana</td>
                   <td>$120</td>
                   <td class="compare-featured-col">$190</td>
                   <td>$225</td>
                 </tr>
                 <tr>
-                  <td class="compare-feature">Almuerzos</td>
+                  <td class="compare-feature" data-i18n="compare.row_lunches">Almuerzos</td>
                   <td>5</td>
                   <td class="compare-featured-col">5</td>
                   <td>5</td>
                 </tr>
                 <tr>
-                  <td class="compare-feature">Cenas</td>
+                  <td class="compare-feature" data-i18n="compare.row_dinners">Cenas</td>
                   <td class="compare-dash">—</td>
                   <td class="compare-featured-col">5</td>
                   <td>5</td>
                 </tr>
                 <tr>
-                  <td class="compare-feature">Activate shots</td>
+                  <td class="compare-feature" data-i18n="compare.row_shots">Activate shots</td>
                   <td>5</td>
                   <td class="compare-featured-col">5</td>
                   <td>5</td>
                 </tr>
                 <tr>
-                  <td class="compare-feature">Snacks</td>
+                  <td class="compare-feature" data-i18n="compare.row_snacks">Snacks</td>
                   <td class="compare-dash">—</td>
                   <td class="compare-featured-col compare-dash">—</td>
                   <td>3</td>
                 </tr>
                 <tr>
-                  <td class="compare-feature">Personalizado por macros</td>
+                  <td class="compare-feature" data-i18n="compare.row_macros">Personalizado por macros</td>
                   <td><i class="fa-solid fa-check"></i></td>
                   <td class="compare-featured-col"><i class="fa-solid fa-check"></i></td>
                   <td><i class="fa-solid fa-check"></i></td>
                 </tr>
                 <tr>
-                  <td class="compare-feature">Entrega cada domingo</td>
+                  <td class="compare-feature" data-i18n="compare.row_delivery">Entrega cada domingo</td>
                   <td><i class="fa-solid fa-check"></i></td>
                   <td class="compare-featured-col"><i class="fa-solid fa-check"></i></td>
                   <td><i class="fa-solid fa-check"></i></td>
@@ -473,34 +474,34 @@
         </div>
 
         <div class="trust-bar">
-          <div class="trust-item"><i class="fa-solid fa-location-dot"></i><span>Entrega en toda el área de Miami</span></div>
-          <div class="trust-item"><i class="fa-solid fa-calendar"></i><span>Membresía mensual</span></div>
-          <div class="trust-item"><i class="fa-solid fa-rotate-left"></i><span>Cancelás hasta una semana antes del primer domingo del mes</span></div>
+          <div class="trust-item"><i class="fa-solid fa-location-dot"></i><span data-i18n="trust.area">Entrega en toda el área de Miami</span></div>
+          <div class="trust-item"><i class="fa-solid fa-calendar"></i><span data-i18n="trust.membership">Membresía mensual</span></div>
+          <div class="trust-item"><i class="fa-solid fa-rotate-left"></i><span data-i18n="trust.cancel">Cancelás hasta una semana antes del primer domingo del mes</span></div>
         </div>
       </div>
     </section>
 
     <!-- ═══════════════════════════════ GALERÍA -->
     <section class="gallery-section">
-      <img class="gallery-banner" src="/img/gallery-meals.jpg" alt="Doce comidas Fuelhaus de la semana, vista superior" loading="lazy">
+      <img class="gallery-banner" src="/img/gallery-meals.jpg" data-i18n-alt="gallery.alt" alt="Doce comidas Fuelhaus de la semana, vista superior" loading="lazy">
     </section>
 
     <!-- ═══════════════════════════════ COMIDA REAL -->
     <section class="food-section">
       <div class="food-inner">
         <div class="food-img-col">
-          <img src="/img/food-real.jpg" alt="Comidas Fuelhaus con activate shots sobre la mesada" class="food-photo" loading="lazy">
+          <img src="/img/food-real.jpg" data-i18n-alt="food.alt" alt="Comidas Fuelhaus con activate shots sobre la mesada" class="food-photo" loading="lazy">
         </div>
         <div class="food-text-col">
-          <span class="eyebrow light">Lo que comes</span>
-          <h2 class="section-title light">Real. Fresca.<br><em>Sin vueltas.</em></h2>
-          <p class="food-p">Ingredientes de primera calidad, preparados esa misma semana. Sin conservantes, sin procesados. Lo que tu cuerpo merece, en la cantidad exacta que necesita.</p>
-          <p class="food-p">Proteína, carbohidratos y grasas calibrados para tu objetivo específico. No es comida genérica — es tu comida.</p>
+          <span class="eyebrow light" data-i18n="food.eyebrow">Lo que comes</span>
+          <h2 class="section-title light" data-i18n-html="food.title_html">Real. Fresca.<br><em>Sin vueltas.</em></h2>
+          <p class="food-p" data-i18n="food.p1">Ingredientes de primera calidad, preparados esa misma semana. Sin conservantes, sin procesados. Lo que tu cuerpo merece, en la cantidad exacta que necesita.</p>
+          <p class="food-p" data-i18n="food.p2">Proteína, carbohidratos y grasas calibrados para tu objetivo específico. No es comida genérica — es tu comida.</p>
           <div class="food-tags">
-            <span>Sin conservantes</span>
-            <span>Alta proteína</span>
-            <span>Orgánico</span>
-            <span>Sin gluten disponible</span>
+            <span data-i18n="food.tag1">Sin conservantes</span>
+            <span data-i18n="food.tag2">Alta proteína</span>
+            <span data-i18n="food.tag3">Orgánico</span>
+            <span data-i18n="food.tag4">Sin gluten disponible</span>
           </div>
         </div>
       </div>
@@ -510,27 +511,27 @@
     <section class="about-section" id="nosotros">
       <div class="about-inner">
         <div class="about-text">
-          <span class="eyebrow">Nosotros</span>
-          <h2 class="section-title">Consistencia<br><em>es todo.</em></h2>
-          <p class="about-p">Fuelhaus nació en Miami de la mano de personal trainers y nutricionistas que vivían el mismo problema todos los días: entrenar en serio y comer bien no deberían depender de cuánto tiempo te queda en la semana. Diseñamos cada plan con el mismo criterio que usamos con nuestros propios clientes de entrenamiento — macros reales, ingredientes reales, cero relleno.</p>
-          <p class="about-p">Cada semana ayudamos a decenas de personas a mantener su plan sin esfuerzo, sin excusas y sin comprometer ni un gramo de calidad.</p>
+          <span class="eyebrow" data-i18n="about.eyebrow">Nosotros</span>
+          <h2 class="section-title" data-i18n-html="about.title_html">Consistencia<br><em>es todo.</em></h2>
+          <p class="about-p" data-i18n="about.p1">Fuelhaus nació en Miami de la mano de personal trainers y nutricionistas que vivían el mismo problema todos los días: entrenar en serio y comer bien no deberían depender de cuánto tiempo te queda en la semana. Diseñamos cada plan con el mismo criterio que usamos con nuestros propios clientes de entrenamiento — macros reales, ingredientes reales, cero relleno.</p>
+          <p class="about-p" data-i18n="about.p2">Cada semana ayudamos a decenas de personas a mantener su plan sin esfuerzo, sin excusas y sin comprometer ni un gramo de calidad.</p>
           <div class="about-stats">
             <div class="about-stat">
-              <span class="stat-num">50+</span>
-              <span class="stat-label-sm">Clientes activos</span>
+              <span class="stat-num" data-i18n="about.stat1_num">50+</span>
+              <span class="stat-label-sm" data-i18n="about.stat1_label">Clientes activos</span>
             </div>
             <div class="about-stat">
-              <span class="stat-num">100%</span>
-              <span class="stat-label-sm">Ingredientes frescos</span>
+              <span class="stat-num" data-i18n="about.stat2_num">100%</span>
+              <span class="stat-label-sm" data-i18n="about.stat2_label">Ingredientes frescos</span>
             </div>
             <div class="about-stat">
-              <span class="stat-num">0</span>
-              <span class="stat-label-sm">Excusas para fallar</span>
+              <span class="stat-num" data-i18n="about.stat3_num">0</span>
+              <span class="stat-label-sm" data-i18n="about.stat3_label">Excusas para fallar</span>
             </div>
           </div>
         </div>
         <div class="about-img-col">
-          <img src="/img/about-trainer.jpg" alt="Entrenamiento de fuerza, la base detrás del criterio de Fuelhaus" loading="lazy">
+          <img src="/img/about-trainer.jpg" data-i18n-alt="about.img_alt" alt="Entrenamiento de fuerza, la base detrás del criterio de Fuelhaus" loading="lazy">
         </div>
       </div>
     </section>
@@ -578,23 +579,23 @@
     <section class="cta-section" id="contacto">
       <div class="cta-bg"></div>
       <div class="cta-inner">
-        <span class="eyebrow light">Empezá esta semana</span>
-        <h2 class="cta-title">Tu semana, <em>resuelta.</em></h2>
-        <p class="cta-sub">Déjanos tus datos y armamos tu plan. Sin compromiso, sin complicaciones.</p>
+        <span class="eyebrow light" data-i18n="cta.eyebrow">Empezá esta semana</span>
+        <h2 class="cta-title" data-i18n-html="cta.title_html">Tu semana, <em>resuelta.</em></h2>
+        <p class="cta-sub" data-i18n="cta.sub">Déjanos tus datos y armamos tu plan. Sin compromiso, sin complicaciones.</p>
         <form class="cta-form" onsubmit="return false;">
           <div class="cta-fields">
-            <input type="text" placeholder="Tu nombre" class="cta-input" autocomplete="name">
-            <input type="email" placeholder="Tu email" class="cta-input" autocomplete="email">
+            <input type="text" placeholder="Tu nombre" data-i18n-placeholder="cta.name_placeholder" class="cta-input" autocomplete="name">
+            <input type="email" placeholder="Tu email" data-i18n-placeholder="cta.email_placeholder" class="cta-input" autocomplete="email">
           </div>
-          <button type="submit" class="btn btn-white btn-mag cta-submit">Quiero empezar <i class="fa-solid fa-arrow-right"></i></button>
+          <button type="submit" class="btn btn-white btn-mag cta-submit"><span data-i18n="cta.submit">Quiero empezar</span> <i class="fa-solid fa-arrow-right"></i></button>
         </form>
-        <p class="cta-note">O escríbenos directamente:</p>
+        <p class="cta-note" data-i18n="cta.note">O escríbenos directamente:</p>
         <div class="cta-social">
           <a href="https://api.whatsapp.com/send?phone=18184288427&text=Hola!%20Estoy%20interesado%20en%20las%20comidas%20semanales..." target="_blank" rel="noopener" class="cta-social-btn">
-            <i class="fa-brands fa-whatsapp"></i> WhatsApp
+            <i class="fa-brands fa-whatsapp"></i> <span data-i18n="cta.whatsapp">WhatsApp</span>
           </a>
           <a href="https://www.instagram.com/fuelhausmeals" target="_blank" rel="noopener" class="cta-social-btn">
-            <i class="fa-brands fa-instagram"></i> Instagram
+            <i class="fa-brands fa-instagram"></i> <span data-i18n="cta.instagram">Instagram</span>
           </a>
         </div>
       </div>
@@ -610,29 +611,31 @@
           <span class="footer-logo-text"><em>fuel</em><strong>haus</strong></span>
         </a>
         <nav class="footer-nav">
-          <a href="#como-funciona">Cómo funciona</a>
-          <a href="#planes">Planes</a>
-          <a href="#nosotros">Nosotros</a>
-          <a href="#contacto">Contacto</a>
+          <a href="#como-funciona" data-i18n="nav.como_funciona">Cómo funciona</a>
+          <a href="#planes" data-i18n="nav.planes">Planes</a>
+          <a href="#nosotros" data-i18n="nav.nosotros">Nosotros</a>
+          <a href="#contacto" data-i18n="nav.contacto">Contacto</a>
         </nav>
         <div class="footer-social">
+          <button class="lang-toggle lang-toggle-footer" type="button">EN</button>
           <a href="https://www.instagram.com/fuelhausmeals" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
           <a href="https://api.whatsapp.com/send?phone=18184288427&text=Hola!%20Estoy%20interesado%20en%20las%20comidas%20semanales..." target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
           <a href="https://www.tiktok.com/@fuelhausmeals" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
         </div>
       </div>
       <div class="footer-bottom">
-        <span>Fuelhaus &reg; 2025 — Meal prep premium en Miami, FL.</span>
-        <span class="footer-tagline">Comida real · Entrega cada domingo · Miami, FL</span>
+        <span data-i18n-html="footer.copyright">Fuelhaus &reg; 2025 — Meal prep premium en Miami, FL.</span>
+        <span class="footer-tagline" data-i18n="footer.tagline">Comida real · Entrega cada domingo · Miami, FL</span>
       </div>
     </div>
   </footer>
 
   <!-- WHATSAPP FLOTANTE -->
-  <a href="https://api.whatsapp.com/send?phone=18184288427&text=Hola!%20Estoy%20interesado%20en%20las%20comidas%20semanales..." target="_blank" rel="noopener" class="whatsapp-float" aria-label="Escribinos por WhatsApp">
+  <a href="https://api.whatsapp.com/send?phone=18184288427&text=Hola!%20Estoy%20interesado%20en%20las%20comidas%20semanales..." target="_blank" rel="noopener" class="whatsapp-float" data-i18n-aria="whatsapp_float_aria" aria-label="Escribinos por WhatsApp">
     <i class="fa-brands fa-whatsapp"></i>
   </a>
 
+  <script src="js/i18n.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
   <script src="js/main.js"></script>

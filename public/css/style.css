@@ -134,6 +134,34 @@ em { font-style: italic; }
 .btn-members:hover { background: var(--black); color: var(--white); border-color: var(--black); }
 
 /* ============================================
+   SELECTOR DE IDIOMA (ES/EN)
+============================================ */
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--black);
+  border: 1.5px solid rgba(0,0,0,0.25);
+  border-radius: 99px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, border-color .2s ease;
+}
+.lang-toggle:hover { background: var(--black); color: var(--white); border-color: var(--black); }
+
+.footer-social .lang-toggle {
+  border-color: rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.75);
+  margin-right: 4px;
+}
+.footer-social .lang-toggle:hover { background: rgba(255,255,255,0.12); color: var(--white); border-color: rgba(255,255,255,0.4); }
+
+/* ============================================
    HEADER
 ============================================ */
 #header {

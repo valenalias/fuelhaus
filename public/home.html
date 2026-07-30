@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="js/i18n.js"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -74,6 +75,21 @@
       transition: all 0.15s;
     }
     .btn-logout:hover { border-color: var(--dark-green); color: var(--dark-green); }
+
+    .lang-toggle {
+      background: none;
+      border: 1.5px solid var(--border);
+      color: var(--gray);
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      padding: 0.35rem 0.7rem;
+      border-radius: 99px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .lang-toggle:hover { border-color: var(--dark-green); color: var(--dark-green); }
 
     /* ── PROGRESS BAR ─── */
     .progress-wrap {
@@ -525,8 +541,9 @@
     <div class="header-inner">
       <a href="/" class="header-logo"><em>fuel</em><strong>haus</strong></a>
       <div class="header-right">
+        <button class="lang-toggle" type="button">EN</button>
         <span class="header-user" id="header-greeting"></span>
-        <button class="btn-logout" id="logout-btn">Salir</button>
+        <button class="btn-logout" id="logout-btn" data-i18n="home.logout">Salir</button>
       </div>
     </div>
   </header>
@@ -536,22 +553,22 @@
     <div class="progress-inner">
       <div class="prog-step" id="ps-1">
         <div class="prog-dot" id="pd-1">1</div>
-        <span class="prog-label">Plan</span>
+        <span class="prog-label" data-i18n="home.progress_plan">Plan</span>
       </div>
       <div class="prog-line" id="pl-1"></div>
       <div class="prog-step" id="ps-2">
         <div class="prog-dot" id="pd-2">2</div>
-        <span class="prog-label">Datos</span>
+        <span class="prog-label" data-i18n="home.progress_data">Datos</span>
       </div>
       <div class="prog-line" id="pl-2"></div>
       <div class="prog-step" id="ps-3">
         <div class="prog-dot" id="pd-3">3</div>
-        <span class="prog-label">Preferencias</span>
+        <span class="prog-label" data-i18n="home.progress_prefs">Preferencias</span>
       </div>
       <div class="prog-line" id="pl-3"></div>
       <div class="prog-step" id="ps-4">
         <div class="prog-dot" id="pd-4">4</div>
-        <span class="prog-label">Pago</span>
+        <span class="prog-label" data-i18n="home.progress_payment">Pago</span>
       </div>
     </div>
   </div>
@@ -561,9 +578,9 @@
     <!-- STEP: CUENTA (ya tiene pedido) -->
     <div class="step-wrap" id="step-account">
       <div class="step-content">
-        <span class="step-eyebrow">Mi cuenta</span>
-        <h1 class="step-title" id="account-greeting">Tu pedido</h1>
-        <p class="step-sub">Aquí está el resumen de tu pedido activo.</p>
+        <span class="step-eyebrow" data-i18n="home.account_eyebrow">Mi cuenta</span>
+        <h1 class="step-title" id="account-greeting" data-i18n="home.account_title_fallback">Tu pedido</h1>
+        <p class="step-sub" data-i18n="home.account_sub">Aquí está el resumen de tu pedido activo.</p>
 
         <div class="account-card" id="account-order-card">
           <div class="account-card-head">
@@ -572,33 +589,33 @@
           </div>
           <div class="account-card-body">
             <div class="info-grid">
-              <div class="info-item"><span class="info-label">Plan</span><span class="info-value" id="acc-plan">—</span></div>
-              <div class="info-item"><span class="info-label">Precio</span><span class="info-value" id="acc-price">—</span></div>
-              <div class="info-item"><span class="info-label">Fecha</span><span class="info-value" id="acc-date">—</span></div>
-              <div class="info-item"><span class="info-label">Cupón</span><span class="info-value" id="acc-coupon">—</span></div>
+              <div class="info-item"><span class="info-label" data-i18n="home.label_plan">Plan</span><span class="info-value" id="acc-plan">—</span></div>
+              <div class="info-item"><span class="info-label" data-i18n="home.label_price">Precio</span><span class="info-value" id="acc-price">—</span></div>
+              <div class="info-item"><span class="info-label" data-i18n="home.label_date">Fecha</span><span class="info-value" id="acc-date">—</span></div>
+              <div class="info-item"><span class="info-label" data-i18n="home.label_coupon">Cupón</span><span class="info-value" id="acc-coupon">—</span></div>
             </div>
             <hr class="divider">
             <div class="info-grid">
-              <div class="info-item"><span class="info-label">Objetivo</span><span class="info-value" id="acc-goal">—</span></div>
-              <div class="info-item"><span class="info-label">Dieta</span><span class="info-value" id="acc-diet">—</span></div>
-              <div class="info-item" style="grid-column:1/-1"><span class="info-label">Alergias / restricciones</span><span class="info-value" id="acc-allergies">—</span></div>
-              <div class="info-item" style="grid-column:1/-1"><span class="info-label">Alimentos a evitar</span><span class="info-value" id="acc-avoid">—</span></div>
+              <div class="info-item"><span class="info-label" data-i18n="home.label_goal">Objetivo</span><span class="info-value" id="acc-goal">—</span></div>
+              <div class="info-item"><span class="info-label" data-i18n="home.label_diet">Dieta</span><span class="info-value" id="acc-diet">—</span></div>
+              <div class="info-item" style="grid-column:1/-1"><span class="info-label" data-i18n="home.label_allergies">Alergias / restricciones</span><span class="info-value" id="acc-allergies">—</span></div>
+              <div class="info-item" style="grid-column:1/-1"><span class="info-label" data-i18n="home.label_avoid">Alimentos a evitar</span><span class="info-value" id="acc-avoid">—</span></div>
             </div>
             <hr class="divider">
             <div class="info-grid">
-              <div class="info-item"><span class="info-label">WhatsApp</span><span class="info-value" id="acc-phone">—</span></div>
-              <div class="info-item"><span class="info-label">Email</span><span class="info-value" id="acc-email">—</span></div>
+              <div class="info-item"><span class="info-label" data-i18n="home.label_whatsapp">WhatsApp</span><span class="info-value" id="acc-phone">—</span></div>
+              <div class="info-item"><span class="info-label" data-i18n="home.label_email">Email</span><span class="info-value" id="acc-email">—</span></div>
             </div>
           </div>
         </div>
 
         <div class="form-actions">
           <a id="acc-whatsapp-btn" class="btn-whatsapp" href="#" target="_blank" rel="noopener">
-            <i class="fa-brands fa-whatsapp"></i> Comunicarme con Fuelhaus
+            <i class="fa-brands fa-whatsapp"></i> <span data-i18n="home.contact_fuelhaus">Comunicarme con Fuelhaus</span>
           </a>
         </div>
         <div style="text-align:center;margin-top:1rem">
-          <a href="/" class="link-site">← Volver al sitio</a>
+          <a href="/" class="link-site" data-i18n="home.back_to_site">← Volver al sitio</a>
         </div>
       </div>
     </div>
@@ -608,35 +625,35 @@
       <div class="step-content">
         <div class="welcome-wrap">
           <div class="welcome-icon">🥗</div>
-          <span class="step-eyebrow">Bienvenido a Fuelhaus</span>
-          <h1 class="step-title">¡Hola, <em id="welcome-name">!</em></h1>
-          <p class="step-sub" style="max-width:480px;margin:0.5rem auto 1.5rem">
+          <span class="step-eyebrow" data-i18n="home.welcome_eyebrow">Bienvenido a Fuelhaus</span>
+          <h1 class="step-title"><span data-i18n="home.welcome_greeting_prefix">¡Hola, </span><em id="welcome-name">!</em></h1>
+          <p class="step-sub" style="max-width:480px;margin:0.5rem auto 1.5rem" data-i18n-html="home.welcome_sub_html">
             Estás a cuatro pasos de tener tu semana de comida resuelta.<br>
             Todo fresco, personalizado y listo para comer.
           </p>
           <div class="welcome-steps-list">
             <div class="w-step">
               <div class="w-step-ico"><i class="fa-solid fa-star"></i></div>
-              <span class="w-step-label">Elegís tu plan</span>
+              <span class="w-step-label" data-i18n="home.w_step1">Elegís tu plan</span>
             </div>
             <div class="w-step">
               <div class="w-step-ico"><i class="fa-solid fa-user"></i></div>
-              <span class="w-step-label">Completás tus datos</span>
+              <span class="w-step-label" data-i18n="home.w_step2">Completás tus datos</span>
             </div>
             <div class="w-step">
               <div class="w-step-ico"><i class="fa-solid fa-sliders"></i></div>
-              <span class="w-step-label">Configurás tus preferencias</span>
+              <span class="w-step-label" data-i18n="home.w_step3">Configurás tus preferencias</span>
             </div>
             <div class="w-step">
               <div class="w-step-ico"><i class="fa-solid fa-check-circle"></i></div>
-              <span class="w-step-label">Confirmás tu pedido</span>
+              <span class="w-step-label" data-i18n="home.w_step4">Confirmás tu pedido</span>
             </div>
           </div>
           <button class="btn-primary" id="start-btn" style="font-size:1rem;padding:1rem 2.5rem">
-            Empezar <i class="fa-solid fa-arrow-right"></i>
+            <span data-i18n="home.start_btn">Empezar</span> <i class="fa-solid fa-arrow-right"></i>
           </button>
           <br><br>
-          <a href="/" class="link-site">← Volver al sitio</a>
+          <a href="/" class="link-site" data-i18n="home.back_to_site">← Volver al sitio</a>
         </div>
       </div>
     </div>
@@ -644,66 +661,66 @@
     <!-- STEP: PLANES -->
     <div class="step-wrap" id="step-plans">
       <div class="step-content wide">
-        <span class="step-eyebrow">Paso 1 de 4</span>
-        <h2 class="step-title">Elige tu <em>plan</em></h2>
-        <p class="step-sub">Todos incluyen 35–50g de proteína por porción. Ingredientes frescos, sin conservantes, entrega dominical.</p>
+        <span class="step-eyebrow" data-i18n="home.step1_of_4">Paso 1 de 4</span>
+        <h2 class="step-title" data-i18n-html="home.plans_title_html">Elige tu <em>plan</em></h2>
+        <p class="step-sub" data-i18n="home.plans_sub">Todos incluyen 35–50g de proteína por porción. Ingredientes frescos, sin conservantes, entrega dominical.</p>
 
         <div class="plans-grid">
 
           <div class="plan-card" data-plan="structure" onclick="selectPlan('structure', this)">
-            <div class="plan-name">Structure</div>
+            <div class="plan-name" data-i18n="home.structure_name">Structure</div>
             <div class="plan-price-row">
               <span class="plan-price">$120</span>
-              <span class="plan-per"> / semana</span>
+              <span class="plan-per" data-i18n="home.per_week"> / semana</span>
             </div>
             <ul class="plan-includes">
-              <li><i class="fa-solid fa-check"></i> 5 almuerzos semanales</li>
-              <li><i class="fa-solid fa-check"></i> 5 activate shots</li>
-              <li><i class="fa-solid fa-check"></i> Personalizado por macros</li>
-              <li><i class="fa-solid fa-check"></i> Entrega el domingo</li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.structure_i1">5 almuerzos semanales</span></li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.structure_i2">5 activate shots</span></li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.structure_i3">Personalizado por macros</span></li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.structure_i4">Entrega el domingo</span></li>
             </ul>
-            <button class="plan-select-btn">Elegir Structure</button>
+            <button class="plan-select-btn" data-i18n="home.structure_cta">Elegir Structure</button>
           </div>
 
           <div class="plan-card featured" data-plan="performance" onclick="selectPlan('performance', this)">
-            <div class="plan-badge">Más elegido</div>
-            <div class="plan-name">Performance</div>
+            <div class="plan-badge" data-i18n="home.most_chosen">Más elegido</div>
+            <div class="plan-name" data-i18n="home.performance_name">Performance</div>
             <div class="plan-price-row">
               <span class="plan-price">$190</span>
-              <span class="plan-per"> / semana</span>
+              <span class="plan-per" data-i18n="home.per_week"> / semana</span>
             </div>
             <ul class="plan-includes">
-              <li><i class="fa-solid fa-check"></i> 5 almuerzos semanales</li>
-              <li><i class="fa-solid fa-check"></i> 5 cenas semanales</li>
-              <li><i class="fa-solid fa-check"></i> 5 activate shots</li>
-              <li><i class="fa-solid fa-check"></i> Personalizado por macros</li>
-              <li><i class="fa-solid fa-check"></i> Entrega el domingo</li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.performance_i1">5 almuerzos semanales</span></li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.performance_i2">5 cenas semanales</span></li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.performance_i3">5 activate shots</span></li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.performance_i4">Personalizado por macros</span></li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.performance_i5">Entrega el domingo</span></li>
             </ul>
-            <button class="plan-select-btn">Elegir Performance</button>
+            <button class="plan-select-btn" data-i18n="home.performance_cta">Elegir Performance</button>
           </div>
 
           <div class="plan-card" data-plan="full_system" onclick="selectPlan('full_system', this)">
-            <div class="plan-name">Full System</div>
+            <div class="plan-name" data-i18n="home.full_system_name">Full System</div>
             <div class="plan-price-row">
               <span class="plan-price">$225</span>
-              <span class="plan-per"> / semana</span>
+              <span class="plan-per" data-i18n="home.per_week"> / semana</span>
             </div>
             <ul class="plan-includes">
-              <li><i class="fa-solid fa-check"></i> 5 almuerzos semanales</li>
-              <li><i class="fa-solid fa-check"></i> 5 cenas semanales</li>
-              <li><i class="fa-solid fa-check"></i> 5 activate shots</li>
-              <li><i class="fa-solid fa-check"></i> 3 snacks semanales</li>
-              <li><i class="fa-solid fa-check"></i> Personalizado por macros</li>
-              <li><i class="fa-solid fa-check"></i> Entrega el domingo</li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.full_system_i1">5 almuerzos semanales</span></li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.full_system_i2">5 cenas semanales</span></li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.full_system_i3">5 activate shots</span></li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.full_system_i4">3 snacks semanales</span></li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.full_system_i5">Personalizado por macros</span></li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.full_system_i6">Entrega el domingo</span></li>
             </ul>
-            <button class="plan-select-btn">Elegir Full System</button>
+            <button class="plan-select-btn" data-i18n="home.full_system_cta">Elegir Full System</button>
           </div>
 
         </div>
 
         <div class="form-actions">
-          <button class="btn-outline" onclick="goStep('welcome')"><i class="fa-solid fa-arrow-left"></i> Atrás</button>
-          <span style="font-size:0.8rem;color:var(--gray)">Hacé clic en el plan para seleccionarlo</span>
+          <button class="btn-outline" onclick="goStep('welcome')"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="home.back">Atrás</span></button>
+          <span style="font-size:0.8rem;color:var(--gray)" data-i18n="home.click_plan_hint">Hacé clic en el plan para seleccionarlo</span>
         </div>
       </div>
     </div>
@@ -711,35 +728,35 @@
     <!-- STEP: DATOS PERSONALES -->
     <div class="step-wrap" id="step-data">
       <div class="step-content">
-        <span class="step-eyebrow">Paso 2 de 4</span>
-        <h2 class="step-title">Tus datos de <em>contacto</em></h2>
-        <p class="step-sub">Así sabemos a quién entregarle las comidas y por dónde comunicarnos.</p>
+        <span class="step-eyebrow" data-i18n="home.step2_of_4">Paso 2 de 4</span>
+        <h2 class="step-title" data-i18n-html="home.data_title_html">Tus datos de <em>contacto</em></h2>
+        <p class="step-sub" data-i18n="home.data_sub">Así sabemos a quién entregarle las comidas y por dónde comunicarnos.</p>
 
         <form id="data-form" novalidate>
           <div class="form-row">
             <div class="field">
-              <label for="d-name">Nombre *</label>
-              <input type="text" id="d-name" placeholder="Juan" required autocomplete="given-name">
+              <label for="d-name" data-i18n="home.label_first_name">Nombre *</label>
+              <input type="text" id="d-name" placeholder="Juan" data-i18n-placeholder="home.first_name_placeholder" required autocomplete="given-name">
             </div>
             <div class="field">
-              <label for="d-lastname">Apellido *</label>
-              <input type="text" id="d-lastname" placeholder="Pérez" required autocomplete="family-name">
+              <label for="d-lastname" data-i18n="home.label_last_name">Apellido *</label>
+              <input type="text" id="d-lastname" placeholder="Pérez" data-i18n-placeholder="home.last_name_placeholder" required autocomplete="family-name">
             </div>
           </div>
           <div class="field">
-            <label for="d-email">Email</label>
+            <label for="d-email" data-i18n="home.label_email_field">Email</label>
             <input type="email" id="d-email" readonly>
-            <span class="field-hint">Este es el email de tu cuenta</span>
+            <span class="field-hint" data-i18n="home.email_hint">Este es el email de tu cuenta</span>
           </div>
           <div class="field">
-            <label for="d-phone">WhatsApp *</label>
-            <input type="tel" id="d-phone" placeholder="+1 (305) 000-0000" required autocomplete="tel">
-            <span class="field-hint">Lo usamos para coordinar tu entrega del domingo</span>
+            <label for="d-phone" data-i18n="home.label_phone">WhatsApp *</label>
+            <input type="tel" id="d-phone" placeholder="+1 (305) 000-0000" data-i18n-placeholder="home.phone_placeholder" required autocomplete="tel">
+            <span class="field-hint" data-i18n="home.phone_hint">Lo usamos para coordinar tu entrega del domingo</span>
           </div>
           <div class="error-msg" id="data-error"></div>
           <div class="form-actions">
-            <button type="button" class="btn-outline" onclick="goStep('plans')"><i class="fa-solid fa-arrow-left"></i> Atrás</button>
-            <button type="submit" class="btn-primary">Continuar <i class="fa-solid fa-arrow-right"></i></button>
+            <button type="button" class="btn-outline" onclick="goStep('plans')"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="home.back">Atrás</span></button>
+            <button type="submit" class="btn-primary"><span data-i18n="home.continue">Continuar</span> <i class="fa-solid fa-arrow-right"></i></button>
           </div>
         </form>
       </div>
@@ -748,72 +765,72 @@
     <!-- STEP: PREFERENCIAS -->
     <div class="step-wrap" id="step-prefs">
       <div class="step-content">
-        <span class="step-eyebrow">Paso 3 de 4</span>
-        <h2 class="step-title">Configura tus <em>comidas</em></h2>
-        <p class="step-sub">Con esta información preparamos comidas que se adaptan exactamente a tu cuerpo y objetivos.</p>
+        <span class="step-eyebrow" data-i18n="home.step3_of_4">Paso 3 de 4</span>
+        <h2 class="step-title" data-i18n-html="home.prefs_title_html">Configura tus <em>comidas</em></h2>
+        <p class="step-sub" data-i18n="home.prefs_sub">Con esta información preparamos comidas que se adaptan exactamente a tu cuerpo y objetivos.</p>
 
         <div style="margin-bottom:1.5rem">
-          <span class="pref-section-title">¿Cuál es tu objetivo? *</span>
+          <span class="pref-section-title" data-i18n="home.goal_question">¿Cuál es tu objetivo? *</span>
           <div class="goal-grid">
             <div class="goal-card" data-goal="fat_loss" onclick="selectGoal('fat_loss',this)">
               <span class="goal-ico">🔥</span>
               <div class="goal-text-wrap">
-                <span class="goal-name">Perder grasa</span>
-                <span class="goal-desc">Déficit calórico con alta proteína</span>
+                <span class="goal-name" data-i18n="home.goal_fat_loss_name">Perder grasa</span>
+                <span class="goal-desc" data-i18n="home.goal_fat_loss_desc">Déficit calórico con alta proteína</span>
               </div>
             </div>
             <div class="goal-card" data-goal="muscle_gain" onclick="selectGoal('muscle_gain',this)">
               <span class="goal-ico">💪</span>
               <div class="goal-text-wrap">
-                <span class="goal-name">Ganar músculo</span>
-                <span class="goal-desc">Superávit moderado, proteína elevada</span>
+                <span class="goal-name" data-i18n="home.goal_muscle_gain_name">Ganar músculo</span>
+                <span class="goal-desc" data-i18n="home.goal_muscle_gain_desc">Superávit moderado, proteína elevada</span>
               </div>
             </div>
             <div class="goal-card" data-goal="maintenance" onclick="selectGoal('maintenance',this)">
               <span class="goal-ico">⚖️</span>
               <div class="goal-text-wrap">
-                <span class="goal-name">Mantenerme</span>
-                <span class="goal-desc">Balance exacto para tu composición</span>
+                <span class="goal-name" data-i18n="home.goal_maintenance_name">Mantenerme</span>
+                <span class="goal-desc" data-i18n="home.goal_maintenance_desc">Balance exacto para tu composición</span>
               </div>
             </div>
             <div class="goal-card" data-goal="healthy" onclick="selectGoal('healthy',this)">
               <span class="goal-ico">🥗</span>
               <div class="goal-text-wrap">
-                <span class="goal-name">Comer saludable</span>
-                <span class="goal-desc">Nutrición equilibrada para sentirte mejor</span>
+                <span class="goal-name" data-i18n="home.goal_healthy_name">Comer saludable</span>
+                <span class="goal-desc" data-i18n="home.goal_healthy_desc">Nutrición equilibrada para sentirte mejor</span>
               </div>
             </div>
           </div>
         </div>
 
         <div class="field">
-          <label for="pref-diet">¿Seguís algún tipo de dieta?</label>
+          <label for="pref-diet" data-i18n="home.diet_question">¿Seguís algún tipo de dieta?</label>
           <select id="pref-diet">
-            <option value="none">Sin preferencia especial</option>
-            <option value="high_protein">Alta proteína</option>
-            <option value="low_carb">Baja en carbohidratos</option>
-            <option value="keto">Keto</option>
-            <option value="vegan">Vegano</option>
-            <option value="vegetarian">Vegetariano</option>
-            <option value="paleo">Paleo</option>
-            <option value="mediterranean">Mediterránea</option>
+            <option value="none" data-i18n="home.diet_none">Sin preferencia especial</option>
+            <option value="high_protein" data-i18n="home.diet_high_protein">Alta proteína</option>
+            <option value="low_carb" data-i18n="home.diet_low_carb">Baja en carbohidratos</option>
+            <option value="keto" data-i18n="home.diet_keto">Keto</option>
+            <option value="vegan" data-i18n="home.diet_vegan">Vegano</option>
+            <option value="vegetarian" data-i18n="home.diet_vegetarian">Vegetariano</option>
+            <option value="paleo" data-i18n="home.diet_paleo">Paleo</option>
+            <option value="mediterranean" data-i18n="home.diet_mediterranean">Mediterránea</option>
           </select>
         </div>
 
         <div class="field">
-          <label for="pref-allergies">¿Tenés alergias o restricciones alimentarias?</label>
-          <textarea id="pref-allergies" rows="2" placeholder="Ej: lactosa, gluten, maní... o escribí 'Ninguna'"></textarea>
+          <label for="pref-allergies" data-i18n="home.allergies_question">¿Tenés alergias o restricciones alimentarias?</label>
+          <textarea id="pref-allergies" rows="2" placeholder="Ej: lactosa, gluten, maní... o escribí 'Ninguna'" data-i18n-placeholder="home.allergies_placeholder"></textarea>
         </div>
 
         <div class="field">
-          <label for="pref-avoid">¿Qué alimentos preferís evitar?</label>
-          <textarea id="pref-avoid" rows="2" placeholder="Ej: brócoli, picante, mariscos..."></textarea>
+          <label for="pref-avoid" data-i18n="home.avoid_question">¿Qué alimentos preferís evitar?</label>
+          <textarea id="pref-avoid" rows="2" placeholder="Ej: brócoli, picante, mariscos..." data-i18n-placeholder="home.avoid_placeholder"></textarea>
         </div>
 
         <div class="error-msg" id="prefs-error"></div>
         <div class="form-actions">
-          <button class="btn-outline" onclick="goStep('data')"><i class="fa-solid fa-arrow-left"></i> Atrás</button>
-          <button class="btn-primary" id="prefs-next-btn" onclick="submitPrefs()">Continuar <i class="fa-solid fa-arrow-right"></i></button>
+          <button class="btn-outline" onclick="goStep('data')"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="home.back">Atrás</span></button>
+          <button class="btn-primary" id="prefs-next-btn" onclick="submitPrefs()"><span data-i18n="home.continue">Continuar</span> <i class="fa-solid fa-arrow-right"></i></button>
         </div>
       </div>
     </div>
@@ -821,49 +838,49 @@
     <!-- STEP: PAGO -->
     <div class="step-wrap" id="step-payment">
       <div class="step-content">
-        <span class="step-eyebrow">Paso 4 de 4</span>
-        <h2 class="step-title">Confirmá tu <em>pedido</em></h2>
-        <p class="step-sub">Revisá el resumen y confirmá. ¡Ya casi está!</p>
+        <span class="step-eyebrow" data-i18n="home.step4_of_4">Paso 4 de 4</span>
+        <h2 class="step-title" data-i18n-html="home.payment_title_html">Confirmá tu <em>pedido</em></h2>
+        <p class="step-sub" data-i18n="home.payment_sub">Revisá el resumen y confirmá. ¡Ya casi está!</p>
 
         <div class="summary-card">
-          <div class="summary-title">Resumen del pedido</div>
+          <div class="summary-title" data-i18n="home.summary_title">Resumen del pedido</div>
           <div class="summary-row">
-            <span class="summary-label">Plan seleccionado</span>
+            <span class="summary-label" data-i18n="home.summary_plan">Plan seleccionado</span>
             <span class="summary-value" id="pay-plan-name">—</span>
           </div>
           <div class="summary-row">
-            <span class="summary-label">Precio semanal</span>
+            <span class="summary-label" data-i18n="home.summary_weekly_price">Precio semanal</span>
             <span class="summary-value" id="pay-base-price">—</span>
           </div>
           <div class="summary-row" id="pay-discount-row" style="display:none">
-            <span class="summary-label">Descuento (<span id="pay-discount-pct"></span>%)</span>
+            <span class="summary-label"><span data-i18n="home.summary_discount">Descuento (</span><span id="pay-discount-pct"></span>%)</span>
             <span class="summary-value discount-val" id="pay-discount-val">— </span>
           </div>
           <div class="summary-row total">
-            <span>Total</span>
+            <span data-i18n="home.summary_total">Total</span>
             <span id="pay-total">—</span>
           </div>
         </div>
 
         <div style="margin-bottom:1.5rem">
-          <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:0.5rem;letter-spacing:0.02em">Cupón de descuento</label>
+          <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:0.5rem;letter-spacing:0.02em" data-i18n="home.coupon_label">Cupón de descuento</label>
           <div class="coupon-row">
             <div class="coupon-input-wrap">
-              <input type="text" id="coupon-input" placeholder="TUCODIGO" maxlength="30">
+              <input type="text" id="coupon-input" placeholder="TUCODIGO" data-i18n-placeholder="home.coupon_placeholder" maxlength="30">
               <div class="coupon-msg" id="coupon-msg"></div>
             </div>
-            <button class="btn-apply" id="apply-coupon-btn" onclick="applyCoupon()">Aplicar</button>
+            <button class="btn-apply" id="apply-coupon-btn" onclick="applyCoupon()" data-i18n="home.coupon_apply">Aplicar</button>
           </div>
         </div>
 
         <div class="error-msg" id="payment-error"></div>
         <div class="form-actions">
-          <button class="btn-outline" onclick="goStep('prefs')"><i class="fa-solid fa-arrow-left"></i> Atrás</button>
+          <button class="btn-outline" onclick="goStep('prefs')"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="home.back">Atrás</span></button>
           <button class="btn-primary" id="confirm-btn" onclick="confirmOrder()">
-            <i class="fa-solid fa-check"></i> Confirmar pedido
+            <i class="fa-solid fa-check"></i> <span data-i18n="home.confirm_order">Confirmar pedido</span>
           </button>
         </div>
-        <p style="text-align:center;font-size:0.75rem;color:var(--gray);margin-top:1rem">
+        <p style="text-align:center;font-size:0.75rem;color:var(--gray);margin-top:1rem" data-i18n="home.payment_disclaimer">
           Al confirmar aceptás recibir tu plan semanal con entrega dominical en Miami.
         </p>
       </div>
@@ -874,20 +891,20 @@
       <div class="step-content">
         <div class="confirm-wrap">
           <div class="confirm-icon-big"><i class="fa-solid fa-check"></i></div>
-          <span class="step-eyebrow">¡Pedido confirmado!</span>
-          <h1 class="step-title">Tu semana está <em>resuelta.</em></h1>
-          <p class="step-sub">Guardá tu número de pedido para cualquier consulta.</p>
+          <span class="step-eyebrow" data-i18n="home.confirmed_eyebrow">¡Pedido confirmado!</span>
+          <h1 class="step-title" data-i18n-html="home.confirmed_title_html">Tu semana está <em>resuelta.</em></h1>
+          <p class="step-sub" data-i18n="home.confirmed_sub">Guardá tu número de pedido para cualquier consulta.</p>
           <div class="confirm-order-num" id="confirm-order-num">FH-0001</div>
           <ul class="confirm-list">
-            <li><i class="fa-solid fa-calendar-check"></i> Recibes tus comidas el próximo domingo</li>
-            <li><i class="fa-solid fa-box"></i> Todo fresco, preparado esa semana</li>
-            <li><i class="fa-brands fa-whatsapp"></i> Avisanos por WhatsApp que ya abonaste</li>
+            <li><i class="fa-solid fa-calendar-check"></i> <span data-i18n="home.confirmed_li1">Recibes tus comidas el próximo domingo</span></li>
+            <li><i class="fa-solid fa-box"></i> <span data-i18n="home.confirmed_li2">Todo fresco, preparado esa semana</span></li>
+            <li><i class="fa-brands fa-whatsapp"></i> <span data-i18n="home.confirmed_li3">Avisanos por WhatsApp que ya abonaste</span></li>
           </ul>
           <a id="confirm-whatsapp-btn" class="btn-whatsapp" href="#" target="_blank" rel="noopener" style="font-size:1.05rem">
-            <i class="fa-brands fa-whatsapp"></i> Avisar que ya pagué
+            <i class="fa-brands fa-whatsapp"></i> <span data-i18n="home.confirmed_whatsapp_btn">Avisar que ya pagué</span>
           </a>
           <br>
-          <a href="/" class="link-site">← Volver al sitio</a>
+          <a href="/" class="link-site" data-i18n="home.back_to_site">← Volver al sitio</a>
         </div>
       </div>
     </div>
@@ -897,11 +914,14 @@
   <script>
     /* ── Datos del flujo ─────────────────────────────────────────────────────*/
     const WHATSAPP_NUMBER = '18184288427';
-    const PLAN_NAMES  = { structure: 'Structure', performance: 'Performance', full_system: 'Full System' };
     const PLAN_PRICES = { structure: 120, performance: 190, full_system: 225 };
-    const GOAL_NAMES  = { fat_loss: 'Perder grasa', muscle_gain: 'Ganar músculo', maintenance: 'Mantenerme', healthy: 'Comer saludable' };
-    const DIET_NAMES  = { none: 'Sin preferencia', high_protein: 'Alta proteína', low_carb: 'Baja en carbos', keto: 'Keto', vegan: 'Vegano', vegetarian: 'Vegetariano', paleo: 'Paleo', mediterranean: 'Mediterránea' };
-    const STATUS_LABELS = { paid: 'Pagado', processing: 'En proceso', delivered: 'Entregado', cancelled: 'Cancelado' };
+    /* Nombres/etiquetas traducibles: se resuelven contra el diccionario de
+       i18n.js en cada llamada, así respetan el idioma activo aunque el
+       usuario lo cambie a mitad del flujo sin recargar la página. */
+    function planName(key)        { return t('home.' + key + '_name'); }
+    function goalName(key)        { return t('home.goal_' + key + '_name'); }
+    function dietName(key)        { return t('home.diet_' + key); }
+    function orderStatusLabel(key){ return t('home.status_' + key); }
     const STATUS_CLASSES = { paid: 'paid', processing: 'processing', delivered: 'delivered', cancelled: 'cancelled' };
 
     const flow = {
@@ -988,7 +1008,7 @@
 
       errEl.classList.remove('visible');
       if (!name || !lastName || !phone) {
-        errEl.textContent = 'Completá todos los campos obligatorios';
+        errEl.textContent = t('home.err_required_fields');
         errEl.classList.add('visible');
         return;
       }
@@ -1001,7 +1021,7 @@
       const errEl = document.getElementById('prefs-error');
       errEl.classList.remove('visible');
       if (!flow.selectedGoal) {
-        errEl.textContent = 'Seleccioná tu objetivo antes de continuar';
+        errEl.textContent = t('home.err_select_goal');
         errEl.classList.add('visible');
         return;
       }
@@ -1012,7 +1032,7 @@
     /* ── Resumen de pago ─────────────────────────────────────────────────────*/
     function updatePaymentSummary() {
       const base = PLAN_PRICES[flow.selectedPlan] || 0;
-      document.getElementById('pay-plan-name').textContent  = PLAN_NAMES[flow.selectedPlan] || '—';
+      document.getElementById('pay-plan-name').textContent  = planName(flow.selectedPlan) || '—';
       document.getElementById('pay-base-price').textContent = '$' + base + '/sem';
 
       const discRow = document.getElementById('pay-discount-row');
@@ -1037,17 +1057,17 @@
       inp.classList.remove('valid', 'invalid');
       msg.textContent = '';
       btn.disabled = true;
-      btn.textContent = '…';
+      btn.textContent = t('home.coupon_applying');
 
       const { ok, data } = await apiFetch('POST', '/api/coupons/validate', { code, plan: flow.selectedPlan });
 
       btn.disabled = false;
-      btn.textContent = 'Aplicar';
+      btn.textContent = t('home.coupon_apply');
 
       if (!ok) {
         inp.classList.add('invalid');
         msg.className = 'coupon-msg err';
-        msg.textContent = data.error || 'Cupón inválido';
+        msg.textContent = tApiError(data.error) || t('home.err_invalid_coupon');
         flow.appliedCoupon = null;
         flow.discountPct   = 0;
         flow.discountAmt   = 0;
@@ -1055,7 +1075,7 @@
       } else {
         inp.classList.add('valid');
         msg.className = 'coupon-msg ok';
-        msg.textContent = '✓ ' + data.coupon.discountPercent + '% de descuento aplicado';
+        msg.textContent = t('home.coupon_applied_prefix') + data.coupon.discountPercent + t('home.coupon_applied_suffix');
         flow.appliedCoupon = data.coupon.code;
         flow.discountPct   = data.coupon.discountPercent;
         flow.discountAmt   = data.discount;
@@ -1070,7 +1090,7 @@
       const errEl = document.getElementById('payment-error');
       errEl.classList.remove('visible');
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Confirmando…';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + t('home.confirming');
 
       const payload = {
         plan:        flow.selectedPlan,
@@ -1080,8 +1100,8 @@
         preferences: {
           goal:      flow.selectedGoal,
           diet:      document.getElementById('pref-diet').value,
-          allergies: document.getElementById('pref-allergies').value.trim() || 'Ninguna',
-          avoid:     document.getElementById('pref-avoid').value.trim() || 'Ninguno',
+          allergies: document.getElementById('pref-allergies').value.trim() || t('home.none_f'),
+          avoid:     document.getElementById('pref-avoid').value.trim() || t('home.none_m'),
         },
       };
 
@@ -1092,10 +1112,10 @@
 
       const { ok, data } = await apiFetch('POST', '/api/orders', payload);
       btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar pedido';
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> <span data-i18n="home.confirm_order">' + t('home.confirm_order') + '</span>';
 
       if (!ok) {
-        errEl.textContent = data.error || 'Error al confirmar el pedido';
+        errEl.textContent = tApiError(data.error) || t('home.err_confirm_order');
         errEl.classList.add('visible');
         return;
       }
@@ -1104,7 +1124,7 @@
       const orderNum = data.order.orderNumber;
       document.getElementById('confirm-order-num').textContent = orderNum;
 
-      const waMsg  = encodeURIComponent('Ya aboné mi pedido número ' + orderNum);
+      const waMsg  = encodeURIComponent(t('home.whatsapp_confirm_msg', { order: orderNum }));
       document.getElementById('confirm-whatsapp-btn').href =
         'https://api.whatsapp.com/send?phone=' + WHATSAPP_NUMBER + '&text=' + waMsg;
 
@@ -1129,7 +1149,7 @@
 
       currentUser = data.user;
       const firstName = data.user.name.split(' ')[0];
-      document.getElementById('header-greeting').textContent = 'Hola, ' + firstName;
+      document.getElementById('header-greeting').textContent = t('home.header_greeting_prefix') + firstName;
       document.getElementById('welcome-name').textContent    = firstName + '!';
       // Separar nombre y apellido: si ya tiene lastName guardado, usarlo
       const parts = data.user.name.trim().split(' ');
@@ -1158,28 +1178,28 @@
     /* ── Vista de cuenta (pedido existente) ──────────────────────────────────*/
     function renderAccountView(order, user) {
       const firstName = user.name.split(' ')[0];
-      document.getElementById('account-greeting').textContent = '¡Hola, ' + firstName + '!';
+      document.getElementById('account-greeting').textContent = t('home.account_greeting_prefix') + firstName + '!';
       document.getElementById('acc-order-num').textContent = order.orderNumber;
 
-      const statusLabel = STATUS_LABELS[order.status] || order.status;
+      const statusText  = orderStatusLabel(order.status) || order.status;
       const statusClass = STATUS_CLASSES[order.status] || 'paid';
       document.getElementById('acc-status-badge').innerHTML =
-        '<span class="badge-status-' + statusClass + '">' + statusLabel + '</span>';
+        '<span class="badge-status-' + statusClass + '">' + statusText + '</span>';
 
-      document.getElementById('acc-plan').textContent   = PLAN_NAMES[order.plan]  || '—';
+      document.getElementById('acc-plan').textContent   = planName(order.plan)  || '—';
       document.getElementById('acc-price').textContent  = '$' + (order.finalPrice || order.planPrice) + '/sem';
-      document.getElementById('acc-date').textContent   = new Date(order.createdAt).toLocaleDateString('es-US', { day:'2-digit', month:'2-digit', year:'numeric' });
-      document.getElementById('acc-coupon').textContent = order.coupon || 'Sin cupón';
+      document.getElementById('acc-date').textContent   = new Date(order.createdAt).toLocaleDateString(currentLang() === 'en' ? 'en-US' : 'es-US', { day:'2-digit', month:'2-digit', year:'numeric' });
+      document.getElementById('acc-coupon').textContent = order.coupon || t('home.no_coupon');
       document.getElementById('acc-phone').textContent  = order.userPhone || user.phone || '—';
       document.getElementById('acc-email').textContent  = order.userEmail || user.email;
 
       const prefs = order.preferences || {};
-      document.getElementById('acc-goal').textContent     = GOAL_NAMES[prefs.goal]  || '—';
-      document.getElementById('acc-diet').textContent     = DIET_NAMES[prefs.diet]  || '—';
-      document.getElementById('acc-allergies').textContent= prefs.allergies || 'Ninguna';
-      document.getElementById('acc-avoid').textContent    = prefs.avoid     || 'Ninguno';
+      document.getElementById('acc-goal').textContent     = goalName(prefs.goal)  || '—';
+      document.getElementById('acc-diet').textContent     = dietName(prefs.diet)  || '—';
+      document.getElementById('acc-allergies').textContent= prefs.allergies || t('home.none_f');
+      document.getElementById('acc-avoid').textContent    = prefs.avoid     || t('home.none_m');
 
-      const waMsg = encodeURIComponent('Hola! Tengo el pedido número ' + order.orderNumber + ' y quería consultarte algo.');
+      const waMsg = encodeURIComponent(t('home.whatsapp_account_msg', { order: order.orderNumber }));
       document.getElementById('acc-whatsapp-btn').href =
         'https://api.whatsapp.com/send?phone=' + WHATSAPP_NUMBER + '&text=' + waMsg;
     }
