@@ -145,13 +145,15 @@ function initProcess() {
       { opacity: 0.4, scale: 1, duration: 0.55, stagger: 0.18, ease: 'back.out(2)' },
       '-=0.55'
     )
-    /* Después de entrar, las flechas quedan con un pulso suave e
-       infinito — un "latido" sutil que sugiere el flujo entre pasos
-       en vez de quedar estáticas. */
+    /* Después de entrar, las flechas quedan con un pulso infinito que
+       sugiere el flujo entre pasos en vez de quedar estáticas. Más
+       amplitud que la primera versión — con la sección entera ahora
+       más viva (cards con tilt incluido), el pulso original quedaba
+       demasiado sutil como para notarse. */
     .to('.step-arrow', {
-      scale: 1.25,
-      opacity: 0.7,
-      duration: 1,
+      scale: 1.4,
+      opacity: 0.85,
+      duration: 0.85,
       ease: 'sine.inOut',
       repeat: -1,
       yoyo: true,
@@ -472,10 +474,9 @@ function initMagnetic() {
   });
 }
 
-/* ─── TILT DE LAS CARDS DE PLANES ─────────── */
-function initTilt() {
-  if (reduced) return;
-  document.querySelectorAll('.plan-card').forEach((card) => {
+/* ─── TILT CON EL MOUSE (planes + pasos) ──── */
+function tiltify(selector, strength) {
+  document.querySelectorAll(selector).forEach((card) => {
     /* Se apaga solo en touch: mousemove no dispara sin mouse, así que
        en celular la card queda tal cual está en el CSS, sin código
        aparte para "desactivarlo". */
@@ -484,8 +485,8 @@ function initTilt() {
       const px = (e.clientX - r.left) / r.width - 0.5;
       const py = (e.clientY - r.top) / r.height - 0.5;
       gsap.to(card, {
-        rotateY: px * 9,
-        rotateX: -py * 9,
+        rotateY: px * strength,
+        rotateX: -py * strength,
         y: -4,
         transformPerspective: 700,
         transformOrigin: 'center',
@@ -497,6 +498,12 @@ function initTilt() {
       gsap.to(card, { rotateY: 0, rotateX: 0, y: 0, duration: 0.5, ease: 'power2.out' });
     });
   });
+}
+
+function initTilt() {
+  if (reduced) return;
+  tiltify('.plan-card', 9);
+  tiltify('.step-card', 7);
 }
 
 /* ─── MOBILE NAV ──────────────────────────── */
