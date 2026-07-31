@@ -5,18 +5,25 @@
 
 -- ── Tabla: usuarios ──────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS users (
-  id            BIGSERIAL PRIMARY KEY,
-  name          TEXT        NOT NULL DEFAULT '',
-  last_name     TEXT        NOT NULL DEFAULT '',
-  email         TEXT        UNIQUE NOT NULL,
-  password_hash TEXT        NOT NULL,
-  role          TEXT        NOT NULL DEFAULT 'user',
-  phone         TEXT        NOT NULL DEFAULT '',
-  plan          TEXT,
-  status        TEXT        NOT NULL DEFAULT 'pending',
-  notes         TEXT        NOT NULL DEFAULT '',
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id                  BIGSERIAL PRIMARY KEY,
+  name                TEXT        NOT NULL DEFAULT '',
+  last_name           TEXT        NOT NULL DEFAULT '',
+  email               TEXT        UNIQUE NOT NULL,
+  password_hash       TEXT        NOT NULL,
+  role                TEXT        NOT NULL DEFAULT 'user',
+  phone               TEXT        NOT NULL DEFAULT '',
+  plan                TEXT,
+  status              TEXT        NOT NULL DEFAULT 'pending',
+  notes               TEXT        NOT NULL DEFAULT '',
+  reset_token         TEXT,
+  reset_token_expires TIMESTAMPTZ,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Si la tabla "users" ya existía de antes (sin estas columnas), este bloque
+-- las agrega sin tocar los datos. Seguro de correr las veces que sea.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMPTZ;
 
 -- ── Tabla: pedidos ───────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS orders (

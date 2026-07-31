@@ -20,6 +20,8 @@ const TO_SNAKE = {
   userEmail:       'user_email',
   userPhone:       'user_phone',
   createdAt:       'created_at',
+  resetToken:        'reset_token',
+  resetTokenExpires: 'reset_token_expires',
 };
 
 const FROM_SNAKE = Object.fromEntries(Object.entries(TO_SNAKE).map(([k, v]) => [v, k]));
@@ -45,15 +47,23 @@ function fromSnake(obj) {
 
 const Users = {
   async getAll() {
-    const { data } = await supabase.from('users').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
     return (data || []).map(fromSnake);
   },
   async getById(id) {
-    const { data } = await supabase.from('users').select('*').eq('id', id).maybeSingle();
+    const { data, error } = await supabase.from('users').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
     return fromSnake(data);
   },
   async getByEmail(email) {
-    const { data } = await supabase.from('users').select('*').ilike('email', email).maybeSingle();
+    const { data, error } = await supabase.from('users').select('*').ilike('email', email).maybeSingle();
+    if (error) throw error;
+    return fromSnake(data);
+  },
+  async getByResetToken(token) {
+    const { data, error } = await supabase.from('users').select('*').eq('reset_token', token).maybeSingle();
+    if (error) throw error;
     return fromSnake(data);
   },
   async create(userData) {
@@ -75,11 +85,13 @@ const Users = {
 
 const Orders = {
   async getAll() {
-    const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
     return (data || []).map(fromSnake);
   },
   async getById(id) {
-    const { data } = await supabase.from('orders').select('*').eq('id', id).maybeSingle();
+    const { data, error } = await supabase.from('orders').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
     return fromSnake(data);
   },
   async find(fn) {
@@ -105,11 +117,13 @@ const Orders = {
 
 const Coupons = {
   async getAll() {
-    const { data } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
     return (data || []).map(fromSnake);
   },
   async getById(id) {
-    const { data } = await supabase.from('coupons').select('*').eq('id', id).maybeSingle();
+    const { data, error } = await supabase.from('coupons').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
     return fromSnake(data);
   },
   async create(couponData) {

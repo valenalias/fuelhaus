@@ -239,6 +239,30 @@
     }
     .error-msg.visible { display: block; }
 
+    .success-msg {
+      display: none;
+      color: var(--success);
+      font-size: 0.8rem;
+      margin-top: 0.8rem;
+      padding: 0.6rem 0.9rem;
+      background: rgba(39,174,96,0.08);
+      border-radius: 6px;
+      font-weight: 500;
+    }
+    .success-msg.visible { display: block; }
+
+    .forgot-link {
+      display: block;
+      text-align: right;
+      margin-top: -0.6rem;
+      margin-bottom: 0.6rem;
+      color: var(--gray);
+      font-size: 0.78rem;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .forgot-link:hover { color: var(--dark-green); }
+
     .btn-submit {
       width: 100%;
       padding: 0.85rem 1.5rem;
@@ -314,7 +338,7 @@
       </div>
 
       <!-- Tabs: Ingresar / Crear cuenta -->
-      <div class="tabs">
+      <div class="tabs" id="tabs">
         <button class="tab active" data-tab="login" data-i18n="login.tab_login">Ingresar</button>
         <button class="tab" data-tab="register" data-i18n="login.tab_register">Crear cuenta</button>
       </div>
@@ -332,6 +356,7 @@
             <label for="l-pass" data-i18n="login.label_password">Contraseña</label>
             <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password" required>
           </div>
+          <a href="#" class="forgot-link" id="forgot-link" data-i18n="login.forgot_link">¿Olvidaste tu contraseña?</a>
           <div class="error-msg" id="login-error"></div>
           <button type="submit" class="btn-submit" id="login-btn">
             <span data-i18n="login.login_btn">Ingresar</span> <span>→</span>
@@ -363,7 +388,46 @@
         </form>
       </div>
 
-      <a href="/" class="back-link" data-i18n="login.back_link">← Volver al sitio</a>
+      <!-- Formulario: Olvidé mi contraseña -->
+      <div class="form-section" id="form-forgot">
+        <h2 class="form-title" data-i18n="login.forgot_title">Recuperar contraseña</h2>
+        <p class="form-sub" data-i18n="login.forgot_sub">Ingresá tu email y te mandamos un link para elegir una nueva.</p>
+        <form id="forgot-form" autocomplete="on" novalidate>
+          <div class="field">
+            <label for="f-email" data-i18n="login.label_email">Email</label>
+            <input type="email" id="f-email" placeholder="tu@email.com" data-i18n-placeholder="login.email_placeholder" autocomplete="email" required>
+          </div>
+          <div class="error-msg" id="forgot-error"></div>
+          <div class="success-msg" id="forgot-success-msg"></div>
+          <button type="submit" class="btn-submit" id="forgot-btn">
+            <span data-i18n="login.forgot_btn">Enviar link</span> <span>→</span>
+          </button>
+        </form>
+        <a href="#" class="back-link" id="forgot-back" data-i18n="login.back_to_login">← Volver a ingresar</a>
+      </div>
+
+      <!-- Formulario: Elegir nueva contraseña (llega desde el link del email) -->
+      <div class="form-section" id="form-reset">
+        <h2 class="form-title" data-i18n="login.reset_title">Elegí tu nueva contraseña</h2>
+        <p class="form-sub" data-i18n="login.reset_sub">Mínimo 6 caracteres.</p>
+        <form id="reset-form" autocomplete="off" novalidate>
+          <div class="field">
+            <label for="rs-pass" data-i18n="login.label_new_password">Nueva contraseña</label>
+            <input type="password" id="rs-pass" placeholder="••••••••" autocomplete="new-password" required>
+          </div>
+          <div class="field">
+            <label for="rs-pass2" data-i18n="login.label_confirm_password">Confirmar contraseña</label>
+            <input type="password" id="rs-pass2" placeholder="••••••••" autocomplete="new-password" required>
+          </div>
+          <div class="error-msg" id="reset-error"></div>
+          <div class="success-msg" id="reset-success-msg"></div>
+          <button type="submit" class="btn-submit" id="reset-btn">
+            <span data-i18n="login.reset_btn">Guardar contraseña</span> <span>→</span>
+          </button>
+        </form>
+      </div>
+
+      <a href="/" class="back-link" id="site-back-link" data-i18n="login.back_link">← Volver al sitio</a>
 
     </div>
   </div>
@@ -383,7 +447,7 @@
     });
 
     function clearErrors() {
-      document.querySelectorAll('.error-msg').forEach(el => {
+      document.querySelectorAll('.error-msg, .success-msg').forEach(el => {
         el.textContent = '';
         el.classList.remove('visible');
       });
@@ -394,6 +458,33 @@
       el.textContent = msg;
       el.classList.add('visible');
     }
+
+    function showSuccess(id, msg) {
+      const el = document.getElementById(id);
+      el.textContent = msg;
+      el.classList.add('visible');
+    }
+
+    // Vistas: login / register (con tabs) vs. forgot / reset (sin tabs)
+    function goToView(view) {
+      clearErrors();
+      const showTabs = view === 'login' || view === 'register';
+      document.getElementById('tabs').style.display = showTabs ? 'flex' : 'none';
+      if (showTabs) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === view));
+      }
+      document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+      document.getElementById('form-' + view).classList.add('active');
+    }
+
+    document.getElementById('forgot-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      goToView('forgot');
+    });
+    document.getElementById('forgot-back').addEventListener('click', (e) => {
+      e.preventDefault();
+      goToView('login');
+    });
 
     async function apiPost(url, body) {
       const res  = await fetch(url, {
@@ -453,6 +544,63 @@
       localStorage.setItem('fh_token', data.token);
       localStorage.setItem('fh_user',  JSON.stringify(data.user));
       window.location.href = '/';
+    });
+
+    // Olvidé mi contraseña
+    document.getElementById('forgot-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearErrors();
+      const btn = document.getElementById('forgot-btn');
+      btn.disabled = true;
+      btn.textContent = t('login.forgot_btn_loading');
+
+      const email = document.getElementById('f-email').value.trim();
+      const { ok, data } = await apiPost('/api/auth/forgot-password', { email });
+
+      btn.disabled = false;
+      btn.innerHTML = '<span data-i18n="login.forgot_btn">' + t('login.forgot_btn') + '</span> <span>→</span>';
+
+      if (!ok) {
+        showError('forgot-error', tApiError(data.error) || t('login.forgot_btn') + ' error');
+        return;
+      }
+      document.getElementById('forgot-form').style.display = 'none';
+      showSuccess('forgot-success-msg', t('login.forgot_success'));
+    });
+
+    // Elegir nueva contraseña (desde el link del email)
+    const resetToken = new URLSearchParams(window.location.search).get('reset_token');
+    if (resetToken) {
+      goToView('reset');
+    }
+
+    document.getElementById('reset-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearErrors();
+
+      const pass1 = document.getElementById('rs-pass').value;
+      const pass2 = document.getElementById('rs-pass2').value;
+      if (pass1 !== pass2) {
+        showError('reset-error', t('login.reset_error_mismatch'));
+        return;
+      }
+
+      const btn = document.getElementById('reset-btn');
+      btn.disabled = true;
+      btn.textContent = t('login.reset_btn_loading');
+
+      const { ok, data } = await apiPost('/api/auth/reset-password', { token: resetToken, password: pass1 });
+
+      if (!ok) {
+        btn.disabled = false;
+        btn.innerHTML = '<span data-i18n="login.reset_btn">' + t('login.reset_btn') + '</span> <span>→</span>';
+        showError('reset-error', tApiError(data.error) || t('login.reset_btn') + ' error');
+        return;
+      }
+
+      document.getElementById('reset-form').style.display = 'none';
+      showSuccess('reset-success-msg', t('login.reset_success'));
+      setTimeout(() => { window.location.href = '/login'; }, 2200);
     });
   </script>
 </body>

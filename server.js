@@ -2,14 +2,47 @@ require('dotenv').config();
 
 const express = require('express');
 const path    = require('path');
+const crypto  = require('crypto');
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
 const { Users, Orders, Coupons, orderNumber } = require('./db');
 
-const app        = express();
-const PORT       = process.env.PORT || 3000;
-const ROOT       = path.join(__dirname, 'public');
-const JWT_SECRET = process.env.JWT_SECRET || 'fuelhaus_jwt_2025_secret';
+const app         = express();
+const PORT        = process.env.PORT || 3000;
+const ROOT        = path.join(__dirname, 'public');
+const JWT_SECRET  = process.env.JWT_SECRET || 'fuelhaus_jwt_2025_secret';
+const RESEND_KEY  = process.env.RESEND_API_KEY;
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hora
+
+async function sendResetEmail(to, resetUrl) {
+  if (!RESEND_KEY) {
+    console.error('RESEND_API_KEY no configurada — no se pudo enviar el email de recuperación.');
+    return;
+  }
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${RESEND_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: 'Fuelhaus <no-reply@fuelhaus.com>',
+      to,
+      subject: 'Recuperá tu contraseña — Fuelhaus',
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#1C1B19">
+          <p style="font-size:22px;font-weight:700;color:#2B3D26;margin:0 0 24px"><em style="font-style:italic;font-weight:400">fuel</em><strong>haus</strong></p>
+          <p style="font-size:16px;line-height:1.6">Pediste restablecer tu contraseña. Tocá el botón de abajo para elegir una nueva — el link vence en 1 hora.</p>
+          <a href="${resetUrl}" style="display:inline-block;margin:20px 0;padding:14px 28px;background:#2B3D26;color:#fff;text-decoration:none;border-radius:8px;font-weight:700">Elegir nueva contraseña</a>
+          <p style="font-size:13px;color:#88887E;line-height:1.6">Si no pediste esto, podés ignorar este email — tu contraseña actual sigue funcionando igual.</p>
+        </div>
+      `,
+    }),
+  });
+  if (!res.ok) {
+    console.error('Resend respondió con error:', res.status, await res.text());
+  }
+}
 
 const PLAN_PRICES = { structure: 120, performance: 190, full_system: 225 };
 
@@ -88,6 +121,56 @@ app.get('/api/auth/me', auth, async (req, res) => {
     const user = await Users.getById(req.user.id);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
     res.json({ user: safeUser(user) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email?.trim())
+      return res.status(400).json({ error: 'El email es obligatorio' });
+
+    const user = await Users.getByEmail(email.trim());
+    // Responde igual exista o no la cuenta — así nadie puede usar este
+    // formulario para averiguar qué emails están registrados.
+    if (user) {
+      const token = crypto.randomBytes(32).toString('hex');
+      await Users.update(user.id, {
+        resetToken: token,
+        resetTokenExpires: new Date(Date.now() + RESET_TOKEN_TTL_MS).toISOString(),
+      });
+      const origin   = `${req.protocol}://${req.get('host')}`;
+      const resetUrl = `${origin}/login?reset_token=${token}`;
+      await sendResetEmail(user.email, resetUrl);
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body || {};
+    if (!token || !password)
+      return res.status(400).json({ error: 'Faltan datos' });
+    if (password.length < 6)
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+
+    const user = await Users.getByResetToken(token);
+    if (!user || !user.resetTokenExpires || new Date(user.resetTokenExpires) < new Date())
+      return res.status(400).json({ error: 'Ese link ya no es válido o expiró' });
+
+    await Users.update(user.id, {
+      passwordHash: await bcrypt.hash(password, 10),
+      resetToken: null,
+      resetTokenExpires: null,
+    });
+    res.json({ ok: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error del servidor' });
