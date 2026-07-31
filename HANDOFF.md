@@ -1,144 +1,154 @@
-# HANDOFF — Rediseño premium landing FuelHaus
+# HANDOFF — FuelHaus
 
-Última actualización: 2026-07-25
+Última actualización: 2026-07-31
 
 ## Contexto
-
-Rediseño de la landing de FuelHaus para que se vea premium y esté lista para
-mostrarle a inversores. Se hizo en base a una auditoría completa (UX/UI,
-ecommerce, branding, dirección de arte, conversión, mobile, performance)
-comparando el sitio contra el `BRANDING/FUEL-HAUS-BRANDING.pdf` (Brand
-Proposal), que se usó como fuente de identidad de marca.
 
 - **Deploy:** https://fuelhaus.vercel.app (auto-deploy vía Vercel, conectado
   a GitHub, rama `main`)
 - **Repo:** https://github.com/valenalias/fuelhaus
-- Todos los cambios de esta sesión están commiteados y pusheados a `main`.
+- **Admin:** admin@fuelhaus.com / Fuelhaus2025
 
-## Proceso seguido
+## 🔴 Lo más urgente — sistema de cuentas caído en producción
 
-1. Auditoría completa del sitio actual vs. el Brand Proposal (fortalezas,
-   debilidades, oportunidades, qué sobra, qué falta).
-2. Roadmap en etapas, revisado y aprobado por el cliente antes de tocar código.
-3. Implementación etapa por etapa, con checkpoints y capturas de pantalla
-   (desktop y mobile) antes de cada commit.
+El login y "crear cuenta" en `fuelhaus.vercel.app` **no funcionan ahora
+mismo**. No es un bug de código: la base de datos de Supabase es
+inalcanzable — `ohnedhcnqcmhaggyddjx.supabase.co` no resuelve ni siquiera a
+nivel DNS ("dominio inexistente"), confirmado con los logs de Vercel
+(`vercel logs`) y probando la resolución del dominio desde afuera de Vercel.
 
-## Decisiones del cliente (para no repreguntar)
+Causa más probable: el proyecto de Supabase (plan gratuito) se pausó por
+inactividad y, si quedó pausado mucho tiempo, puede haber sido eliminado.
 
-- **No mencionar al chef Michelin** del Brand Proposal — el storytelling de
-  fundación es solo "personal trainers y nutricionistas".
-- **Fotos:** usar las del Brand Proposal (extraídas del PDF en alta
-  resolución) + stock premium como puente donde falte.
-- **Catálogo futuro** (drinks funcionales, postres altos en proteína, açaí
-  bowls del Brand Proposal): **no se venden todavía**. Quedan fuera de la web
-  por ahora — no prometer algo que no se puede entregar. Se pueden mencionar
-  en el pitch a inversores como roadmap de producto, pero no en el sitio.
-- **Idioma:** español, pero neutralizado — sin voseo rioplatense marcado, para
-  no excluir a mexicanos/colombianos/venezolanos de la comunidad hispana de
-  Miami (no solo argentinos).
-- **Política de cancelación real:** la membresía es **mensual**. Se puede
-  cancelar hasta una semana antes del primer domingo del mes.
+**Acción pendiente del cliente:** entrar a supabase.com, revisar si el
+proyecto aparece pausado (reactivar) o si ya no está (crear uno nuevo y
+volver a cargar `supabase-schema.sql`). Sin esto resuelto, nadie puede
+loguearse ni registrarse en producción, aunque el resto del sitio funcione
+perfecto.
 
-## Qué se hizo
+De paso se encontró y corrigió un bug relacionado en `db.js`: las funciones
+que leen usuarios/pedidos/cupones ignoraban el `error` que devuelve
+Supabase y solo miraban `data` — si la conexión fallaba, se comportaban
+igual que "no existe", ocultando el problema real. Ya corregido (los
+errores de conexión ahora se propagan como error real, no como "no
+encontrado").
 
-### Commit `d06517f` — Rediseño premium de landing
+## Rama abierta sin mergear: `forgot-password`
 
-- Reemplazo de fotos de stock (Unsplash) y una foto no relacionada con la
-  marca (un puesto de snacks/Nutella que estaba en "Nosotros") por
-  fotografía real extraída en alta resolución del Brand Proposal PDF
-  (con PyMuPDF, extrayendo las imágenes embebidas, no renders de página):
-  - `hero-wrap.jpg` — hero
-  - `gallery-meals.jpg` — banner de galería (reemplaza el grid de 4 fotos)
-  - `food-real.jpg` — sección "Comida real"
-  - `about-trainer.jpg` — sección "Nosotros"
-  - `cta-lifestyle.jpg` — fondo del CTA final
-  - `strip-meals.jpg` — fondo de la sección de cita ("Ingredientes reales...")
-- Historia de fundación agregada en "Nosotros" (personal trainers y
-  nutricionistas, sin chef).
-- Logo: de `LOGO.jpeg` (JPEG borroso con hack de `mix-blend-mode`) a wordmark
-  de texto + CSS (clase `.brand-wordmark`), consistente en header, loader y
-  footer, funciona en fondos claros y oscuros.
-- Contador animado (GSAP ScrollTrigger) en los números de "Nosotros"
-  (50+, 100%, 0) — cuentan desde 0 al hacer scroll.
-- Neutralización de voseo rioplatense y del término "vianda" en **todo** el
-  sitio (`index.html`, `home.html`) + metadatos SEO + JSON-LD +
-  `lang="es-US"` (antes `es-AR`).
-- Optimización de imágenes (el hero pasó de 2.4MB/3840×5120px a 115KB).
-- Eliminación de ~1100 líneas de CSS muerto (componentes Spin, Cleo,
-  Calculadora, Arch, Stats, Newsletter de una iteración anterior, sin uso en
-  el HTML actual).
-- Nueva sección **"Así llega tu semana"** — preview de menú sin necesidad de
-  login, reutilizando fotos reales que ya existían pero no se usaban
-  (`MENU-PLANES-COMIDA1.jpeg`, `MENU-PLANES-COMIDA3.jpeg`,
-  `MENU-PLANES-COMIDA4-CONSHOTS.jpeg`).
-- **Comparador de planes en tabla** ("Compará en detalle") debajo de las 3
-  cards de planes.
-- **Trust bar** (zona de entrega, membresía mensual, política de
-  cancelación real).
-- **Botón de WhatsApp flotante** (visible en todo momento).
-- Sección de **testimonios construida pero comentada** en el HTML — buscar
-  `TESTIMONIOS (pendiente de activar)` en `index.html`. Activar cuando haya
-  2-3 citas reales de clientes.
+Preview: https://fuelhaus-git-forgot-password-valenalias1.vercel.app
 
-### Commit `d85ec4e` — Fix mobile: tabla comparadora
+Construido: link "¿Olvidaste tu contraseña?" en `login.html`, endpoint que
+genera un token de un solo uso (vence en 1 hora) y manda un email vía
+**Resend** con un link para elegir nueva contraseña, y la pantalla para
+definirla. Todo traducido ES/EN.
 
-La tabla no entraba en pantallas de celular (<600px): quedaba cortada
-mostrando solo la primera columna, sin ninguna pista de que había más
-contenido. Se agregó una versión compacta (padding y tipografía reducidos,
-los labels largos hacen wrap) que entra completa sin scroll horizontal desde
-360px de ancho.
+**No se puede probar de punta a punta ni mergear todavía.** Faltan 3 cosas,
+todas fuera del código:
 
-### Commit `7ecc576` — Fix tablet/laptop chica: foto de "Nosotros"
+1. Que Supabase vuelva a estar accesible (ver arriba).
+2. Correr en el SQL Editor de Supabase (agrega columnas nuevas a `users`
+   sin tocar datos existentes, ya está en `supabase-schema.sql`):
+   ```sql
+   ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT;
+   ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMPTZ;
+   ```
+3. Crear cuenta gratuita en **resend.com**, verificar el dominio
+   `fuelhaus.com` (registros DNS, probablemente en Cloudflare) y cargar
+   `RESEND_API_KEY` como variable de entorno en Vercel. Si esta env var no
+   está configurada, el endpoint no rompe pero tampoco manda el email
+   (queda logueado server-side).
 
-Entre 768px y 1024px la foto de entrenamiento quedaba en una caja muy ancha
-y baja, cortando la cara y las pesas (solo se veía el torso). En desktop
-completo (1440px+) y en mobile se veía bien. Se ajustó el alto y el
-`object-position` específicamente en ese rango.
+## Qué se hizo en esta etapa (ya en `main`, en producción)
 
-## Pendiente / próximos pasos
+### Mobile UX + fotos reales de marca
+- Pase completo de UX mobile (inputs que hacían zoom en iOS, barra de
+  progreso del checkout que se cortaba en pantallas chicas, hero
+  rediseñado para mobile a sangre completa en vez de la versión de
+  escritorio apretada).
+- Fotos reales de la marca (de un WeTransfer con 162 archivos) reemplazando
+  fotos de stock/corporativas en hero, CTA final y footer. El hero final es
+  una foto generada con IA (prompt del cliente) por sobre las fotos reales
+  disponibles, que se sentían "de producto" en vez de lifestyle.
+- Fix de un bug real de scroll horizontal en iOS: `overflow-x:hidden`
+  estaba solo en `body`; en iOS el scroll horizontal lo controla `html`, así
+  que el hero full-bleed (`calc(50% - 50vw)`) podía escaparse y dejar la
+  página corrida hacia la izquierda de forma permanente durante el scroll.
 
-1. **Testimonios** — sección lista pero comentada (`index.html`, buscar el
-   comentario que dice `TESTIMONIOS (pendiente de activar)`). Falta
-   contenido real: pedirle al cliente 2-3 mensajes de WhatsApp o reviews de
-   clientes reales, con nombre (o iniciales) y plan.
+### Sitio bilingüe ES/EN
+- Sistema de traducción propio (`public/js/i18n.js`, sin dependencias) vía
+  atributos `data-i18n*` en el HTML. Español siempre por defecto sin
+  importar el idioma del navegador (decisión de negocio explícita).
+  Selector ES/EN en el header, recordado en `localStorage`.
+- Cubre landing, login/registro y todo el flujo de onboarding/checkout de
+  `home.html` (incluye textos generados por JS, no solo HTML estático).
+- Fix encontrado en QA: el auto-traductor de Chrome traducía por encima del
+  sistema propio y corrompía el nombre de marca — se agregó
+  `<meta name="google" content="notranslate">`.
 
-2. **Sección "Próximamente" (catálogo futuro)** — pendiente por decisión del
-   cliente. Ya están procesadas y guardadas (sin usar todavía en el HTML)
-   las fotos:
-   - `public/img/soon-drinks.jpg` (shots Immunity/Glow/Detox + smoothies)
-   - `public/img/soon-desserts.jpg` (postres altos en proteína)
-   - `public/img/soon-acai.jpg` (açaí bowl)
+### Animaciones (GSAP + ScrollTrigger)
+- Revisión completa de motion en todo el sitio: reveals de entrada al
+  scrollear, parallax en la sección de ingredientes y el CTA, contador
+  animado en "Nosotros", tilt con mouse en cards (desktop), botón de
+  WhatsApp con pulso, etc.
+- La sección "Tres pasos" tuvo varias rondas de ajuste por feedback directo
+  del cliente probando en su celular: pulsos que quedaban infinitos
+  (`repeat:-1`) se leían como "la página está trabada" en vez de sutiles —
+  se corrigió a repeticiones finitas. Las flechas quedaban tapadas por las
+  cards por una regla de stacking de CSS (`.step-card` con
+  `position:relative` pinta por encima de elementos sin `position`) — se
+  corrigió con `z-index` explícito. El pulso del ícono terminó sacándose
+  del todo porque quedaba mal ubicado al escalar dentro de la card.
 
-   Falta armar la sección en `index.html` + CSS, enmarcada como
-   "próximamente"/roadmap de producto, **sin CTA de compra**.
+### Optimización de velocidad de carga
+- Dos fotos del menú estaban a una resolución muy por encima de lo que se
+  muestra en pantalla (300KB/254KB para una miniatura de ~390×340px) — se
+  redimensionaron y recomprimieron sin pérdida visible. En total, casi
+  400KB menos en la primera visita.
+- La foto del hero (elemento más grande de la primera pantalla / LCP) ahora
+  tiene `<link rel="preload" fetchpriority="high">` para que el navegador
+  la empiece a bajar antes de terminar de parsear CSS/fuentes.
+- Se midió si separar Font Awesome en piezas más chicas ayudaba — no
+  (18.9KB comprimido el paquete completo vs 19KB separado en 3 pedidos), no
+  se tocó.
 
-3. **Modelo de cobro semanal vs. mensual** — el sitio dice precios "por
-   semana" en todos lados (hero, plan cards, tabla comparadora, checkout en
-   `home.html`), pero la política real es de membresía **mensual** (se
-   cancela con una semana de anticipación al primer domingo del mes). Se le
-   avisó al cliente; no se tocó porque es una decisión de negocio, no de
-   diseño. Si decide aclararlo en la web, hay que revisar el copy en varios
-   lugares.
+## Pendientes de antes, siguen vigentes
 
-4. **Limpieza opcional de archivos no usados** — siguen en `public/img/` sin
-   usarse: `LOGO.jpeg`, `MENU-PLANES-COMIDA2.jpeg` (2.4MB), y
-   `NOSOTROS-STAND.jpeg` (la foto del puesto de snacks, no es de FuelHaus).
-   No se borraron por las dudas — se pueden limpiar cuando el cliente
-   confirme que no los necesita para otra cosa.
+1. **Testimonios** — sección lista pero comentada en `index.html`, buscar
+   `TESTIMONIOS (pendiente de activar)`. Falta contenido real: 2-3
+   mensajes de WhatsApp o reviews de clientes reales, con nombre (o
+   iniciales) y plan.
 
-5. **Re-extraer fotos del Brand Proposal si hace falta** — el PDF tiene 9
-   páginas con fotografía de estudio de calidad (incluye las de drinks,
-   postres y açaí ya usadas para "Próximamente", y otras sin usar todavía,
-   como una foto de manos cortando ingredientes). Proceso: PyMuPDF (`fitz`)
-   para extraer las imágenes embebidas del PDF (no renderizar la página
-   completa, que da menor resolución) vía `doc.extract_image(xref)` por cada
-   `page.get_images(full=True)`.
+2. **Sección "Próximamente"** (drinks funcionales, postres altos en
+   proteína, açaí bowls) — fotos ya procesadas y guardadas sin usar:
+   `public/img/soon-drinks.jpg`, `soon-desserts.jpg`, `soon-acai.jpg`.
+   Falta armar la sección, enmarcada como roadmap de producto, sin CTA de
+   compra.
+
+3. **Precio semanal vs. membresía mensual** — el sitio dice "por semana" en
+   todos lados, pero la política real es mensual (se cancela con una
+   semana de anticipación al primer domingo del mes). Es decisión de
+   negocio del cliente, no se tocó.
+
+4. **Archivos sin usar en `public/img/`** — `LOGO.jpeg`,
+   `MENU-PLANES-COMIDA2.jpeg` (2.4MB), `NOSOTROS-STAND.jpeg`,
+   `MENU-PLANES.jpeg`, `MENU-PLANES-COMIDA1.jpeg`, `hero-wrap.jpg`. No
+   afectan la velocidad de carga (nadie los descarga si no están
+   referenciados), pero ocupan espacio de más. No se borraron por las
+   dudas.
+
+5. **Stripe** — pendiente de una segunda etapa, el cliente todavía no creó
+   la cuenta.
 
 ## Notas técnicas
 
-- **Deploy:** Vercel conectado a GitHub, auto-deploy en cada push a `main`.
+- **Deploy:** Vercel conectado a GitHub, auto-deploy en cada push a `main`
+  (y preview automático en cada push a cualquier otra rama, URL estable
+  `https://fuelhaus-git-{rama}-valenalias1.vercel.app`).
+- **Ver logs de producción:** `vercel logs https://fuelhaus.vercel.app`
+  (útil para diagnosticar errores 500 que no se ven desde el navegador).
+- **Server completo:** `node server.js` (requiere `.env` con
+  `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `JWT_SECRET`, y ahora también
+  `RESEND_API_KEY` para el reset de contraseña — ver `.env.example`).
 - **Probar localmente sin Supabase:** `python3 -m http.server` dentro de
-  `public/` sirve la landing estática (el login/checkout de `/home` no
-  funciona sin un `.env` real con credenciales de Supabase).
-- **Server completo:** `node server.js` (requiere `.env` con `SUPABASE_URL`,
-  `SUPABASE_SERVICE_KEY`, `JWT_SECRET` — ver `.env.example`).
+  `public/` sirve la landing estática (login/checkout no funcionan sin
+  Supabase real).
