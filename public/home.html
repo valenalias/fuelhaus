@@ -1231,8 +1231,8 @@
 
     /* ── Init ────────────────────────────────────────────────────────────────*/
     (async function init() {
-      const t = token();
-      if (!t) return (window.location.href = '/login');
+      const authToken = token();
+      if (!authToken) return (window.location.href = '/login');
 
       const { ok, data } = await apiFetch('GET', '/api/auth/me');
       if (!ok || !data.user) return (window.location.href = '/login');
