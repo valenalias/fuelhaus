@@ -897,6 +897,18 @@
       </div>
     </div>
 
+    <!-- STEP: PROCESANDO PAGO (vuelta desde Stripe Checkout) -->
+    <div class="step-wrap" id="step-processing">
+      <div class="step-content">
+        <div class="confirm-wrap">
+          <div class="confirm-icon-big"><i class="fa-solid fa-spinner fa-spin"></i></div>
+          <span class="step-eyebrow" data-i18n="home.processing_eyebrow">Confirmando tu pago…</span>
+          <h1 class="step-title" data-i18n="home.processing_title">Ya casi está</h1>
+          <p class="step-sub" data-i18n="home.processing_sub">Esto puede tardar unos segundos, no cierres esta página.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- STEP: CONFIRMACIÓN -->
     <div class="step-wrap" id="step-confirm">
       <div class="step-content">
@@ -1096,13 +1108,7 @@
     }
 
     /* ── Confirmar pedido ────────────────────────────────────────────────────*/
-    async function confirmOrder() {
-      const btn   = document.getElementById('confirm-btn');
-      const errEl = document.getElementById('payment-error');
-      errEl.classList.remove('visible');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + t('home.confirming');
-
+    function buildOrderPayload() {
       const payload = {
         plan:        flow.selectedPlan,
         lastName:    flow.userData.lastName,
@@ -1115,31 +1121,105 @@
           avoid:     document.getElementById('pref-avoid').value.trim() || t('home.none_m'),
         },
       };
-
       // Actualizar nombre si cambió
       if (flow.userData.name && currentUser) {
         payload.name = flow.userData.name;
       }
+      return payload;
+    }
 
-      const { ok, data } = await apiFetch('POST', '/api/orders', payload);
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-check"></i> <span data-i18n="home.confirm_order">' + t('home.confirm_order') + '</span>';
+    function showConfirmScreen(order) {
+      const orderNum = order.orderNumber;
+      document.getElementById('confirm-order-num').textContent = orderNum;
+
+      const waMsg = encodeURIComponent(t('home.whatsapp_confirm_msg', { order: orderNum }));
+      document.getElementById('confirm-whatsapp-btn').href =
+        'https://api.whatsapp.com/send?phone=' + WHATSAPP_NUMBER + '&text=' + waMsg;
+
+      goStep('confirm');
+    }
+
+    // El pago se completa en Stripe Checkout (fuera de esta página), así que
+    // antes de redirigir guardamos el estado del flujo en sessionStorage: si
+    // el usuario cancela y Stripe lo trae de vuelta, lo recuperamos acá mismo
+    // en vez de perderlo con la recarga.
+    function saveCheckoutFlowSnapshot() {
+      sessionStorage.setItem('fh_checkout_flow', JSON.stringify({
+        flow: {
+          selectedPlan:  flow.selectedPlan,
+          selectedGoal:  flow.selectedGoal,
+          appliedCoupon: flow.appliedCoupon,
+          discountPct:   flow.discountPct,
+          discountAmt:   flow.discountAmt,
+          finalPrice:    flow.finalPrice,
+          userData:      flow.userData,
+        },
+        diet:        document.getElementById('pref-diet').value,
+        allergies:   document.getElementById('pref-allergies').value,
+        avoid:       document.getElementById('pref-avoid').value,
+        couponInput: document.getElementById('coupon-input').value,
+      }));
+    }
+
+    function restoreCheckoutFlow() {
+      const raw = sessionStorage.getItem('fh_checkout_flow');
+      sessionStorage.removeItem('fh_checkout_flow');
+      if (!raw) return;
+      try {
+        const snap = JSON.parse(raw);
+        Object.assign(flow, snap.flow);
+        document.getElementById('pref-diet').value       = snap.diet || '';
+        document.getElementById('pref-allergies').value  = snap.allergies || '';
+        document.getElementById('pref-avoid').value      = snap.avoid || '';
+        document.getElementById('coupon-input').value    = snap.couponInput || '';
+        if (flow.appliedCoupon) {
+          document.getElementById('coupon-input').classList.add('valid');
+          const msg = document.getElementById('coupon-msg');
+          msg.className = 'coupon-msg ok';
+          msg.textContent = t('home.coupon_applied_prefix') + flow.discountPct + t('home.coupon_applied_suffix');
+        }
+        updatePaymentSummary();
+      } catch { /* snapshot corrupto: seguimos sin restaurar nada */ }
+    }
+
+    async function waitForNewOrder(maxAttempts, delayMs) {
+      for (let i = 0; i < maxAttempts; i++) {
+        const r = await apiFetch('GET', '/api/orders/mine');
+        if (r.ok && r.data.orders && r.data.orders.length > 0) return r.data.orders[0];
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+      return null;
+    }
+
+    async function confirmOrder() {
+      const btn   = document.getElementById('confirm-btn');
+      const errEl = document.getElementById('payment-error');
+      errEl.classList.remove('visible');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + t('home.confirming');
+
+      const payload = buildOrderPayload();
+      const { ok, data } = await apiFetch('POST', '/api/orders/checkout', payload);
 
       if (!ok) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> <span data-i18n="home.confirm_order">' + t('home.confirm_order') + '</span>';
         errEl.textContent = tApiError(data.error) || t('home.err_confirm_order');
         errEl.classList.add('visible');
         return;
       }
 
-      // Pantalla de confirmación
-      const orderNum = data.order.orderNumber;
-      document.getElementById('confirm-order-num').textContent = orderNum;
+      if (data.url) {
+        // Cupón no cubrió el 100%: hay que pagar de verdad en Stripe.
+        saveCheckoutFlowSnapshot();
+        window.location.href = data.url;
+        return;
+      }
 
-      const waMsg  = encodeURIComponent(t('home.whatsapp_confirm_msg', { order: orderNum }));
-      document.getElementById('confirm-whatsapp-btn').href =
-        'https://api.whatsapp.com/send?phone=' + WHATSAPP_NUMBER + '&text=' + waMsg;
-
-      goStep('confirm');
+      // Cupón 100%: el pedido ya se creó directo, sin pasar por Stripe.
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> <span data-i18n="home.confirm_order">' + t('home.confirm_order') + '</span>';
+      showConfirmScreen(data.order);
     }
 
     /* ── Logout ──────────────────────────────────────────────────────────────*/
@@ -1172,6 +1252,32 @@
         document.getElementById('d-lastname').value = data.user.lastName;
       } else if (parts.length > 1) {
         document.getElementById('d-lastname').value = parts.slice(1).join(' ');
+      }
+
+      // Vuelta desde Stripe Checkout
+      const params = new URLSearchParams(window.location.search);
+      const checkoutStatus = params.get('checkout');
+      if (checkoutStatus) window.history.replaceState(null, '', '/home');
+
+      if (checkoutStatus === 'success') {
+        goStep('processing');
+        const order = await waitForNewOrder(8, 1500);
+        sessionStorage.removeItem('fh_checkout_flow');
+        if (order) { showConfirmScreen(order); return; }
+        goStep('payment');
+        const errEl = document.getElementById('payment-error');
+        errEl.textContent = t('home.err_payment_processing');
+        errEl.classList.add('visible');
+        return;
+      }
+
+      if (checkoutStatus === 'cancelled') {
+        restoreCheckoutFlow();
+        goStep('payment');
+        const errEl = document.getElementById('payment-error');
+        errEl.textContent = t('home.checkout_cancelled_msg');
+        errEl.classList.add('visible');
+        return;
       }
 
       // Verificar si ya tiene pedidos

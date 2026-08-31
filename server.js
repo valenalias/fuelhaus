@@ -4,6 +4,7 @@ const express = require('express');
 const path    = require('path');
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
+const Stripe  = require('stripe');
 const { Users, Orders, Coupons, orderNumber } = require('./db');
 
 const app        = express();
@@ -12,8 +13,14 @@ const ROOT       = path.join(__dirname, 'public');
 const JWT_SECRET = process.env.JWT_SECRET || 'fuelhaus_jwt_2025_secret';
 
 const PLAN_PRICES = { structure: 120, performance: 190, full_system: 225 };
+const PLAN_LABELS = { structure: 'Plan Structure', performance: 'Plan Performance', full_system: 'Plan Full System' };
 
-app.use(express.json());
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
+
+// `verify` guarda el body crudo en req.rawBody sin dejar de parsear el JSON
+// normal para el resto de las rutas — lo necesita el webhook de Stripe para
+// validar la firma (stripe.webhooks.constructEvent exige el buffer exacto).
+app.use(express.json({ verify: (req, res, buf) => { req.rawBody = buf; } }));
 app.use(express.static(ROOT));
 
 // ── Middlewares ──────────────────────────────────────────────────────────────
@@ -175,6 +182,169 @@ app.post('/api/orders', auth, async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'Error del servidor' });
   }
+});
+
+// ── Pedidos: checkout con Stripe (usuario) ────────────────────────────────────
+// Crea una Stripe Checkout Session y redirige ahí; el pedido recién se crea en
+// Supabase cuando llega el webhook `checkout.session.completed` (o de forma
+// directa acá mismo si el cupón deja el precio en $0, sin pasar por Stripe).
+
+async function finalizeOrder(meta) {
+  const user = await Users.getById(meta.userId);
+  if (!user) throw new Error('Usuario no encontrado para la orden: ' + meta.userId);
+
+  let couponData = null, discount = 0;
+  if (meta.couponCode) {
+    const all    = await Coupons.getAll();
+    const coupon = all.find(c => c.code.toUpperCase() === meta.couponCode.toUpperCase() && c.active);
+    if (coupon) {
+      discount   = Math.round(meta.basePrice * coupon.discountPercent / 100);
+      couponData = { code: coupon.code, discountPercent: coupon.discountPercent };
+      await Coupons.update(coupon.id, { uses: coupon.uses + 1 });
+    }
+  }
+
+  await Users.update(user.id, {
+    name:     meta.name || user.name,
+    lastName: meta.lastName || user.lastName || '',
+    phone:    meta.phone,
+    plan:     meta.plan,
+    status:   'active',
+  });
+
+  const order = await Orders.create({
+    userId:                 user.id,
+    userName:               meta.name + (meta.lastName ? ' ' + meta.lastName : ''),
+    userEmail:              user.email,
+    userPhone:              meta.phone,
+    plan:                   meta.plan,
+    planPrice:              meta.basePrice,
+    coupon:                 couponData ? couponData.code : null,
+    discountPercent:        couponData ? couponData.discountPercent : 0,
+    discountAmount:         discount,
+    finalPrice:             meta.finalPrice,
+    preferences:            meta.preferences || {},
+    status:                 'paid',
+    readByAdmin:            false,
+    stripeSessionId:        meta.stripeSessionId || null,
+    stripePaymentIntentId:  meta.stripePaymentIntentId || null,
+  });
+
+  return order;
+}
+
+app.post('/api/orders/checkout', auth, async (req, res) => {
+  try {
+    const { plan, lastName, phone, preferences, couponCode } = req.body || {};
+
+    if (!plan || !PLAN_PRICES[plan]) return res.status(400).json({ error: 'Plan inválido' });
+    if (!phone?.trim()) return res.status(400).json({ error: 'Número de WhatsApp requerido' });
+
+    const user = await Users.getById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const basePrice  = PLAN_PRICES[plan];
+    const firstName  = req.body.name?.trim() || user.name;
+    const cleanLastName = lastName?.trim() || user.lastName || '';
+    const cleanPhone    = phone.trim();
+
+    // Precio estimado solo para decidir si hace falta pasar por Stripe — el
+    // descuento real (y el consumo del cupón) se aplica siempre en finalizeOrder.
+    let estimatedFinal = basePrice;
+    if (couponCode) {
+      const all    = await Coupons.getAll();
+      const coupon = all.find(c => c.code.toUpperCase() === couponCode.toUpperCase() && c.active && (!c.maxUses || c.uses < c.maxUses));
+      if (coupon) estimatedFinal = basePrice - Math.round(basePrice * coupon.discountPercent / 100);
+    }
+
+    if (estimatedFinal <= 0) {
+      const order = await finalizeOrder({
+        userId: user.id, plan, name: firstName, lastName: cleanLastName, phone: cleanPhone,
+        couponCode, preferences, basePrice, finalPrice: 0,
+      });
+      return res.status(201).json({ order: { ...order, orderNumber: orderNumber(order.id) } });
+    }
+
+    if (!stripe) return res.status(500).json({ error: 'Los pagos todavía no están configurados' });
+
+    const origin = req.headers.origin || `https://${req.get('host')}`;
+
+    const session = await stripe.checkout.sessions.create({
+      mode:                'payment',
+      payment_method_types: ['card'],
+      customer_email:      user.email,
+      line_items: [{
+        price_data: {
+          currency:     'usd',
+          product_data: { name: PLAN_LABELS[plan] || plan },
+          unit_amount:  Math.round(estimatedFinal * 100),
+        },
+        quantity: 1,
+      }],
+      metadata: {
+        userId:      String(user.id),
+        plan,
+        name:        firstName,
+        lastName:    cleanLastName,
+        phone:       cleanPhone,
+        couponCode:  couponCode || '',
+        basePrice:   String(basePrice),
+        finalPrice:  String(estimatedFinal),
+        preferences: JSON.stringify(preferences || {}).slice(0, 490),
+      },
+      success_url: `${origin}/home?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:  `${origin}/home?checkout=cancelled`,
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// ── Stripe: webhook ───────────────────────────────────────────────────────────
+// Público (sin JWT) — Stripe se autentica con la firma del header, no con
+// nuestro auth normal. Acá es donde el pedido se crea de verdad.
+
+app.post('/api/stripe/webhook', async (req, res) => {
+  if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) return res.status(500).end();
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.rawBody, req.headers['stripe-signature'], process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error('Webhook de Stripe con firma inválida:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    try {
+      const existing = await Orders.find(o => o.stripeSessionId === session.id);
+      if (existing.length === 0) {
+        const meta = session.metadata || {};
+        await finalizeOrder({
+          userId:                meta.userId,
+          plan:                  meta.plan,
+          name:                  meta.name,
+          lastName:              meta.lastName,
+          phone:                 meta.phone,
+          couponCode:            meta.couponCode,
+          preferences:           meta.preferences ? JSON.parse(meta.preferences) : {},
+          basePrice:             Number(meta.basePrice) || 0,
+          finalPrice:            Number(meta.finalPrice) || 0,
+          stripeSessionId:       session.id,
+          stripePaymentIntentId: session.payment_intent || null,
+        });
+      }
+    } catch (err) {
+      console.error('Error creando el pedido desde el webhook de Stripe:', err);
+      return res.status(500).end();
+    }
+  }
+
+  res.json({ received: true });
 });
 
 // ── Pedidos: los míos (usuario) ───────────────────────────────────────────────

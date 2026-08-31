@@ -329,6 +329,10 @@ const I18N = {
       confirmed_whatsapp_btn: 'Avisar que ya pagué',
       whatsapp_confirm_msg: 'Ya aboné mi pedido número {order}',
 
+      processing_eyebrow: 'Confirmando tu pago…',
+      processing_title: 'Ya casi está',
+      processing_sub: 'Esto puede tardar unos segundos, no cierres esta página.',
+
       status_paid: 'Pagado',
       status_processing: 'En proceso',
       status_delivered: 'Entregado',
@@ -338,6 +342,8 @@ const I18N = {
       err_select_goal: 'Seleccioná tu objetivo antes de continuar',
       err_confirm_order: 'Error al confirmar el pedido',
       err_invalid_coupon: 'Cupón inválido',
+      err_payment_processing: 'Tu pago se está confirmando y está tardando más de lo normal. Si el cargo se hizo, tu pedido va a aparecer en unos minutos — refrescá esta página o avisanos por WhatsApp.',
+      checkout_cancelled_msg: 'Cancelaste el pago. Podés revisar el resumen y volver a intentarlo cuando quieras.',
     },
 
     /* Mapea mensajes de error que devuelve el servidor (siempre en
@@ -666,6 +672,10 @@ const I18N = {
       confirmed_whatsapp_btn: 'Let us know I\'ve paid',
       whatsapp_confirm_msg: 'I just paid for my order number {order}',
 
+      processing_eyebrow: 'Confirming your payment…',
+      processing_title: 'Almost there',
+      processing_sub: 'This can take a few seconds, don\'t close this page.',
+
       status_paid: 'Paid',
       status_processing: 'Processing',
       status_delivered: 'Delivered',
@@ -675,6 +685,8 @@ const I18N = {
       err_select_goal: 'Select your goal before continuing',
       err_confirm_order: 'Error confirming the order',
       err_invalid_coupon: 'Invalid coupon',
+      err_payment_processing: 'Your payment is still confirming and it\'s taking longer than usual. If the charge went through, your order will show up in a few minutes — refresh this page or message us on WhatsApp.',
+      checkout_cancelled_msg: 'You cancelled the payment. You can review the summary and try again whenever you want.',
     },
 
     api_errors: {
@@ -694,6 +706,7 @@ const I18N = {
       'Plan inválido': 'Invalid plan',
       'Número de WhatsApp requerido': 'WhatsApp number required',
       'Pedido no encontrado': 'Order not found',
+      'Los pagos todavía no están configurados': 'Payments are not set up yet',
     },
   },
 };

@@ -20,6 +20,8 @@ const TO_SNAKE = {
   userEmail:       'user_email',
   userPhone:       'user_phone',
   createdAt:       'created_at',
+  stripeSessionId:       'stripe_session_id',
+  stripePaymentIntentId: 'stripe_payment_intent_id',
 };
 
 const FROM_SNAKE = Object.fromEntries(Object.entries(TO_SNAKE).map(([k, v]) => [v, k]));

@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS orders (
   preferences      JSONB       NOT NULL DEFAULT '{}',
   status           TEXT        NOT NULL DEFAULT 'paid',
   read_by_admin    BOOLEAN     NOT NULL DEFAULT FALSE,
+  stripe_session_id        TEXT UNIQUE,
+  stripe_payment_intent_id TEXT,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

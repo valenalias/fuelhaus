@@ -1,6 +1,6 @@
 # HANDOFF — FuelHaus
 
-Última actualización: 2026-07-31
+Última actualización: 2026-08-31 (ver sección "Stripe Checkout" — sesión más reciente)
 
 ## Contexto
 
@@ -136,8 +136,66 @@ todas fuera del código:
    referenciados), pero ocupan espacio de más. No se borraron por las
    dudas.
 
-5. **Stripe** — pendiente de una segunda etapa, el cliente todavía no creó
-   la cuenta.
+5. **Stripe** — implementado (ver sección "Stripe Checkout" más abajo, sesión
+   2026-08-31). Falta que el cliente termine de configurarlo (SQL, env vars,
+   webhook) y probarlo en modo test antes de pasar a claves live.
+
+## Stripe Checkout (sesión 2026-08-31)
+
+**Qué cambió:** el paso "Confirmar pedido" del onboarding (`home.html`) ya no
+crea el pedido directo con `status: paid` — ahora crea una Stripe Checkout
+Session y redirige ahí. El pedido recién se crea en Supabase cuando llega el
+webhook `checkout.session.completed` (o, si un cupón deja el precio en $0,
+se crea directo sin pasar por Stripe). Cobro **único por pedido** (no
+suscripción recurrente) — coherente con el modelo actual de "un pedido por
+selección de plan"; la membresía mensual real (ver punto 3 de arriba) sigue
+sin resolver y queda fuera de esta etapa.
+
+**Archivos tocados:**
+- `server.js`: `POST /api/orders/checkout` (crea la sesión de Stripe o el
+  pedido gratis directo) y `POST /api/stripe/webhook` (público, valida firma,
+  crea el pedido — idempotente por `stripe_session_id`). Lógica de creación
+  de pedido compartida en `finalizeOrder()`. `express.json({ verify })` guarda
+  el body crudo en `req.rawBody` para la verificación de firma sin tener que
+  reordenar middlewares.
+- `db.js`: mapeo `stripeSessionId`/`stripePaymentIntentId` ↔
+  `stripe_session_id`/`stripe_payment_intent_id`.
+- `supabase-schema.sql`: columnas nuevas en `orders` (`stripe_session_id`
+  UNIQUE, `stripe_payment_intent_id`) — **falta correr el ALTER en la DB real
+  de producción**, ver abajo.
+- `public/home.html`: `confirmOrder()` ahora llama a `/api/orders/checkout`;
+  si devuelve `url` redirige a Stripe; si devuelve `order` (cupón 100%) va
+  directo a la pantalla de confirmación. Nuevo paso `step-processing`
+  (spinner "Confirmando tu pago…") para la vuelta desde Stripe. El estado del
+  flujo (plan, cupón, datos, preferencias) se guarda en `sessionStorage`
+  antes de redirigir a Stripe, para poder restaurarlo si el usuario cancela.
+- `public/js/i18n.js`: strings nuevos ES/EN para el paso de "procesando
+  pago", el error de "el pago está tardando" y el aviso de pago cancelado.
+- `package.json`: dependencia `stripe` (`^22.6.0`).
+- `.env.example`: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`.
+
+**Pendiente para que funcione en producción (a cargo de Valen):**
+1. Correr en el SQL Editor de Supabase (proyecto `ohnedhcnqcmhaggyddjx`):
+   ```sql
+   ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_session_id TEXT UNIQUE;
+   ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_payment_intent_id TEXT;
+   ```
+2. En el Dashboard de Stripe (modo test primero): Developers → API keys →
+   copiar la Secret key (`sk_test_...`).
+3. En el Dashboard de Stripe: Developers → Webhooks → Add endpoint → URL
+   `https://fuelhaus.vercel.app/api/stripe/webhook` → evento
+   `checkout.session.completed` → copiar el Signing secret (`whsec_...`).
+4. Cargar `STRIPE_SECRET_KEY` y `STRIPE_WEBHOOK_SECRET` en Vercel
+   (Project Settings → Environment Variables, Production y Preview).
+5. Probar un pedido completo en modo test (tarjeta `4242 4242 4242 4242`,
+   cualquier fecha futura/CVC) de punta a punta antes de pasar a claves live.
+6. Recién ahí reemplazar por las claves **live** (`sk_live_...`/
+   `whsec_...` del webhook en modo live — es un endpoint nuevo, con su
+   propio signing secret) y volver a probar con una tarjeta real.
+
+**No bloqueado por falta de dominio propio** (a diferencia del reset de
+contraseña con Resend, ver rama `forgot-password`) — Stripe funciona con
+cualquier URL pública, `fuelhaus.vercel.app` alcanza.
 
 ## Notas técnicas
 
