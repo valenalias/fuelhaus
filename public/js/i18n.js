@@ -104,6 +104,8 @@ const I18N = {
       full_week_cta: 'Elegir Full Week',
       full_week_i1: '15 comidas',
       full_week_i2: '7 activate shots',
+      full_week_regular_label: 'Valor regular',
+      full_week_savings: 'Ahorrás $39/semana',
       note_html: 'Cada plan se adapta a tus objetivos, gustos y alergias. Sin excepciones. <a href="#contacto">Habla con nosotros →</a>',
     },
 
@@ -273,6 +275,8 @@ const I18N = {
       full_week_i3: 'Personalizado por macros',
       full_week_i4: 'Entrega el domingo',
       full_week_cta: 'Elegir Full Week',
+      full_week_regular_label: 'Valor regular',
+      full_week_savings: 'Ahorrás $39/semana',
       back: 'Atrás',
       click_plan_hint: 'Hacé clic en el plan para seleccionarlo',
 
@@ -463,6 +467,8 @@ const I18N = {
       full_week_cta: 'Choose Full Week',
       full_week_i1: '15 meals',
       full_week_i2: '7 activate shots',
+      full_week_regular_label: 'Regular value',
+      full_week_savings: 'Save $39/week',
       note_html: 'Every plan adapts to your goals, taste and allergies. No exceptions. <a href="#contacto">Talk to us →</a>',
     },
 
@@ -630,6 +636,8 @@ const I18N = {
       full_week_i3: 'Customized by macros',
       full_week_i4: 'Sunday delivery',
       full_week_cta: 'Choose Full Week',
+      full_week_regular_label: 'Regular value',
+      full_week_savings: 'Save $39/week',
       back: 'Back',
       click_plan_hint: 'Click a plan to select it',
 

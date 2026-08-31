@@ -283,6 +283,12 @@
     .plan-card.featured .plan-name, .plan-card.flagship .plan-name { color: var(--white); }
 
     .plan-price-row { margin-bottom: 1.25rem; }
+    /* Valor regular / ahorro (solo Full Week) — referencia discreta, sin
+       badges ni colores de "oferta", tachado chico arriba del precio real. */
+    .plan-value-row { display: flex; align-items: baseline; gap: 0.4rem; font-size: 0.72rem; color: rgba(255,255,255,0.6); margin-bottom: 0.15rem; }
+    .plan-regular-price { text-decoration: line-through; }
+    .plan-card.flagship .plan-price-row { margin-bottom: 0.2rem; }
+    .plan-savings { font-size: 0.78rem; font-weight: 600; color: rgba(255,255,255,0.85); margin-bottom: 1.25rem; }
     .plan-price { font-size: 2rem; font-weight: 800; color: var(--black); line-height: 1; }
     .plan-card.featured .plan-price, .plan-card.flagship .plan-price { color: var(--white); }
     .plan-per  { font-size: 0.82rem; color: var(--gray); font-weight: 500; }
@@ -745,10 +751,15 @@
           <div class="plan-card flagship" data-plan="full_week" onclick="selectPlan('full_week', this)">
             <div class="plan-badge"><i class="fa-solid fa-trophy"></i><span data-i18n="home.most_complete">El más completo</span></div>
             <div class="plan-name" data-i18n="home.full_week_name">Full Week</div>
+            <div class="plan-value-row">
+              <span data-i18n="home.full_week_regular_label">Valor regular</span>
+              <span class="plan-regular-price">$304</span>
+            </div>
             <div class="plan-price-row">
               <span class="plan-price">$265</span>
               <span class="plan-per" data-i18n="home.per_week"> / semana</span>
             </div>
+            <p class="plan-savings" data-i18n="home.full_week_savings">Ahorrás $39/semana</p>
             <ul class="plan-includes">
               <li><i class="fa-solid fa-check"></i> <span data-i18n="home.full_week_i1">15 comidas semanales</span></li>
               <li><i class="fa-solid fa-check"></i> <span data-i18n="home.full_week_i2">7 activate shots</span></li>
