@@ -1,6 +1,6 @@
 # HANDOFF — FuelHaus
 
-Última actualización: 2026-08-31 (ver sección "Stripe Checkout" — sesión más reciente)
+Última actualización: 2026-08-31 (ver secciones "Stripe Checkout" y "Plan Full Week" — sesión más reciente)
 
 ## Contexto
 
@@ -196,6 +196,53 @@ sin resolver y queda fuera de esta etapa.
 **No bloqueado por falta de dominio propio** (a diferencia del reset de
 contraseña con Resend, ver rama `forgot-password`) — Stripe funciona con
 cualquier URL pública, `fuelhaus.vercel.app` alcanza.
+
+## Plan Full Week (sesión 2026-08-31, en producción)
+
+**Cuarto plan:** $265/semana — 15 comidas + 7 activate shots. `PLAN_PRICES`/
+`PLAN_LABELS` en `server.js` (usa el mismo checkout de Stripe que los demás,
+sin código nuevo ahí).
+
+**Landing page (`index.html`):** no se agregó como cuarta card en la grilla
+(quedaba 3+1 descolgada) — se agrega como card **flagship** de ancho
+completo debajo de las 3 cards existentes (`.plan-flagship`), con badge
+"El más completo" (trophy, fondo `--green-bg`, distinto del `--green` de
+"Más elegido" de Performance para no competir visualmente). Incluye
+"Valor regular ~~$304~~" tachado chico + "Ahorrás $39/semana" discreto
+(sin badges rojos ni % — cálculo: Structure $120 ÷ (5 meals + 5 shots a
+$7c/u = $35) → ~$17/meal; 15×$17 + 7×$7 = $304 valor de referencia).
+**No se tocó el comparador "Compará en detalle"** (forzar 15 comidas en las
+columnas separadas de Almuerzos/Cenas hubiera requerido inventar un split
+que el cliente no dio — si en algún momento pide agregarlo ahí, pedirle el
+desglose real primero). En mobile (≤1024px) los 3 planes de la grilla
+pasan a **carrusel horizontal con scroll-snap** (antes se apilaban en
+columna) — el flagship se mantiene aparte, ancho completo, no entra al
+carrusel.
+
+**Onboarding (`home.html`):** grilla de planes pasa de 3 a **2×2**
+(`.plans-grid { grid-template-columns: repeat(2, 1fr); }`), Full Week con
+clase `.flagship` (fondo `--sage`, badge `--dark-green` con trofeo — distinto
+del fondo `--dark-green` sólido de "Más elegido"/Performance). Mobile sigue
+apilado en una columna (a diferencia de la landing, acá es un paso
+transaccional de elegir-y-listo, no una vitrina — no se justificaba el
+carrusel).
+
+**Verificado end-to-end:** seleccionar Full Week en el onboarding → resumen
+"$265/sem" correcto → Stripe Checkout muestra "Plan Full Week — USD 265.00"
+(modo test). Cuenta de prueba usada
+(`test.fullweek.fuelhaus@gmail.com`) fue borrada por Valen después de la
+prueba.
+
+**Lección de sesión — pestañas en segundo plano rompen Claude in Chrome:**
+si la pestaña del navegador queda en background (`document.visibilityState
+!== "visible"`), Chrome frena el ticker de GSAP y varias herramientas del
+navegador (screenshot, scroll, find, get_page_text) quedan colgadas
+indefinidamente esperando `document_idle` — no es un bug del sitio.
+Solución: pedirle al usuario que traiga la pestaña al frente: `document.
+hasFocus()` en consola confirma. `resize_window` además falla o no aplica
+si el tab está oculto, y en esta máquina el monitor físico limita el ancho
+CSS real a ~983px con escalado de Windows al 125% (no se puede simular un
+verdadero ≥1024px salvo maximizando/enfocando la ventana real).
 
 ## Notas técnicas
 
