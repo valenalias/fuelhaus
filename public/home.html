@@ -253,7 +253,7 @@
     /* ── STEP: PLANES ─── */
     .plans-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 1.25rem;
       margin-top: 0.5rem;
     }
@@ -271,17 +271,28 @@
     .plan-card:hover { border-color: var(--sage); box-shadow: var(--shadow); transform: translateY(-2px); }
     .plan-card.selected { border-color: var(--dark-green); box-shadow: 0 0 0 3px rgba(43,61,38,0.12); }
     .plan-card.featured { background: var(--dark-green); border-color: var(--dark-green); }
+    /* Full Week: segundo nivel destacado, distinto del "Más elegido" (featured)
+       para que no compitan visualmente por el mismo verde oscuro. */
+    .plan-card.flagship { background: var(--sage); border-color: var(--sage); }
 
     .plan-badge { position: absolute; top: -1px; right: 1.25rem; background: var(--sage); color: var(--white); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.25rem 0.7rem; border-radius: 0 0 8px 8px; }
+    .plan-card.flagship .plan-badge { background: var(--dark-green); }
+    .plan-card.flagship .plan-badge i { margin-right: 0.3rem; }
 
     .plan-name { font-family: 'Lora', serif; font-size: 1.5rem; font-weight: 600; color: var(--black); margin-bottom: 0.15rem; }
-    .plan-card.featured .plan-name { color: var(--white); }
+    .plan-card.featured .plan-name, .plan-card.flagship .plan-name { color: var(--white); }
 
     .plan-price-row { margin-bottom: 1.25rem; }
+    /* Valor regular / ahorro (solo Full Week) — referencia discreta, sin
+       badges ni colores de "oferta", tachado chico arriba del precio real. */
+    .plan-value-row { display: flex; align-items: baseline; gap: 0.4rem; font-size: 0.72rem; color: rgba(255,255,255,0.6); margin-bottom: 0.15rem; }
+    .plan-regular-price { text-decoration: line-through; }
+    .plan-card.flagship .plan-price-row { margin-bottom: 0.2rem; }
+    .plan-savings { font-size: 0.78rem; font-weight: 600; color: rgba(255,255,255,0.85); margin-bottom: 1.25rem; }
     .plan-price { font-size: 2rem; font-weight: 800; color: var(--black); line-height: 1; }
-    .plan-card.featured .plan-price { color: var(--white); }
+    .plan-card.featured .plan-price, .plan-card.flagship .plan-price { color: var(--white); }
     .plan-per  { font-size: 0.82rem; color: var(--gray); font-weight: 500; }
-    .plan-card.featured .plan-per { color: rgba(255,255,255,0.6); }
+    .plan-card.featured .plan-per, .plan-card.flagship .plan-per { color: rgba(255,255,255,0.6); }
 
     .plan-includes {
       list-style: none;
@@ -298,9 +309,10 @@
       font-size: 0.875rem;
       color: var(--black);
     }
-    .plan-card.featured .plan-includes li { color: rgba(255,255,255,0.85); }
+    .plan-card.featured .plan-includes li, .plan-card.flagship .plan-includes li { color: rgba(255,255,255,0.85); }
     .plan-includes li i { color: var(--sage); font-size: 0.8rem; }
     .plan-card.featured .plan-includes li i { color: #a8c49d; }
+    .plan-card.flagship .plan-includes li i { color: var(--dark-green); }
 
     .plan-select-btn {
       width: 100%;
@@ -326,6 +338,15 @@
     }
     .plan-card.featured .plan-select-btn:hover,
     .plan-card.featured.selected .plan-select-btn {
+      background: var(--white);
+      color: var(--dark-green);
+    }
+    .plan-card.flagship .plan-select-btn {
+      border-color: var(--white);
+      color: var(--white);
+    }
+    .plan-card.flagship .plan-select-btn:hover,
+    .plan-card.flagship.selected .plan-select-btn {
       background: var(--white);
       color: var(--dark-green);
     }
@@ -727,6 +748,27 @@
             <button class="plan-select-btn" data-i18n="home.full_system_cta">Elegir Full System</button>
           </div>
 
+          <div class="plan-card flagship" data-plan="full_week" onclick="selectPlan('full_week', this)">
+            <div class="plan-badge"><i class="fa-solid fa-trophy"></i><span data-i18n="home.most_complete">El más completo</span></div>
+            <div class="plan-name" data-i18n="home.full_week_name">Full Week</div>
+            <div class="plan-value-row">
+              <span data-i18n="home.full_week_regular_label">Valor regular</span>
+              <span class="plan-regular-price">$304</span>
+            </div>
+            <div class="plan-price-row">
+              <span class="plan-price">$265</span>
+              <span class="plan-per" data-i18n="home.per_week"> / semana</span>
+            </div>
+            <p class="plan-savings" data-i18n="home.full_week_savings">Ahorrás $39/semana</p>
+            <ul class="plan-includes">
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.full_week_i1">15 comidas semanales</span></li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.full_week_i2">7 activate shots</span></li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.full_week_i3">Personalizado por macros</span></li>
+              <li><i class="fa-solid fa-check"></i> <span data-i18n="home.full_week_i4">Entrega el domingo</span></li>
+            </ul>
+            <button class="plan-select-btn" data-i18n="home.full_week_cta">Elegir Full Week</button>
+          </div>
+
         </div>
 
         <div class="form-actions">
@@ -937,7 +979,7 @@
   <script>
     /* ── Datos del flujo ─────────────────────────────────────────────────────*/
     const WHATSAPP_NUMBER = '18184288427';
-    const PLAN_PRICES = { structure: 120, performance: 190, full_system: 225 };
+    const PLAN_PRICES = { structure: 120, performance: 190, full_system: 225, full_week: 265 };
     /* Nombres/etiquetas traducibles: se resuelven contra el diccionario de
        i18n.js en cada llamada, así respetan el idioma activo aunque el
        usuario lo cambie a mitad del flujo sin recargar la página. */

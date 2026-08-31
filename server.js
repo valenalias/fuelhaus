@@ -12,8 +12,8 @@ const PORT       = process.env.PORT || 3000;
 const ROOT       = path.join(__dirname, 'public');
 const JWT_SECRET = process.env.JWT_SECRET || 'fuelhaus_jwt_2025_secret';
 
-const PLAN_PRICES = { structure: 120, performance: 190, full_system: 225 };
-const PLAN_LABELS = { structure: 'Plan Structure', performance: 'Plan Performance', full_system: 'Plan Full System' };
+const PLAN_PRICES = { structure: 120, performance: 190, full_system: 225, full_week: 265 };
+const PLAN_LABELS = { structure: 'Plan Structure', performance: 'Plan Performance', full_system: 'Plan Full System', full_week: 'Plan Full Week' };
 
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 

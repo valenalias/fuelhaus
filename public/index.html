@@ -55,7 +55,7 @@
         "url": "https://fuelhaus.com",
         "telephone": "+18184288427",
         "servesCuisine": ["Comida Saludable", "Fitness", "Orgánica", "Meal Prep"],
-        "priceRange": "$120-$225 por semana",
+        "priceRange": "$120-$265 por semana",
         "hasDelivery": true,
         "openingHours": "Su 08:00-20:00",
         "areaServed": {
@@ -104,6 +104,13 @@
             "name": "Plan Full System",
             "description": "5 almuerzos + 5 cenas + 5 activate shots + 3 snacks. Cobertura total.",
             "url": "https://fuelhaus.com/#planes"
+          },
+          {
+            "@type": "ListItem",
+            "position": 4,
+            "name": "Plan Full Week",
+            "description": "15 comidas + 7 activate shots por semana. El plan más completo.",
+            "url": "https://fuelhaus.com/#planes"
           }
         ]
       },
@@ -131,7 +138,7 @@
             "name": "¿Cuánto cuesta el servicio de comidas?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Los planes van desde $120 por semana (Plan Structure) hasta $225 por semana (Plan Full System). Todos incluyen comidas con alta proteína, frescas y sin conservantes."
+              "text": "Los planes van desde $120 por semana (Plan Structure) hasta $265 por semana (Plan Full Week, el más completo). Todos incluyen comidas con alta proteína, frescas y sin conservantes."
             }
           },
           {
@@ -413,6 +420,35 @@
             <a href="#contacto" class="btn btn-outline btn-mag btn-full" data-i18n="plans.full_system_cta">Elegir Full System</a>
           </div>
         </div>
+
+        <div class="plan-flagship">
+          <div class="flagship-badge"><i class="fa-solid fa-trophy"></i><span data-i18n="plans.full_week_badge">El más completo</span></div>
+          <div class="flagship-inner">
+            <div class="flagship-info">
+              <span class="plan-name" data-i18n="plans.full_week_name">Full Week</span>
+              <p class="flagship-tagline" data-i18n="plans.full_week_tagline">Your full week, fueled.</p>
+              <p class="plan-desc" data-i18n="plans.full_week_desc">Para no fallarte nunca: tu semana entera resuelta, sin vueltas.</p>
+            </div>
+            <ul class="plan-includes flagship-includes">
+              <li><i class="fa-solid fa-check"></i><span data-i18n="plans.full_week_i1">15 comidas</span></li>
+              <li><i class="fa-solid fa-check"></i><span data-i18n="plans.full_week_i2">7 activate shots</span></li>
+            </ul>
+            <div class="flagship-buy">
+              <div class="flagship-value">
+                <span data-i18n="plans.full_week_regular_label">Valor regular</span>
+                <span class="flagship-regular-price">$304</span>
+              </div>
+              <div class="plan-price">
+                <span class="price-sign">$</span>
+                <span class="price-num">265</span>
+                <span class="price-per" data-i18n="plans.per_week">/ semana</span>
+              </div>
+              <p class="flagship-savings" data-i18n="plans.full_week_savings">Ahorrás $39/semana</p>
+              <a href="#contacto" class="btn btn-white btn-mag btn-full" data-i18n="plans.full_week_cta">Elegir Full Week</a>
+            </div>
+          </div>
+        </div>
+
         <p class="plans-note" data-i18n-html="plans.note_html">Cada plan se adapta a tus objetivos, gustos y alergias. Sin excepciones. <a href="#contacto">Habla con nosotros →</a></p>
 
         <div class="compare-wrap">

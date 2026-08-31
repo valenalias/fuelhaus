@@ -773,6 +773,86 @@ em { font-style: italic; }
 .plans-note a { color: var(--green); font-weight: 500; }
 .plans-note a:hover { text-decoration: underline; }
 
+/* ---- Full Week: card flagship aparte, no un cuarto plan más en la
+   grilla (que quedaría 3+1 descolgada) — el tope de gama se presenta
+   como una pieza propia, de ancho completo. Verde más oscuro que
+   plan-featured (--green en vez de --green-bg) para que no compitan
+   por la misma jerarquía visual. */
+.plan-flagship {
+  background: var(--green-bg);
+  border-radius: var(--r);
+  padding: 44px 48px;
+  margin-bottom: 40px;
+  position: relative;
+  color: var(--white);
+}
+.flagship-badge {
+  position: absolute;
+  top: -14px;
+  left: 48px;
+  background: var(--green);
+  color: var(--white);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 5px 16px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+.flagship-badge i { margin-right: 6px; }
+.flagship-inner {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+.flagship-info { flex: 1.4; display: flex; flex-direction: column; gap: 8px; }
+.plan-flagship .plan-name { color: var(--white); }
+.flagship-tagline {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 20px;
+  color: var(--white);
+}
+.plan-flagship .plan-desc { color: rgba(255,255,255,0.65); }
+.flagship-includes {
+  flex: 1;
+  margin-bottom: 0;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+}
+.flagship-includes li { color: var(--white); }
+.flagship-includes li i { color: rgba(255,255,255,0.8); }
+.flagship-buy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.plan-flagship .price-sign, .plan-flagship .price-num { color: var(--white); }
+.plan-flagship .price-per { color: rgba(255,255,255,0.6); }
+.flagship-buy .btn { width: 100%; margin-top: 12px; }
+
+/* Valor regular / ahorro: referencia discreta, no una promo agresiva —
+   sin badges, sin rojo, sin porcentajes. Solo el precio de siempre
+   tachado arriba y una línea chica de ahorro debajo del precio. */
+.flagship-value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+}
+.flagship-regular-price { text-decoration: line-through; }
+.flagship-savings {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.75);
+  margin-top: 2px;
+}
+
 /* ---- Comparador de planes ---- */
 .compare-wrap { margin-top: 72px; }
 .compare-title {
@@ -1344,13 +1424,32 @@ thead .compare-featured-col { background: var(--green); color: var(--white); }
   .badge-big { font-size: 16px; }
   .badge-sub { margin-top: 0; font-size: 11px; }
 
-  /* Plans */
+  /* Plans — carrusel horizontal con scroll-snap en vez de la lista
+     apilada: se siente pensado para el dedo (swipe) en vez de una
+     grilla de escritorio angostada. Full bleed edge-to-edge con un
+     poco de la próxima card asomando como pista de que hay más. */
   .plans-grid {
-    grid-template-columns: 1fr;
-    max-width: 420px;
-    margin-left: auto;
-    margin-right: auto;
+    display: flex;
+    grid-template-columns: none;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 16px;
+    max-width: 100%;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding: 4px 20px 8px;
   }
+  .plans-grid::-webkit-scrollbar { display: none; }
+  .plans-grid .plan-card {
+    flex: 0 0 82%;
+    scroll-snap-align: center;
+  }
+
+  .flagship-inner { flex-direction: column; align-items: stretch; gap: 24px; }
+  .flagship-includes { flex-direction: column; }
+  .plan-flagship { padding: 40px 28px; }
 
   /* Food */
   .food-inner { grid-template-columns: 1fr; }
