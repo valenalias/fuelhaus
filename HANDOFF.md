@@ -1,6 +1,26 @@
 # HANDOFF — FuelHaus
 
-Última actualización: 2026-08-31 (ver secciones "Stripe Checkout" y "Plan Full Week" — sesión más reciente)
+Última actualización: 2026-09-04 (ver sección "Stripe en modo LIVE" — sesión más reciente)
+
+## Stripe en modo LIVE (sesión 2026-09-04)
+
+Se pasó Stripe de modo test a **modo live** (cobros reales). Se generó la
+Secret Key live (`sk_live_...`) y un webhook nuevo en modo live (Developers
+→ Webhooks, endpoint `https://fuelhaus.vercel.app/api/stripe/webhook`,
+evento `checkout.session.completed`, con su propio `whsec_...`). Ambas
+claves se cargaron en Vercel **solo en Production** (Preview se dejó con
+las claves de test, así los deploys de preview no arriesgan cobrar de
+verdad).
+
+De paso se detectó y arregló un bug del deploy manual (`vercel deploy`):
+no respetaba el `.gitignore` e intentaba subir 1.8GB de
+`BRANDING/CONTENIDO-NUEVO/` (assets no usados por el sitio), rompiendo el
+deploy. Se agregó `.vercelignore` (commit `3a2cd98`).
+
+**Pendiente:** hacer una compra real chica de punta a punta para confirmar
+que el webhook crea el pedido en Supabase con las claves live (implica un
+cargo real, reembolsable después desde el Dashboard de Stripe si es solo
+de prueba) — no se hizo en esta sesión porque involucra plata real.
 
 ## Contexto
 
