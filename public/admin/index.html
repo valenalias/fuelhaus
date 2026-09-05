@@ -130,6 +130,11 @@
             <span class="plan-stat-num" id="s-full_system">—</span>
             <span class="plan-stat-label">clientes</span>
           </div>
+          <div class="plan-stat-card flagship">
+            <span class="plan-stat-name">Full Week</span>
+            <span class="plan-stat-num" id="s-full_week">—</span>
+            <span class="plan-stat-label">clientes</span>
+          </div>
           <div class="plan-stat-card muted">
             <span class="plan-stat-name">Sin plan</span>
             <span class="plan-stat-num" id="s-none">—</span>
@@ -301,6 +306,7 @@
               <tr>
                 <th>Código</th>
                 <th>Descuento</th>
+                <th>Mínimo</th>
                 <th>Usos</th>
                 <th>Usos máx.</th>
                 <th>Estado</th>
@@ -351,13 +357,24 @@
       <form id="coupon-form" novalidate>
         <input type="hidden" id="c-id">
         <div class="modal-grid">
-          <div class="field">
+          <div class="field field-full">
             <label for="c-code">Código *</label>
             <input type="text" id="c-code" placeholder="DESCUENTO20" style="text-transform:uppercase" required>
           </div>
           <div class="field">
-            <label for="c-discount">Descuento (%) *</label>
-            <input type="number" id="c-discount" min="1" max="100" placeholder="20" required>
+            <label for="c-type">Tipo de descuento *</label>
+            <select id="c-type">
+              <option value="percent">Porcentaje (%)</option>
+              <option value="fixed">Monto fijo ($)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="c-discount" id="c-discount-label">Descuento (%) *</label>
+            <input type="number" id="c-discount" min="1" max="100" step="1" placeholder="20" required>
+          </div>
+          <div class="field field-full">
+            <label for="c-min-order">Compra mínima para que aplique (opcional)</label>
+            <input type="number" id="c-min-order" min="0" step="1" placeholder="Ej: 200 (dejalo vacío para que aplique siempre)">
           </div>
           <div class="field field-full">
             <label for="c-maxuses">Usos máximos (0 o vacío = ilimitado)</label>

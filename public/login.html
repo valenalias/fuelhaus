@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -272,6 +273,52 @@
     }
     .back-link:hover { color: var(--dark-green); }
 
+    .forgot-link {
+      display: block;
+      text-align: right;
+      margin-top: -0.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--gray);
+      font-size: 0.8rem;
+      text-decoration: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'Be Vietnam Pro', sans-serif;
+      width: 100%;
+      transition: color 0.2s;
+    }
+    .forgot-link:hover { color: var(--dark-green); }
+
+    .forgot-success {
+      display: none;
+      text-align: center;
+    }
+    .forgot-success.visible { display: block; }
+    .forgot-success p {
+      color: var(--black);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
+    }
+    .btn-whatsapp {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.85rem 1.5rem;
+      background: #25d366;
+      color: var(--white);
+      border-radius: 8px;
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .btn-whatsapp:hover { background: #1ebe59; }
+
     /* ── Mobile ─────────────────────────────────────────────────────────────── */
     @media (max-width: 760px) {
       body { flex-direction: column; }
@@ -332,11 +379,35 @@
             <label for="l-pass" data-i18n="login.label_password">Contraseña</label>
             <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password" required>
           </div>
+          <button type="button" class="forgot-link" id="forgot-open-btn" data-i18n="login.forgot_link">¿Olvidaste tu contraseña?</button>
           <div class="error-msg" id="login-error"></div>
           <button type="submit" class="btn-submit" id="login-btn">
             <span data-i18n="login.login_btn">Ingresar</span> <span>→</span>
           </button>
         </form>
+      </div>
+
+      <!-- Formulario: Olvidé mi contraseña -->
+      <div class="form-section" id="form-forgot">
+        <h2 class="form-title" data-i18n="login.forgot_title">Recuperar acceso</h2>
+        <p class="form-sub" data-i18n="login.forgot_sub">Todavía no mandamos el reset por email automático — dejanos tu email y te ayudamos a recuperarlo por WhatsApp.</p>
+        <form id="forgot-form" novalidate>
+          <div class="field">
+            <label for="f-email" data-i18n="login.label_email">Email</label>
+            <input type="email" id="f-email" placeholder="tu@email.com" data-i18n-placeholder="login.email_placeholder" autocomplete="email" required>
+          </div>
+          <div class="error-msg" id="forgot-error"></div>
+          <button type="submit" class="btn-submit" id="forgot-btn">
+            <span data-i18n="login.forgot_btn">Solicitar ayuda</span> <span>→</span>
+          </button>
+        </form>
+        <div class="forgot-success" id="forgot-success">
+          <p data-i18n="login.forgot_success_msg">¡Listo! Escribinos por WhatsApp y te ayudamos a recuperar el acceso al toque.</p>
+          <a id="forgot-whatsapp-btn" class="btn-whatsapp" href="#" target="_blank" rel="noopener">
+            <i class="fa-brands fa-whatsapp"></i> <span data-i18n="login.forgot_whatsapp_btn">Escribir por WhatsApp</span>
+          </a>
+        </div>
+        <a href="#" class="back-link" id="forgot-back-link" data-i18n="login.forgot_back">← Volver a ingresar</a>
       </div>
 
       <!-- Formulario: Crear cuenta -->
@@ -371,6 +442,13 @@
   <script src="js/i18n.js"></script>
 
   <script>
+    // Preserva el plan elegido en la landing (?plan=performance) a través del
+    // login/registro, para que /home lo reciba y no haga falta re-elegirlo.
+    const PLAN_KEYS = ['structure', 'performance', 'full_system', 'full_week'];
+    const preselectedPlan = new URLSearchParams(window.location.search).get('plan');
+    function planQuery() {
+      return PLAN_KEYS.includes(preselectedPlan) ? ('?plan=' + preselectedPlan) : '';
+    }
     // Tabs
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
@@ -381,6 +459,23 @@
         clearErrors();
       });
     });
+    if (PLAN_KEYS.includes(preselectedPlan)) {
+      document.querySelector('.tab[data-tab="register"]')?.click();
+    }
+
+    // Prefill desde el form de "Contacto" de la landing (nombre + email,
+    // sin plan todavía) — one-shot: se borra apenas se usa.
+    (function prefillFromContactForm() {
+      const raw = sessionStorage.getItem('fh_prefill');
+      sessionStorage.removeItem('fh_prefill');
+      if (!raw) return;
+      try {
+        const { name, email } = JSON.parse(raw);
+        document.getElementById('r-name').value  = name  || '';
+        document.getElementById('r-email').value = email || '';
+        document.querySelector('.tab[data-tab="register"]')?.click();
+      } catch { /* prefill corrupto: seguimos con el form vacío */ }
+    })();
 
     function clearErrors() {
       document.querySelectorAll('.error-msg').forEach(el => {
@@ -426,7 +521,53 @@
 
       localStorage.setItem('fh_token', data.token);
       localStorage.setItem('fh_user',  JSON.stringify(data.user));
-      window.location.href = data.user.role === 'admin' ? '/admin/' : '/home';
+      window.location.href = data.user.role === 'admin' ? '/admin/' : ('/home' + planQuery());
+    });
+
+    // Olvidé mi contraseña
+    const WHATSAPP_NUMBER = '18184288427';
+
+    document.getElementById('forgot-open-btn').addEventListener('click', () => {
+      document.querySelector('.tabs').style.display = 'none';
+      document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+      document.getElementById('forgot-form').style.display = '';
+      document.getElementById('forgot-success').classList.remove('visible');
+      document.getElementById('form-forgot').classList.add('active');
+      clearErrors();
+    });
+
+    document.getElementById('forgot-back-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.querySelector('.tabs').style.display = '';
+      document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+      document.getElementById('form-login').classList.add('active');
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelector('.tab[data-tab="login"]').classList.add('active');
+    });
+
+    document.getElementById('forgot-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearErrors();
+      const btn   = document.getElementById('forgot-btn');
+      const email = document.getElementById('f-email').value.trim();
+      btn.disabled = true;
+      btn.textContent = t('login.forgot_btn_loading');
+
+      const { ok, data } = await apiPost('/api/auth/request-password-reset', { email });
+
+      btn.disabled = false;
+      btn.innerHTML = '<span data-i18n="login.forgot_btn">' + t('login.forgot_btn') + '</span> <span>→</span>';
+
+      if (!ok) {
+        showError('forgot-error', tApiError(data.error) || t('login.forgot_btn') + ' error');
+        return;
+      }
+
+      const waMsg = encodeURIComponent(t('login.forgot_whatsapp_msg', { email }));
+      document.getElementById('forgot-whatsapp-btn').href =
+        'https://api.whatsapp.com/send?phone=' + WHATSAPP_NUMBER + '&text=' + waMsg;
+      document.getElementById('forgot-form').style.display = 'none';
+      document.getElementById('forgot-success').classList.add('visible');
     });
 
     // Registro
@@ -452,7 +593,7 @@
 
       localStorage.setItem('fh_token', data.token);
       localStorage.setItem('fh_user',  JSON.stringify(data.user));
-      window.location.href = '/';
+      window.location.href = '/home' + planQuery();
     });
   </script>
 </body>

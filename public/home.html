@@ -351,6 +351,92 @@
       color: var(--dark-green);
     }
 
+    /* ── STEP: BUILD YOUR WEEK (meals) ─── */
+    #step-meals .step-content { padding-bottom: 6rem; } /* deja lugar a la barra sticky */
+
+    .meals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 1.1rem;
+      margin-top: 0.5rem;
+    }
+    .meal-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .meal-card.has-qty { border-color: var(--sage); box-shadow: 0 0 0 2px rgba(107,138,94,0.14); }
+
+    /* Espacio de foto: sin imagen todavía, se resuelve con un degradé de
+       marca + ícono en vez de un placeholder gris o un ícono roto. Cuando
+       el meal tenga `image`, se reemplaza por un <img> real sin tocar el
+       resto de la card. */
+    .meal-card-media {
+      aspect-ratio: 4 / 3;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--cream-dark), var(--white));
+    }
+    .meal-card-media img { width: 100%; height: 100%; object-fit: cover; }
+    .meal-card-media-placeholder { color: var(--sage); opacity: 0.45; font-size: 1.8rem; }
+
+    .meal-card-body { padding: 1rem 1.1rem 1.1rem; display: flex; flex-direction: column; flex: 1; gap: 0.3rem; }
+    .meal-card-name { font-family: 'Lora', serif; font-size: 1.02rem; font-weight: 600; color: var(--black); }
+    .meal-card-desc { font-size: 0.78rem; color: var(--gray); line-height: 1.4; flex: 1; margin-bottom: 0.75rem; }
+
+    .meal-qty { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+    .meal-qty-btn {
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      color: var(--dark-green);
+      font-size: 1.1rem; font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .meal-qty-btn:hover:not(:disabled) { border-color: var(--sage); background: rgba(107,138,94,0.08); }
+    .meal-qty-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .meal-qty-count { font-size: 1.05rem; font-weight: 800; color: var(--black); min-width: 1.5rem; text-align: center; }
+
+    /* Barra inferior sticky: resumen del conteo + CTA, siempre visible
+       mientras se arma la semana (clave en mobile, donde hay que scrollear
+       la grilla de meals). */
+    .meals-bar {
+      position: sticky;
+      bottom: 0;
+      left: 0; right: 0;
+      background: var(--white);
+      border-top: 1.5px solid var(--border);
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
+      padding: 0.85rem 1.5rem;
+      margin: 0 -1.5rem;
+    }
+    .meals-bar-inner {
+      max-width: 1020px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .meals-bar-info { display: flex; flex-direction: column; gap: 0.1rem; }
+    .meals-bar-count { font-family: 'Lora', serif; font-weight: 700; font-size: 1.15rem; color: var(--dark-green); }
+    .meals-bar-line { font-size: 0.78rem; color: var(--gray); font-weight: 600; }
+    .meals-bar-actions { display: flex; align-items: center; gap: 0.75rem; }
+    #meals-continue-btn.is-ready { background: var(--dark-green); }
+
+    @media (max-width: 540px) {
+      .meals-bar-inner { justify-content: center; }
+      .meals-bar-info { text-align: center; align-items: center; }
+      .meals-bar-actions { width: 100%; justify-content: space-between; }
+    }
+
     /* ── STEP: DATOS ─── */
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .field { margin-bottom: 1.1rem; }
@@ -500,6 +586,7 @@
       cursor: pointer; transition: all 0.15s;
     }
     .btn-outline:hover { border-color: var(--black); }
+    .btn-outline.full { width: 100%; justify-content: center; }
     .btn-whatsapp {
       display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
       padding: 1rem 2rem;
@@ -550,18 +637,18 @@
       .welcome-steps-list { gap: 0.75rem; }
 
       /* Barra de progreso: en pantallas angostas "Preferencias" (el label
-         más largo) no entra en 4 pasos + 3 líneas sin achicar todo. Se
+         más largo) no entra en 5 pasos + 4 líneas sin achicar todo. Se
          reduce dot/label/gap para que entre sin cortar contenido ni
          empujar la página con scroll horizontal. */
       .progress-wrap { padding: 0.75rem 1rem; }
-      .prog-dot { width: 22px; height: 22px; font-size: 0.62rem; }
-      .prog-label { font-size: 0.58rem; }
-      .prog-line { margin-bottom: 0.85rem; }
+      .prog-dot { width: 20px; height: 20px; font-size: 0.58rem; }
+      .prog-label { font-size: 0.52rem; }
+      .prog-line { margin-bottom: 0.8rem; }
     }
-    @media (max-width: 360px) {
-      /* Teléfonos muy angostos (iPhone SE, Android chicos): los labels
-         de texto largo se ocultan y quedan solo los números en los dots
-         para garantizar que la barra completa entre sin desbordar. */
+    @media (max-width: 420px) {
+      /* Teléfonos angostos (iPhone SE, Android chicos): con 5 pasos los
+         labels de texto largo se ocultan y quedan solo los números en los
+         dots para garantizar que la barra completa entre sin desbordar. */
       .prog-label { display: none; }
     }
   </style>
@@ -590,16 +677,21 @@
       <div class="prog-line" id="pl-1"></div>
       <div class="prog-step" id="ps-2">
         <div class="prog-dot" id="pd-2">2</div>
-        <span class="prog-label" data-i18n="home.progress_data">Datos</span>
+        <span class="prog-label" data-i18n="home.progress_meals">Comidas</span>
       </div>
       <div class="prog-line" id="pl-2"></div>
       <div class="prog-step" id="ps-3">
         <div class="prog-dot" id="pd-3">3</div>
-        <span class="prog-label" data-i18n="home.progress_prefs">Preferencias</span>
+        <span class="prog-label" data-i18n="home.progress_data">Datos</span>
       </div>
       <div class="prog-line" id="pl-3"></div>
       <div class="prog-step" id="ps-4">
         <div class="prog-dot" id="pd-4">4</div>
+        <span class="prog-label" data-i18n="home.progress_prefs">Preferencias</span>
+      </div>
+      <div class="prog-line" id="pl-4"></div>
+      <div class="prog-step" id="ps-5">
+        <div class="prog-dot" id="pd-5">5</div>
         <span class="prog-label" data-i18n="home.progress_payment">Pago</span>
       </div>
     </div>
@@ -638,6 +730,15 @@
               <div class="info-item"><span class="info-label" data-i18n="home.label_whatsapp">WhatsApp</span><span class="info-value" id="acc-phone">—</span></div>
               <div class="info-item"><span class="info-label" data-i18n="home.label_email">Email</span><span class="info-value" id="acc-email">—</span></div>
             </div>
+            <div id="acc-subscription-wrap" style="display:none">
+              <hr class="divider">
+              <div class="info-grid">
+                <div class="info-item" style="grid-column:1/-1">
+                  <span class="info-label" data-i18n="home.label_subscription">Suscripción</span>
+                  <span class="info-value" id="acc-subscription-status">—</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -645,6 +746,14 @@
           <a id="acc-whatsapp-btn" class="btn-whatsapp" href="#" target="_blank" rel="noopener">
             <i class="fa-brands fa-whatsapp"></i> <span data-i18n="home.contact_fuelhaus">Comunicarme con Fuelhaus</span>
           </a>
+        </div>
+        <div id="acc-portal-wrap" style="display:none">
+          <div class="form-actions">
+            <button type="button" class="btn-outline full" id="acc-portal-btn" onclick="openSubscriptionPortal()">
+              <i class="fa-solid fa-gear"></i> <span data-i18n="home.manage_subscription">Gestionar mi suscripción</span>
+            </button>
+          </div>
+          <div class="error-msg" id="acc-portal-error"></div>
         </div>
         <div style="text-align:center;margin-top:1rem">
           <a href="/" class="link-site" data-i18n="home.back_to_site">← Volver al sitio</a>
@@ -669,16 +778,20 @@
               <span class="w-step-label" data-i18n="home.w_step1">Elegís tu plan</span>
             </div>
             <div class="w-step">
+              <div class="w-step-ico"><i class="fa-solid fa-utensils"></i></div>
+              <span class="w-step-label" data-i18n="home.w_step2">Armás tu semana</span>
+            </div>
+            <div class="w-step">
               <div class="w-step-ico"><i class="fa-solid fa-user"></i></div>
-              <span class="w-step-label" data-i18n="home.w_step2">Completás tus datos</span>
+              <span class="w-step-label" data-i18n="home.w_step3">Completás tus datos</span>
             </div>
             <div class="w-step">
               <div class="w-step-ico"><i class="fa-solid fa-sliders"></i></div>
-              <span class="w-step-label" data-i18n="home.w_step3">Configurás tus preferencias</span>
+              <span class="w-step-label" data-i18n="home.w_step4">Configurás tus preferencias</span>
             </div>
             <div class="w-step">
               <div class="w-step-ico"><i class="fa-solid fa-check-circle"></i></div>
-              <span class="w-step-label" data-i18n="home.w_step4">Confirmás tu pedido</span>
+              <span class="w-step-label" data-i18n="home.w_step5">Confirmás tu pedido</span>
             </div>
           </div>
           <button class="btn-primary" id="start-btn" style="font-size:1rem;padding:1rem 2.5rem">
@@ -693,7 +806,7 @@
     <!-- STEP: PLANES -->
     <div class="step-wrap" id="step-plans">
       <div class="step-content wide">
-        <span class="step-eyebrow" data-i18n="home.step1_of_4">Paso 1 de 4</span>
+        <span class="step-eyebrow" data-i18n="home.step1_of_5">Paso 1 de 5</span>
         <h2 class="step-title" data-i18n-html="home.plans_title_html">Elige tu <em>plan</em></h2>
         <p class="step-sub" data-i18n="home.plans_sub">Todos incluyen 35–50g de proteína por porción. Ingredientes frescos, sin conservantes, entrega dominical.</p>
 
@@ -778,10 +891,38 @@
       </div>
     </div>
 
+    <!-- STEP: BUILD YOUR WEEK (selección de meals) -->
+    <div class="step-wrap" id="step-meals">
+      <div class="step-content wide">
+        <span class="step-eyebrow" data-i18n="home.step2_of_5">Paso 2 de 5</span>
+        <h2 class="step-title" data-i18n-html="home.meals_title_html">Arma tu <em>semana</em></h2>
+        <p class="step-sub" id="meals-sub">Elegí exactamente tus comidas. Repetí las que quieras.</p>
+
+        <div class="meals-grid" id="meals-grid"></div>
+
+        <div class="error-msg" id="meals-error"></div>
+      </div>
+
+      <div class="meals-bar">
+        <div class="meals-bar-inner">
+          <div class="meals-bar-info">
+            <span class="meals-bar-count" id="meals-bar-count">0 / 0</span>
+            <span class="meals-bar-line" id="meals-bar-line"></span>
+          </div>
+          <div class="meals-bar-actions">
+            <button type="button" class="btn-outline" onclick="goStep('plans')"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="home.back">Atrás</span></button>
+            <button type="button" class="btn-primary" id="meals-continue-btn" onclick="continueFromMeals()" disabled>
+              <span id="meals-continue-label">—</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- STEP: DATOS PERSONALES -->
     <div class="step-wrap" id="step-data">
       <div class="step-content">
-        <span class="step-eyebrow" data-i18n="home.step2_of_4">Paso 2 de 4</span>
+        <span class="step-eyebrow" data-i18n="home.step3_of_5">Paso 3 de 5</span>
         <h2 class="step-title" data-i18n-html="home.data_title_html">Tus datos de <em>contacto</em></h2>
         <p class="step-sub" data-i18n="home.data_sub">Así sabemos a quién entregarle las comidas y por dónde comunicarnos.</p>
 
@@ -808,7 +949,7 @@
           </div>
           <div class="error-msg" id="data-error"></div>
           <div class="form-actions">
-            <button type="button" class="btn-outline" onclick="goStep('plans')"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="home.back">Atrás</span></button>
+            <button type="button" class="btn-outline" onclick="goStep('meals')"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="home.back">Atrás</span></button>
             <button type="submit" class="btn-primary"><span data-i18n="home.continue">Continuar</span> <i class="fa-solid fa-arrow-right"></i></button>
           </div>
         </form>
@@ -818,7 +959,7 @@
     <!-- STEP: PREFERENCIAS -->
     <div class="step-wrap" id="step-prefs">
       <div class="step-content">
-        <span class="step-eyebrow" data-i18n="home.step3_of_4">Paso 3 de 4</span>
+        <span class="step-eyebrow" data-i18n="home.step4_of_5">Paso 4 de 5</span>
         <h2 class="step-title" data-i18n-html="home.prefs_title_html">Configura tus <em>comidas</em></h2>
         <p class="step-sub" data-i18n="home.prefs_sub">Con esta información preparamos comidas que se adaptan exactamente a tu cuerpo y objetivos.</p>
 
@@ -891,7 +1032,7 @@
     <!-- STEP: PAGO -->
     <div class="step-wrap" id="step-payment">
       <div class="step-content">
-        <span class="step-eyebrow" data-i18n="home.step4_of_4">Paso 4 de 4</span>
+        <span class="step-eyebrow" data-i18n="home.step5_of_5">Paso 5 de 5</span>
         <h2 class="step-title" data-i18n-html="home.payment_title_html">Confirmá tu <em>pedido</em></h2>
         <p class="step-sub" data-i18n="home.payment_sub">Revisá el resumen y confirmá. ¡Ya casi está!</p>
 
@@ -906,7 +1047,7 @@
             <span class="summary-value" id="pay-base-price">—</span>
           </div>
           <div class="summary-row" id="pay-discount-row" style="display:none">
-            <span class="summary-label"><span data-i18n="home.summary_discount">Descuento (</span><span id="pay-discount-pct"></span>%)</span>
+            <span class="summary-label"><span data-i18n="home.summary_discount_label">Descuento</span><span id="pay-discount-pct-wrap"> (<span id="pay-discount-pct"></span>%)</span></span>
             <span class="summary-value discount-val" id="pay-discount-val">— </span>
           </div>
           <div class="summary-row total">
@@ -993,13 +1134,17 @@
       selectedPlan:  null,
       selectedGoal:  null,
       appliedCoupon: null,
+      discountType:  'percent',
       discountPct:   0,
       discountAmt:   0,
       finalPrice:    0,
       userData:      {},
+      mealSelections: {}, // { mealId: qty }
     };
 
-    let currentUser = null;
+    let currentUser   = null;
+    let MEALS_CATALOG  = [];
+    let PLAN_MEAL_COUNTS = {};
 
     function token() { return localStorage.getItem('fh_token') || ''; }
     function authHeader() { return { 'Authorization': 'Bearer ' + token(), 'Content-Type': 'application/json' }; }
@@ -1012,7 +1157,7 @@
     }
 
     /* ── Navegación de pasos ─────────────────────────────────────────────────*/
-    const PROGRESS_STEPS = { plans: 1, data: 2, prefs: 3, payment: 4 };
+    const PROGRESS_STEPS = { plans: 1, meals: 2, data: 3, prefs: 4, payment: 5 };
 
     function goStep(name) {
       document.querySelectorAll('.step-wrap').forEach(s => s.classList.remove('active'));
@@ -1032,7 +1177,7 @@
     }
 
     function updateProgress(active) {
-      for (let i = 1; i <= 4; i++) {
+      for (let i = 1; i <= 5; i++) {
         const step = document.getElementById('ps-' + i);
         const dot  = document.getElementById('pd-' + i);
         const line = document.getElementById('pl-' + i);
@@ -1050,10 +1195,109 @@
       el.classList.add('selected');
       flow.selectedPlan = plan;
       flow.appliedCoupon = null;
+      flow.discountType = 'percent';
       flow.discountPct = 0;
       flow.discountAmt = 0;
       flow.finalPrice  = PLAN_PRICES[plan];
-      setTimeout(() => goStep('data'), 280);
+      flow.mealSelections = {};
+      setTimeout(() => {
+        goStep('meals');
+        enterMealsStep();
+      }, 280);
+    }
+
+    /* ── Build your week (selección de meals) ────────────────────────────────*/
+    function requiredMeals() { return PLAN_MEAL_COUNTS[flow.selectedPlan] || 0; }
+    function totalMealsSelected() {
+      return Object.values(flow.mealSelections).reduce((a, b) => a + b, 0);
+    }
+
+    function mealMediaHtml(meal) {
+      if (meal.image) return `<img src="${meal.image}" alt="${escapeAttr(meal.name)}">`;
+      return `<div class="meal-card-media-placeholder"><i class="fa-solid fa-utensils"></i></div>`;
+    }
+
+    function escapeAttr(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    }
+
+    function renderMealsGrid() {
+      const grid = document.getElementById('meals-grid');
+      grid.innerHTML = MEALS_CATALOG.map(meal => `
+        <div class="meal-card" data-meal-id="${meal.id}">
+          <div class="meal-card-media">${mealMediaHtml(meal)}</div>
+          <div class="meal-card-body">
+            <div class="meal-card-name">${escapeAttr(meal.name)}</div>
+            <div class="meal-card-desc">${escapeAttr(meal.description)}</div>
+            <div class="meal-qty">
+              <button type="button" class="meal-qty-btn" data-action="dec" aria-label="menos">−</button>
+              <span class="meal-qty-count">0</span>
+              <button type="button" class="meal-qty-btn" data-action="inc" aria-label="más">+</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      grid.querySelectorAll('.meal-card').forEach(card => {
+        const id = card.getAttribute('data-meal-id');
+        card.querySelector('[data-action="dec"]').addEventListener('click', () => changeMealQty(id, -1));
+        card.querySelector('[data-action="inc"]').addEventListener('click', () => changeMealQty(id, 1));
+      });
+    }
+
+    function changeMealQty(id, delta) {
+      const current = flow.mealSelections[id] || 0;
+      if (delta > 0 && totalMealsSelected() >= requiredMeals()) return;
+      const next = Math.max(current + delta, 0);
+      if (next === 0) delete flow.mealSelections[id];
+      else flow.mealSelections[id] = next;
+      updateMealsUI();
+    }
+
+    function updateMealsUI() {
+      const required = requiredMeals();
+      const total    = totalMealsSelected();
+      const complete = total === required && required > 0;
+
+      document.querySelectorAll('#meals-grid .meal-card').forEach(card => {
+        const id  = card.getAttribute('data-meal-id');
+        const qty = flow.mealSelections[id] || 0;
+        card.classList.toggle('has-qty', qty > 0);
+        card.querySelector('.meal-qty-count').textContent = qty;
+        card.querySelector('[data-action="dec"]').disabled = qty === 0;
+        card.querySelector('[data-action="inc"]').disabled = total >= required;
+      });
+
+      document.getElementById('meals-bar-count').textContent = total + ' / ' + required;
+      document.getElementById('meals-bar-line').textContent =
+        t('home.meals_progress_line', { selected: total, total: required }) + (complete ? ' ✓' : '');
+
+      const btn   = document.getElementById('meals-continue-btn');
+      const label = document.getElementById('meals-continue-label');
+      btn.disabled = !complete;
+      btn.classList.toggle('is-ready', complete);
+      if (complete) {
+        label.innerHTML = '<i class="fa-solid fa-check"></i> ' + t('home.continue');
+      } else {
+        label.textContent = t('home.meals_remaining_btn', { n: required - total });
+      }
+    }
+
+    function enterMealsStep() {
+      const required = requiredMeals();
+      document.getElementById('meals-sub').textContent = t('home.meals_sub', { count: required });
+      updateMealsUI();
+    }
+
+    function continueFromMeals() {
+      const errEl = document.getElementById('meals-error');
+      errEl.classList.remove('visible');
+      if (totalMealsSelected() !== requiredMeals()) {
+        errEl.textContent = t('home.err_meals_incomplete');
+        errEl.classList.add('visible');
+        return;
+      }
+      goStep('data');
     }
 
     /* ── Selección de objetivo ───────────────────────────────────────────────*/
@@ -1103,6 +1347,7 @@
       const discRow = document.getElementById('pay-discount-row');
       if (flow.discountAmt > 0) {
         discRow.style.display = 'flex';
+        document.getElementById('pay-discount-pct-wrap').style.display = flow.discountType === 'percent' ? '' : 'none';
         document.getElementById('pay-discount-pct').textContent = flow.discountPct;
         document.getElementById('pay-discount-val').textContent  = '−$' + flow.discountAmt;
       } else {
@@ -1134,19 +1379,26 @@
         msg.className = 'coupon-msg err';
         msg.textContent = tApiError(data.error) || t('home.err_invalid_coupon');
         flow.appliedCoupon = null;
+        flow.discountType  = 'percent';
         flow.discountPct   = 0;
         flow.discountAmt   = 0;
         flow.finalPrice    = PLAN_PRICES[flow.selectedPlan];
       } else {
         inp.classList.add('valid');
         msg.className = 'coupon-msg ok';
-        msg.textContent = t('home.coupon_applied_prefix') + data.coupon.discountPercent + t('home.coupon_applied_suffix');
+        msg.textContent = couponAppliedMsg(data.coupon);
         flow.appliedCoupon = data.coupon.code;
-        flow.discountPct   = data.coupon.discountPercent;
+        flow.discountType  = data.coupon.discountType;
+        flow.discountPct   = data.coupon.discountType === 'percent' ? data.coupon.discountValue : 0;
         flow.discountAmt   = data.discount;
         flow.finalPrice    = data.final;
       }
       updatePaymentSummary();
+    }
+
+    function couponAppliedMsg(coupon) {
+      const amount = coupon.discountType === 'fixed' ? ('$' + coupon.discountValue) : (coupon.discountValue + '%');
+      return t('home.coupon_applied_prefix') + amount + t('home.coupon_applied_suffix');
     }
 
     /* ── Confirmar pedido ────────────────────────────────────────────────────*/
@@ -1156,6 +1408,7 @@
         lastName:    flow.userData.lastName,
         phone:       flow.userData.phone,
         couponCode:  flow.appliedCoupon || undefined,
+        meals:       Object.entries(flow.mealSelections).map(([id, qty]) => ({ id, qty })),
         preferences: {
           goal:      flow.selectedGoal,
           diet:      document.getElementById('pref-diet').value,
@@ -1188,13 +1441,15 @@
     function saveCheckoutFlowSnapshot() {
       sessionStorage.setItem('fh_checkout_flow', JSON.stringify({
         flow: {
-          selectedPlan:  flow.selectedPlan,
-          selectedGoal:  flow.selectedGoal,
-          appliedCoupon: flow.appliedCoupon,
-          discountPct:   flow.discountPct,
-          discountAmt:   flow.discountAmt,
-          finalPrice:    flow.finalPrice,
-          userData:      flow.userData,
+          selectedPlan:   flow.selectedPlan,
+          selectedGoal:   flow.selectedGoal,
+          appliedCoupon:  flow.appliedCoupon,
+          discountType:   flow.discountType,
+          discountPct:    flow.discountPct,
+          discountAmt:    flow.discountAmt,
+          finalPrice:     flow.finalPrice,
+          userData:       flow.userData,
+          mealSelections: flow.mealSelections,
         },
         diet:        document.getElementById('pref-diet').value,
         allergies:   document.getElementById('pref-allergies').value,
@@ -1218,7 +1473,7 @@
           document.getElementById('coupon-input').classList.add('valid');
           const msg = document.getElementById('coupon-msg');
           msg.className = 'coupon-msg ok';
-          msg.textContent = t('home.coupon_applied_prefix') + flow.discountPct + t('home.coupon_applied_suffix');
+          msg.textContent = couponAppliedMsg({ discountType: flow.discountType, discountValue: flow.discountType === 'fixed' ? flow.discountAmt : flow.discountPct });
         }
         updatePaymentSummary();
       } catch { /* snapshot corrupto: seguimos sin restaurar nada */ }
@@ -1280,6 +1535,14 @@
       if (!ok || !data.user) return (window.location.href = '/login');
       if (data.user.role === 'admin') return (window.location.href = '/admin/');
 
+      const mealsRes = await fetch('/api/meals');
+      if (mealsRes.ok) {
+        const mealsData = await mealsRes.json();
+        MEALS_CATALOG     = mealsData.meals || [];
+        PLAN_MEAL_COUNTS  = mealsData.planMealCounts || {};
+        renderMealsGrid();
+      }
+
       currentUser = data.user;
       const firstName = data.user.name.split(' ')[0];
       document.getElementById('header-greeting').textContent = t('home.header_greeting_prefix') + firstName;
@@ -1328,9 +1591,31 @@
         renderAccountView(ord.data.orders[0], data.user);
         goStep('account');
       } else {
-        goStep('welcome');
+        // Plan elegido desde la landing (botón "Elegir X" → /login?plan=X →
+        // acá): se lo aplica directo y salta a "Arma tu semana", sin volver
+        // a hacer elegir el plan de nuevo.
+        const preselectedPlan = params.get('plan');
+        window.history.replaceState(null, '', '/home');
+        if (preselectedPlan && PLAN_PRICES[preselectedPlan]) {
+          applyPreselectedPlan(preselectedPlan);
+        } else {
+          goStep('welcome');
+        }
       }
     })();
+
+    function applyPreselectedPlan(plan) {
+      document.querySelectorAll('.plan-card').forEach(c => c.classList.toggle('selected', c.dataset.plan === plan));
+      flow.selectedPlan   = plan;
+      flow.appliedCoupon  = null;
+      flow.discountType   = 'percent';
+      flow.discountPct    = 0;
+      flow.discountAmt    = 0;
+      flow.finalPrice     = PLAN_PRICES[plan];
+      flow.mealSelections = {};
+      goStep('meals');
+      enterMealsStep();
+    }
 
     document.getElementById('start-btn').addEventListener('click', () => goStep('plans'));
 
@@ -1361,6 +1646,38 @@
       const waMsg = encodeURIComponent(t('home.whatsapp_account_msg', { order: order.orderNumber }));
       document.getElementById('acc-whatsapp-btn').href =
         'https://api.whatsapp.com/send?phone=' + WHATSAPP_NUMBER + '&text=' + waMsg;
+
+      const subWrap    = document.getElementById('acc-subscription-wrap');
+      const portalWrap = document.getElementById('acc-portal-wrap');
+      if (user.stripeSubscriptionId) {
+        subWrap.style.display    = '';
+        portalWrap.style.display = '';
+        document.getElementById('acc-subscription-status').textContent = subscriptionStatusLabel(user);
+      } else {
+        subWrap.style.display    = 'none';
+        portalWrap.style.display = 'none';
+      }
+    }
+
+    function subscriptionStatusLabel(user) {
+      const dateStr = user.subscriptionCurrentPeriodEnd
+        ? new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString(currentLang() === 'en' ? 'en-US' : 'es-US', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : '';
+      if (user.subscriptionStatus === 'canceled') return t('home.sub_status_canceled');
+      if (user.subscriptionCancelAtPeriodEnd) return t('home.sub_status_canceling', { date: dateStr });
+      return t('home.sub_status_active', { date: dateStr });
+    }
+
+    async function openSubscriptionPortal() {
+      const btn   = document.getElementById('acc-portal-btn');
+      const errEl = document.getElementById('acc-portal-error');
+      errEl.classList.remove('visible');
+      btn.disabled = true;
+      const { ok, data } = await apiFetch('POST', '/api/subscription/portal');
+      btn.disabled = false;
+      if (ok && data.url) { window.location.href = data.url; return; }
+      errEl.textContent = tApiError(data.error) || t('home.err_portal');
+      errEl.classList.add('visible');
     }
   </script>
 </body>

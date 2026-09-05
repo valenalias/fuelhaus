@@ -44,6 +44,7 @@ const PLAN_LABELS = {
   structure:   'Structure',
   performance: 'Performance',
   full_system: 'Full System',
+  full_week:   'Full Week',
   '':           'Sin plan',
   null:         'Sin plan',
 };
@@ -153,6 +154,7 @@ async function loadStats() {
   document.getElementById('s-structure').textContent   = data.byPlan.structure   || 0;
   document.getElementById('s-performance').textContent = data.byPlan.performance || 0;
   document.getElementById('s-full_system').textContent = data.byPlan.full_system || 0;
+  document.getElementById('s-full_week').textContent   = data.byPlan.full_week   || 0;
   document.getElementById('s-none').textContent        = data.byPlan.none        || 0;
 }
 
@@ -392,7 +394,7 @@ function escapeHtml(str) {
 ════════════════════════════════════════════════════════ */
 
 const ORDER_STATUS_LABELS  = { paid: 'Pagado', processing: 'En proceso', delivered: 'Entregado', cancelled: 'Cancelado' };
-const PLAN_NAMES_ADMIN     = { structure: 'Structure', performance: 'Performance', full_system: 'Full System' };
+const PLAN_NAMES_ADMIN     = { structure: 'Structure', performance: 'Performance', full_system: 'Full System', full_week: 'Full Week' };
 const GOAL_NAMES_ADMIN     = { fat_loss: 'Perder grasa', muscle_gain: 'Ganar músculo', maintenance: 'Mantenerme', healthy: 'Comer saludable' };
 const DIET_NAMES_ADMIN     = { none: 'Sin preferencia', high_protein: 'Alta proteína', low_carb: 'Baja en carbos', keto: 'Keto', vegan: 'Vegano', vegetarian: 'Vegetariano', paleo: 'Paleo', mediterranean: 'Mediterránea' };
 
@@ -444,11 +446,11 @@ function renderOrdersTable() {
 
   tbody.innerHTML = filtered.map(o => `
     <tr class="${!o.readByAdmin ? 'new-row' : ''}">
-      <td style="font-weight:700;font-family:monospace">${escapeHtml(o.orderNumber)}${!o.readByAdmin ? ' <span style="background:#e74c3c;color:#fff;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:4px;font-family:sans-serif">Nuevo</span>' : ''}</td>
+      <td style="font-weight:700;font-family:monospace">${escapeHtml(o.orderNumber)}${!o.readByAdmin ? ' <span style="background:#e74c3c;color:#fff;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:4px;font-family:sans-serif">Nuevo</span>' : ''}${!o.stripeSessionId && o.stripeInvoiceId ? ' <span style="background:var(--sage);color:#fff;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:4px;font-family:sans-serif" title="Cobro automático semanal, no un pedido nuevo">🔁 Renovación</span>' : ''}</td>
       <td><div class="user-cell"><div class="user-avatar">${userInitials(o.userName)}</div><div><div class="user-name">${escapeHtml(o.userName)}</div><div style="font-size:0.78rem;color:var(--gray)">${escapeHtml(o.userEmail)}</div></div></div></td>
       <td>${planBadge(o.plan)}</td>
       <td style="font-weight:700">$${o.finalPrice}</td>
-      <td style="font-size:0.8rem;color:var(--gray)">${o.coupon ? '<span style="font-family:monospace;font-weight:700;color:var(--dark-green)">' + escapeHtml(o.coupon) + '</span> (−' + o.discountPercent + '%)' : '—'}</td>
+      <td style="font-size:0.8rem;color:var(--gray)">${o.coupon ? '<span style="font-family:monospace;font-weight:700;color:var(--dark-green)">' + escapeHtml(o.coupon) + '</span> (' + formatOrderDiscount(o) + ')' : '—'}</td>
       <td><span class="badge badge-order-${escapeHtml(o.status)}">${ORDER_STATUS_LABELS[o.status] || o.status}</span></td>
       <td class="date-cell">${formatDate(o.createdAt)}</td>
       <td>
@@ -510,7 +512,7 @@ function openOrderDetail(id) {
       <div class="od-grid">
         <div class="od-item"><span class="od-label">Plan</span><span class="od-value">${PLAN_NAMES_ADMIN[order.plan] || order.plan}</span></div>
         <div class="od-item"><span class="od-label">Precio base</span><span class="od-value">$${order.planPrice}/sem</span></div>
-        ${order.coupon ? `<div class="od-item"><span class="od-label">Cupón</span><span class="od-value" style="font-family:monospace;font-weight:700">${escapeHtml(order.coupon)} (−${order.discountPercent}%)</span></div>` : ''}
+        ${order.coupon ? `<div class="od-item"><span class="od-label">Cupón</span><span class="od-value" style="font-family:monospace;font-weight:700">${escapeHtml(order.coupon)} (${formatOrderDiscount(order)})</span></div>` : ''}
         <div class="od-item"><span class="od-label">Total abonado</span><span class="od-value" style="font-weight:800;font-size:1rem">$${order.finalPrice}/sem</span></div>
       </div>
     </div>
@@ -521,6 +523,7 @@ function openOrderDetail(id) {
         <div class="od-item"><span class="od-label">Dieta</span><span class="od-value">${DIET_NAMES_ADMIN[prefs.diet] || prefs.diet || '—'}</span></div>
         <div class="od-item full"><span class="od-label">Alergias / restricciones</span><span class="od-value">${escapeHtml(prefs.allergies || 'Ninguna')}</span></div>
         <div class="od-item full"><span class="od-label">Alimentos a evitar</span><span class="od-value">${escapeHtml(prefs.avoid || 'Ninguno')}</span></div>
+        ${prefs.meals && prefs.meals.length ? `<div class="od-item full"><span class="od-label">Comidas seleccionadas</span><span class="od-value">${prefs.meals.map(m => escapeHtml(m.name) + ' ×' + m.qty).join(', ')}</span></div>` : ''}
       </div>
     </div>
     <div class="od-section">
@@ -581,6 +584,32 @@ async function deleteOrder(id, num) {
 let allCoupons = [];
 let editingCouponId = null;
 
+function formatDiscount(c) {
+  return c.discountType === 'fixed' ? '$' + c.discountValue : c.discountValue + '%';
+}
+
+// discountPercent en el pedido queda en 0 para cupones de monto fijo (ver
+// server.js) — en ese caso se muestra el monto real descontado en su lugar.
+function formatOrderDiscount(o) {
+  return o.discountPercent > 0 ? '−' + o.discountPercent + '%' : '−$' + o.discountAmount;
+}
+
+function updateDiscountFieldUI() {
+  const type  = document.getElementById('c-type').value;
+  const label = document.getElementById('c-discount-label');
+  const input = document.getElementById('c-discount');
+  if (type === 'fixed') {
+    label.textContent = 'Descuento ($) *';
+    input.removeAttribute('max');
+    input.placeholder = '15';
+  } else {
+    label.textContent = 'Descuento (%) *';
+    input.setAttribute('max', '100');
+    input.placeholder = '20';
+  }
+}
+document.getElementById('c-type').addEventListener('change', updateDiscountFieldUI);
+
 async function loadCoupons() {
   const { ok, data } = await apiFetch('GET', '/api/admin/coupons');
   if (!ok) return;
@@ -600,7 +629,8 @@ function renderCouponsTable() {
   tbody.innerHTML = allCoupons.map(c => `
     <tr>
       <td class="coupon-code-cell">${escapeHtml(c.code)}</td>
-      <td style="font-weight:700">${c.discountPercent}%</td>
+      <td style="font-weight:700">${formatDiscount(c)}</td>
+      <td>${c.minOrderAmount ? '$' + c.minOrderAmount : '—'}</td>
       <td>${c.uses}</td>
       <td>${c.maxUses || '∞ Ilimitado'}</td>
       <td><span class="${c.active ? 'badge-coupon-active' : 'badge-coupon-inactive'}">${c.active ? 'Activo' : 'Inactivo'}</span></td>
@@ -628,14 +658,18 @@ function openCouponModal(id = null) {
     if (!c) return;
     editingCouponId = id;
     document.getElementById('coupon-modal-title').textContent = 'Editar cupón';
-    document.getElementById('c-id').value       = c.id;
-    document.getElementById('c-code').value     = c.code;
-    document.getElementById('c-discount').value = c.discountPercent;
-    document.getElementById('c-maxuses').value  = c.maxUses || '';
+    document.getElementById('c-id').value        = c.id;
+    document.getElementById('c-code').value      = c.code;
+    document.getElementById('c-type').value      = c.discountType || 'percent';
+    document.getElementById('c-discount').value  = c.discountValue;
+    document.getElementById('c-min-order').value = c.minOrderAmount || '';
+    document.getElementById('c-maxuses').value   = c.maxUses || '';
   } else {
     editingCouponId = null;
     document.getElementById('coupon-modal-title').textContent = 'Nuevo cupón';
+    document.getElementById('c-type').value = 'percent';
   }
+  updateDiscountFieldUI();
   document.getElementById('coupon-overlay').classList.add('open');
 }
 
@@ -653,19 +687,27 @@ document.getElementById('coupon-form').addEventListener('submit', async (e) => {
   const saveBtn = document.getElementById('coupon-save');
   saveBtn.disabled = true;
 
-  const id          = document.getElementById('c-id').value;
-  const code        = document.getElementById('c-code').value.trim().toUpperCase();
-  const discount    = parseInt(document.getElementById('c-discount').value);
-  const maxUses     = parseInt(document.getElementById('c-maxuses').value) || 0;
+  const id            = document.getElementById('c-id').value;
+  const code          = document.getElementById('c-code').value.trim().toUpperCase();
+  const discountType  = document.getElementById('c-type').value;
+  const discountValue = parseFloat(document.getElementById('c-discount').value);
+  const minOrderAmount = parseFloat(document.getElementById('c-min-order').value) || 0;
+  const maxUses       = parseInt(document.getElementById('c-maxuses').value) || 0;
 
-  if (!code || !discount) {
+  if (!code || !discountValue) {
     errEl.textContent = 'Código y descuento son obligatorios';
     errEl.classList.add('visible');
     saveBtn.disabled = false;
     return;
   }
+  if (discountType === 'percent' && discountValue > 100) {
+    errEl.textContent = 'El porcentaje no puede ser mayor a 100';
+    errEl.classList.add('visible');
+    saveBtn.disabled = false;
+    return;
+  }
 
-  const body = { code, discountPercent: discount, maxUses: maxUses || null };
+  const body = { code, discountType, discountValue, minOrderAmount: minOrderAmount || null, maxUses: maxUses || null };
   const { ok, data } = id
     ? await apiFetch('PUT', '/api/admin/coupons/' + id, body)
     : await apiFetch('POST', '/api/admin/coupons', body);

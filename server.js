@@ -6,6 +6,7 @@ const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
 const Stripe  = require('stripe');
 const { Users, Orders, Coupons, orderNumber } = require('./db');
+const { MEALS, PLAN_MEAL_COUNTS } = require('./meals');
 
 const app        = express();
 const PORT       = process.env.PORT || 3000;
@@ -14,6 +15,78 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fuelhaus_jwt_2025_secret';
 
 const PLAN_PRICES = { structure: 120, performance: 190, full_system: 225, full_week: 265 };
 const PLAN_LABELS = { structure: 'Plan Structure', performance: 'Plan Performance', full_system: 'Plan Full System', full_week: 'Plan Full Week' };
+
+const MEAL_BY_ID = Object.fromEntries(MEALS.map(m => [m.id, m]));
+
+// Valida que la selección de "Build your week" sume exacto la cantidad de
+// comidas del plan, con ids reales y cantidades enteras positivas.
+function isValidMealSelection(plan, meals) {
+  const required = PLAN_MEAL_COUNTS[plan];
+  if (!required || !Array.isArray(meals) || meals.length === 0) return false;
+  let total = 0;
+  for (const m of meals) {
+    if (!m || !MEAL_BY_ID[m.id] || !Number.isInteger(m.qty) || m.qty <= 0) return false;
+    total += m.qty;
+  }
+  return total === required;
+}
+
+// Reconstruye la selección con el nombre canónico del catálogo (nunca el que
+// mande el cliente) para que quede legible en el pedido guardado.
+function resolveMealsForStorage(meals) {
+  return (meals || [])
+    .filter(m => m && MEAL_BY_ID[m.id] && Number.isInteger(m.qty) && m.qty > 0)
+    .map(m => ({ id: m.id, name: MEAL_BY_ID[m.id].name, qty: m.qty }));
+}
+
+// Calcula el descuento en dólares de un cupón sobre el precio de un plan.
+// Devuelve null si el cupón no aplica (no llega al monto mínimo de compra) —
+// eso se trata igual que "cupón inválido" en los callers.
+function calcCouponDiscount(coupon, basePrice) {
+  if (coupon.minOrderAmount && basePrice < coupon.minOrderAmount) return null;
+  if (coupon.discountType === 'fixed') return Math.min(coupon.discountValue, basePrice);
+  return Math.round(basePrice * coupon.discountValue / 100);
+}
+
+// Valida los campos de descuento de un cupón (alta/edición desde el admin).
+function isValidDiscountFields(discountType, discountValue) {
+  if (discountType !== 'percent' && discountType !== 'fixed') return false;
+  if (!(discountValue > 0)) return false;
+  if (discountType === 'percent' && discountValue > 100) return false;
+  return true;
+}
+
+// Día de corte y de cobro semanal para TODOS los suscriptores (sin importar
+// qué día se hayan suscripto originalmente) — necesario porque hay una sola
+// entrega compartida los domingos y cocina necesita la lista con margen.
+// 0=domingo … 2=martes.
+const BILLING_DAY_OF_WEEK = 2;
+
+// Timestamp Unix (segundos) del próximo martes estrictamente posterior a
+// ahora. Se usa como `billing_cycle_anchor` de Stripe para que la
+// suscripción cobre el precio completo ahora (cubre desde hoy hasta ese
+// martes) y de ahí en más siempre los martes.
+function nextTuesdayAnchor(now = new Date()) {
+  const d = new Date(now);
+  d.setHours(12, 0, 0, 0); // mediodía para no pisarse con cambios de horario
+  let daysUntil = (BILLING_DAY_OF_WEEK - d.getDay() + 7) % 7;
+  if (daysUntil === 0) daysUntil = 7; // si hoy ya es martes, el próximo, no hoy
+  d.setDate(d.getDate() + daysUntil);
+  return Math.floor(d.getTime() / 1000);
+}
+
+// Sincroniza el estado de la suscripción de Stripe sobre el usuario —
+// usado por checkout.session.completed y por los webhooks de
+// customer.subscription.* para que el admin vea todo sin llamar a Stripe.
+async function syncSubscriptionFields(userId, subscription) {
+  await Users.update(userId, {
+    stripeSubscriptionId:            subscription.id,
+    subscriptionStatus:              subscription.status,
+    subscriptionCurrentPeriodEnd:    subscription.current_period_end
+      ? new Date(subscription.current_period_end * 1000).toISOString() : null,
+    subscriptionCancelAtPeriodEnd:   Boolean(subscription.cancel_at_period_end),
+  });
+}
 
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 
@@ -49,6 +122,12 @@ function safeUser(u) {
 
 app.get('/login', (_req, res) => res.sendFile(path.join(ROOT, 'login.html')));
 app.get('/home',  (_req, res) => res.sendFile(path.join(ROOT, 'home.html')));
+
+// ── Catálogo de comidas (público, solo lectura) ───────────────────────────────
+
+app.get('/api/meals', (_req, res) => {
+  res.json({ meals: MEALS, planMealCounts: PLAN_MEAL_COUNTS });
+});
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -90,6 +169,29 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// Sin envío de emails todavía (no hay dominio propio verificado en Resend):
+// deja constancia en las notas internas del cliente para que el admin lo
+// resetee a mano desde "Editar usuario" — el aviso en tiempo real llega por
+// WhatsApp (ver login.html), esto es solo el rastro por si no llega por ahí.
+app.post('/api/auth/request-password-reset', async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email?.trim()) return res.status(400).json({ error: 'Email requerido' });
+
+    const user = await Users.getByEmail(email.trim());
+    if (user) {
+      const stamp = new Date().toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const note  = `🔐 Pidió recuperar su contraseña el ${stamp}\n` + (user.notes || '');
+      await Users.update(user.id, { notes: note });
+    }
+    // Responde ok exista o no el email, para no revelar qué emails están registrados.
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
 app.get('/api/auth/me', auth, async (req, res) => {
   try {
     const user = await Users.getById(req.user.id);
@@ -115,10 +217,16 @@ app.post('/api/coupons/validate', auth, async (req, res) => {
       return res.status(400).json({ error: 'Este cupón ya alcanzó su límite de usos' });
 
     const basePrice = PLAN_PRICES[plan] || 0;
-    const discount  = Math.round(basePrice * coupon.discountPercent / 100);
-    const final     = basePrice - discount;
+    const discount  = calcCouponDiscount(coupon, basePrice);
+    if (discount === null)
+      return res.status(400).json({ error: `Este cupón requiere una compra mínima de $${coupon.minOrderAmount}` });
+    const final = basePrice - discount;
 
-    res.json({ valid: true, coupon: { id: coupon.id, code: coupon.code, discountPercent: coupon.discountPercent }, discount, final });
+    res.json({
+      valid: true,
+      coupon: { id: coupon.id, code: coupon.code, discountType: coupon.discountType, discountValue: coupon.discountValue },
+      discount, final,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error del servidor' });
@@ -129,10 +237,11 @@ app.post('/api/coupons/validate', auth, async (req, res) => {
 
 app.post('/api/orders', auth, async (req, res) => {
   try {
-    const { plan, lastName, phone, preferences, couponCode } = req.body || {};
+    const { plan, lastName, phone, preferences, couponCode, meals } = req.body || {};
 
     if (!plan || !PLAN_PRICES[plan]) return res.status(400).json({ error: 'Plan inválido' });
     if (!phone?.trim()) return res.status(400).json({ error: 'Número de WhatsApp requerido' });
+    if (!isValidMealSelection(plan, meals)) return res.status(400).json({ error: 'Selección de comidas inválida' });
 
     const user = await Users.getById(req.user.id);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -144,10 +253,13 @@ app.post('/api/orders', auth, async (req, res) => {
       const all    = await Coupons.getAll();
       const coupon = all.find(c => c.code.toUpperCase() === couponCode.toUpperCase() && c.active);
       if (coupon && (!coupon.maxUses || coupon.uses < coupon.maxUses)) {
-        discount   = Math.round(basePrice * coupon.discountPercent / 100);
-        finalPrice = basePrice - discount;
-        couponData = { id: coupon.id, code: coupon.code, discountPercent: coupon.discountPercent };
-        await Coupons.update(coupon.id, { uses: coupon.uses + 1 });
+        const calc = calcCouponDiscount(coupon, basePrice);
+        if (calc !== null) {
+          discount   = calc;
+          finalPrice = basePrice - discount;
+          couponData = coupon;
+          await Coupons.update(coupon.id, { uses: coupon.uses + 1 });
+        }
       }
     }
 
@@ -169,10 +281,10 @@ app.post('/api/orders', auth, async (req, res) => {
       plan,
       planPrice:       basePrice,
       coupon:          couponData ? couponData.code : null,
-      discountPercent: couponData ? couponData.discountPercent : 0,
+      discountPercent: couponData && couponData.discountType === 'percent' ? couponData.discountValue : 0,
       discountAmount:  discount,
       finalPrice,
-      preferences:     preferences || {},
+      preferences:     { ...(preferences || {}), meals: resolveMealsForStorage(meals) },
       status:          'paid',
       readByAdmin:     false,
     });
@@ -198,9 +310,12 @@ async function finalizeOrder(meta) {
     const all    = await Coupons.getAll();
     const coupon = all.find(c => c.code.toUpperCase() === meta.couponCode.toUpperCase() && c.active);
     if (coupon) {
-      discount   = Math.round(meta.basePrice * coupon.discountPercent / 100);
-      couponData = { code: coupon.code, discountPercent: coupon.discountPercent };
-      await Coupons.update(coupon.id, { uses: coupon.uses + 1 });
+      const calc = calcCouponDiscount(coupon, meta.basePrice);
+      if (calc !== null) {
+        discount   = calc;
+        couponData = coupon;
+        await Coupons.update(coupon.id, { uses: coupon.uses + 1 });
+      }
     }
   }
 
@@ -220,14 +335,15 @@ async function finalizeOrder(meta) {
     plan:                   meta.plan,
     planPrice:              meta.basePrice,
     coupon:                 couponData ? couponData.code : null,
-    discountPercent:        couponData ? couponData.discountPercent : 0,
+    discountPercent:        couponData && couponData.discountType === 'percent' ? couponData.discountValue : 0,
     discountAmount:         discount,
     finalPrice:             meta.finalPrice,
-    preferences:            meta.preferences || {},
+    preferences:            { ...(meta.preferences || {}), meals: resolveMealsForStorage(meta.meals || []) },
     status:                 'paid',
     readByAdmin:            false,
     stripeSessionId:        meta.stripeSessionId || null,
     stripePaymentIntentId:  meta.stripePaymentIntentId || null,
+    stripeInvoiceId:        meta.stripeInvoiceId || null,
   });
 
   return order;
@@ -235,10 +351,11 @@ async function finalizeOrder(meta) {
 
 app.post('/api/orders/checkout', auth, async (req, res) => {
   try {
-    const { plan, lastName, phone, preferences, couponCode } = req.body || {};
+    const { plan, lastName, phone, preferences, couponCode, meals } = req.body || {};
 
     if (!plan || !PLAN_PRICES[plan]) return res.status(400).json({ error: 'Plan inválido' });
     if (!phone?.trim()) return res.status(400).json({ error: 'Número de WhatsApp requerido' });
+    if (!isValidMealSelection(plan, meals)) return res.status(400).json({ error: 'Selección de comidas inválida' });
 
     const user = await Users.getById(req.user.id);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -254,13 +371,16 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
     if (couponCode) {
       const all    = await Coupons.getAll();
       const coupon = all.find(c => c.code.toUpperCase() === couponCode.toUpperCase() && c.active && (!c.maxUses || c.uses < c.maxUses));
-      if (coupon) estimatedFinal = basePrice - Math.round(basePrice * coupon.discountPercent / 100);
+      if (coupon) {
+        const calc = calcCouponDiscount(coupon, basePrice);
+        if (calc !== null) estimatedFinal = basePrice - calc;
+      }
     }
 
     if (estimatedFinal <= 0) {
       const order = await finalizeOrder({
         userId: user.id, plan, name: firstName, lastName: cleanLastName, phone: cleanPhone,
-        couponCode, preferences, basePrice, finalPrice: 0,
+        couponCode, preferences, meals, basePrice, finalPrice: 0,
       });
       return res.status(201).json({ order: { ...order, orderNumber: orderNumber(order.id) } });
     }
@@ -269,18 +389,38 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
 
     const origin = req.headers.origin || `https://${req.get('host')}`;
 
-    const session = await stripe.checkout.sessions.create({
-      mode:                'payment',
+    // Descuento (si hay cupón) como Stripe Coupon de una sola vez — la
+    // suscripción cobra siempre el precio COMPLETO del plan; el descuento
+    // solo se aplica a esta primera factura, nunca a las renovaciones.
+    const discounts = [];
+    if (estimatedFinal < basePrice) {
+      const stripeCoupon = await stripe.coupons.create({
+        amount_off: Math.round((basePrice - estimatedFinal) * 100),
+        currency:   'usd',
+        duration:   'once',
+        max_redemptions: 1,
+      });
+      discounts.push({ coupon: stripeCoupon.id });
+    }
+
+    const sessionParams = {
+      mode:                'subscription',
       payment_method_types: ['card'],
-      customer_email:      user.email,
       line_items: [{
         price_data: {
           currency:     'usd',
           product_data: { name: PLAN_LABELS[plan] || plan },
-          unit_amount:  Math.round(estimatedFinal * 100),
+          unit_amount:  Math.round(basePrice * 100),
+          recurring:    { interval: 'week' },
         },
         quantity: 1,
       }],
+      discounts,
+      subscription_data: {
+        billing_cycle_anchor: nextTuesdayAnchor(),
+        proration_behavior:   'none',
+        metadata: { userId: String(user.id), plan },
+      },
       metadata: {
         userId:      String(user.id),
         plan,
@@ -291,10 +431,17 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
         basePrice:   String(basePrice),
         finalPrice:  String(estimatedFinal),
         preferences: JSON.stringify(preferences || {}).slice(0, 490),
+        // Campo propio (no el de `preferences`, que ya se trunca a 490
+        // caracteres) para que la selección de comidas nunca se corte.
+        meals:       JSON.stringify(meals).slice(0, 490),
       },
       success_url: `${origin}/home?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${origin}/home?checkout=cancelled`,
-    });
+    };
+    if (user.stripeCustomerId) sessionParams.customer = user.stripeCustomerId;
+    else sessionParams.customer_email = user.email;
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     res.json({ url: session.url });
   } catch (err) {
@@ -324,22 +471,113 @@ app.post('/api/stripe/webhook', async (req, res) => {
       const existing = await Orders.find(o => o.stripeSessionId === session.id);
       if (existing.length === 0) {
         const meta = session.metadata || {};
-        await finalizeOrder({
+        let preferences = {};
+        try { preferences = meta.preferences ? JSON.parse(meta.preferences) : {}; } catch { /* truncado o corrupto: seguimos sin preferencias sueltas */ }
+        let meals = [];
+        try { meals = meta.meals ? JSON.parse(meta.meals) : []; } catch { /* no debería pasar: ver comentario en /api/orders/checkout */ }
+        const order = await finalizeOrder({
           userId:                meta.userId,
           plan:                  meta.plan,
           name:                  meta.name,
           lastName:              meta.lastName,
           phone:                 meta.phone,
           couponCode:            meta.couponCode,
-          preferences:           meta.preferences ? JSON.parse(meta.preferences) : {},
+          preferences,
+          meals,
           basePrice:             Number(meta.basePrice) || 0,
           finalPrice:            Number(meta.finalPrice) || 0,
           stripeSessionId:       session.id,
+          // En modo suscripción no hay payment_intent (viene null) — el
+          // comprobante real de la primera factura es session.invoice.
           stripePaymentIntentId: session.payment_intent || null,
+          stripeInvoiceId:       session.invoice || null,
         });
+
+        // Guarda customer/subscription de Stripe en el usuario para poder
+        // manejar la suscripción después (portal, cancelación, renovaciones).
+        if (session.customer) {
+          await Users.update(order.userId, { stripeCustomerId: session.customer });
+        }
+        if (session.subscription) {
+          const subscription = await stripe.subscriptions.retrieve(session.subscription);
+          await syncSubscriptionFields(order.userId, subscription);
+        }
       }
     } catch (err) {
       console.error('Error creando el pedido desde el webhook de Stripe:', err);
+      return res.status(500).end();
+    }
+  }
+
+  // Renovación semanal automática: invoice.paid dispara tanto para la
+  // primera factura (billing_reason 'subscription_create', ya manejada
+  // arriba) como para cada renovación real ('subscription_cycle') — acá
+  // solo procesamos esta última, clonando el pedido más reciente del
+  // usuario (mismas meals/preferencias, se repiten solas cada semana).
+  if (event.type === 'invoice.paid') {
+    const invoice = event.data.object;
+    if (invoice.billing_reason === 'subscription_cycle') {
+      try {
+        const existing = await Orders.find(o => o.stripeInvoiceId === invoice.id);
+        if (existing.length === 0) {
+          const user = (await Users.getAll()).find(u => u.stripeSubscriptionId === invoice.subscription);
+          if (!user) {
+            console.error('invoice.paid (renovación): no se encontró ningún usuario para la suscripción', invoice.subscription);
+          } else {
+            const [latest] = (await Orders.find(o => o.userId === user.id))
+              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            if (!latest) console.error('invoice.paid (renovación): el usuario', user.id, 'no tiene ningún pedido previo para clonar — se crea uno básico');
+            await Orders.create({
+              userId:          user.id,
+              userName:        latest ? latest.userName : (user.name + (user.lastName ? ' ' + user.lastName : '')),
+              userEmail:       user.email,
+              userPhone:       latest ? latest.userPhone : user.phone,
+              plan:            latest ? latest.plan : user.plan,
+              planPrice:       latest ? latest.planPrice : (PLAN_PRICES[user.plan] || 0),
+              coupon:          null,
+              discountPercent: 0,
+              discountAmount:  0,
+              finalPrice:      (invoice.amount_paid || 0) / 100,
+              preferences:     latest ? latest.preferences : {},
+              status:          'paid',
+              readByAdmin:     false,
+              stripeInvoiceId: invoice.id,
+            });
+          }
+        }
+      } catch (err) {
+        // Choque de la restricción UNIQUE de stripe_invoice_id: otra entrega
+        // del webhook ya creó este pedido — no es un error real, no reintentar.
+        if (err && err.code === '23505') { /* ya existe, ok */ }
+        else {
+          console.error('Error creando la renovación desde invoice.paid:', err);
+          return res.status(500).end();
+        }
+      }
+    }
+  }
+
+  // Cambios de estado de la suscripción (incluye cancel_at_period_end al
+  // cancelar desde el Customer Portal) — se reflejan en el usuario para que
+  // el admin los vea sin tener que entrar a Stripe.
+  if (event.type === 'customer.subscription.updated') {
+    const subscription = event.data.object;
+    try {
+      const user = (await Users.getAll()).find(u => u.stripeSubscriptionId === subscription.id);
+      if (user) await syncSubscriptionFields(user.id, subscription);
+    } catch (err) {
+      console.error('Error sincronizando customer.subscription.updated:', err);
+      return res.status(500).end();
+    }
+  }
+
+  if (event.type === 'customer.subscription.deleted') {
+    const subscription = event.data.object;
+    try {
+      const user = (await Users.getAll()).find(u => u.stripeSubscriptionId === subscription.id);
+      if (user) await Users.update(user.id, { subscriptionStatus: 'canceled', status: 'inactive' });
+    } catch (err) {
+      console.error('Error procesando customer.subscription.deleted:', err);
       return res.status(500).end();
     }
   }
@@ -361,12 +599,32 @@ app.get('/api/orders/mine', auth, async (req, res) => {
   }
 });
 
+// ── Suscripción: portal de Stripe (gestionar/cancelar) ────────────────────────
+
+app.post('/api/subscription/portal', auth, async (req, res) => {
+  try {
+    if (!stripe) return res.status(500).json({ error: 'Los pagos todavía no están configurados' });
+    const user = await Users.getById(req.user.id);
+    if (!user?.stripeCustomerId) return res.status(400).json({ error: 'Todavía no tenés una suscripción activa' });
+
+    const origin = req.headers.origin || `https://${req.get('host')}`;
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer:   user.stripeCustomerId,
+      return_url: `${origin}/home`,
+    });
+    res.json({ url: portalSession.url });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
 // ── Admin: Estadísticas ──────────────────────────────────────────────────────
 
 app.get('/api/admin/stats', adminOnly, async (req, res) => {
   try {
     const usrs   = (await Users.getAll()).filter(u => u.role !== 'admin');
-    const byPlan   = { structure: 0, performance: 0, full_system: 0, none: 0 };
+    const byPlan   = { structure: 0, performance: 0, full_system: 0, full_week: 0, none: 0 };
     const byStatus = { active: 0, pending: 0, inactive: 0 };
     usrs.forEach(u => {
       const p = u.plan || 'none';
@@ -515,17 +773,19 @@ app.get('/api/admin/coupons', adminOnly, async (req, res) => {
 
 app.post('/api/admin/coupons', adminOnly, async (req, res) => {
   try {
-    const { code, discountPercent, maxUses } = req.body || {};
-    if (!code?.trim() || !discountPercent)
+    const { code, discountType, discountValue, minOrderAmount, maxUses } = req.body || {};
+    if (!code?.trim() || !discountValue)
       return res.status(400).json({ error: 'Código y descuento son obligatorios' });
-    if (discountPercent < 1 || discountPercent > 100)
-      return res.status(400).json({ error: 'El descuento debe ser entre 1 y 100' });
+    if (!isValidDiscountFields(discountType, Number(discountValue)))
+      return res.status(400).json({ error: 'El descuento no es válido para ese tipo' });
     const all    = await Coupons.getAll();
     const exists = all.find(c => c.code.toUpperCase() === code.trim().toUpperCase());
     if (exists) return res.status(409).json({ error: 'Ya existe un cupón con ese código' });
     const coupon = await Coupons.create({
       code: code.trim().toUpperCase(),
-      discountPercent: parseInt(discountPercent),
+      discountType,
+      discountValue: Number(discountValue),
+      minOrderAmount: minOrderAmount ? Number(minOrderAmount) : null,
       active: true,
       uses: 0,
       maxUses: maxUses ? parseInt(maxUses) : null,
@@ -542,12 +802,20 @@ app.put('/api/admin/coupons/:id', adminOnly, async (req, res) => {
     const id = parseInt(req.params.id);
     const c  = await Coupons.getById(id);
     if (!c) return res.status(404).json({ error: 'Cupón no encontrado' });
-    const { code, discountPercent, maxUses, active } = req.body || {};
+    const { code, discountType, discountValue, minOrderAmount, maxUses, active } = req.body || {};
     const updates = {};
-    if (code)              updates.code            = code.trim().toUpperCase();
-    if (discountPercent)   updates.discountPercent = parseInt(discountPercent);
-    if (maxUses !== undefined) updates.maxUses     = maxUses ? parseInt(maxUses) : null;
-    if (active  !== undefined) updates.active      = Boolean(active);
+    if (code) updates.code = code.trim().toUpperCase();
+    if (discountType || discountValue) {
+      const nextType  = discountType || c.discountType;
+      const nextValue = discountValue !== undefined ? Number(discountValue) : c.discountValue;
+      if (!isValidDiscountFields(nextType, nextValue))
+        return res.status(400).json({ error: 'El descuento no es válido para ese tipo' });
+      updates.discountType  = nextType;
+      updates.discountValue = nextValue;
+    }
+    if (minOrderAmount !== undefined) updates.minOrderAmount = minOrderAmount ? Number(minOrderAmount) : null;
+    if (maxUses !== undefined) updates.maxUses = maxUses ? parseInt(maxUses) : null;
+    if (active  !== undefined) updates.active  = Boolean(active);
     res.json({ coupon: await Coupons.update(id, updates) });
   } catch (err) {
     console.error(err);

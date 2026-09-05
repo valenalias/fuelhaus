@@ -1,6 +1,296 @@
 # HANDOFF — FuelHaus
 
-Última actualización: 2026-09-04 (ver sección "Stripe en modo LIVE" — sesión más reciente)
+Última actualización: 2026-09-05 (ver sección "Autopay semanal (suscripciones)" — sesión más reciente)
+
+## Autopay semanal (suscripciones recurrentes de Stripe) — sesión 2026-09-05
+
+**Objetivo:** el checkout pasó de pago único a **cobro automático semanal
+real** (Stripe `mode: 'subscription'`), con una política de cancelación
+clara. Plan completo (contexto de negocio, diseño técnico, checklist
+manual de Stripe) guardado en
+`C:\Users\valen\.claude\plans\reactive-noodling-clock.md` — este resumen
+es la versión corta.
+
+**Día de corte = día de cobro = martes** para TODOS los suscriptores, sin
+importar qué día se hayan suscripto (investigado: HelloFresh corta 5 días
+antes de la entrega, que es exactamente martes para una entrega de
+domingo — coincide con lo que cocina necesita, que es la lista 3 días
+antes del sábado de prep, o sea miércoles; martes deja 1 día de margen).
+Se logra con `subscription_data.billing_cycle_anchor` calculado por
+`nextTuesdayAnchor()` en `server.js` — cobra el precio completo ahora
+mismo (cubre desde el signup hasta ese martes) y de ahí en más siempre
+los martes, sin importar el día de la semana en que alguien se suscriba.
+
+**Cancelación = Stripe Customer Portal** (`POST /api/subscription/portal`,
+botón "Gestionar mi suscripción" en la vista de cuenta) — cancela al
+final del período ya pagado, nunca inmediato. **Requiere activar el
+Portal a mano en el Dashboard de Stripe** (test y live) y elegir
+explícitamente "Cancel at end of billing period" — el default de Stripe
+NO es ese.
+
+**Meals se repiten automáticamente** cada semana — cada renovación real
+(`invoice.paid` con `billing_reason: 'subscription_cycle'`) clona el
+pedido más reciente del usuario (mismo plan, mismas preferencias/meals
+ya resueltas) en un pedido nuevo, sin que el cliente tenga que volver a
+elegir nada. El pedido de la primera semana sigue creándose vía
+`checkout.session.completed`, como antes.
+
+**Cupón de descuento: solo la primera semana.** Se aplica como un Stripe
+Coupon (`duration: 'once'`) por separado, no se mezcla con el precio
+recurrente — la suscripción siempre cobra el precio COMPLETO del plan;
+el descuento desaparece solo después de la primera factura.
+
+**Un cupón que deja el precio en $0 sigue siendo un pedido único, sin
+suscripción de Stripe** — decisión explícita, no se auto-renueva.
+
+**Clientes que ya pagaron con el flujo viejo (pago único) no se
+convierten solos a autopay** — tienen que volver a pasar por el checkout
+si Valen quiere pasarlos a suscripción (Stripe no puede convertir un pago
+ya hecho).
+
+**Migración de base de datos (correr en Supabase ANTES de deployar):**
+```sql
+ALTER TABLE users  ADD COLUMN IF NOT EXISTS stripe_customer_id                  TEXT;
+ALTER TABLE users  ADD COLUMN IF NOT EXISTS stripe_subscription_id              TEXT;
+ALTER TABLE users  ADD COLUMN IF NOT EXISTS subscription_status                 TEXT;
+ALTER TABLE users  ADD COLUMN IF NOT EXISTS subscription_current_period_end     TIMESTAMPTZ;
+ALTER TABLE users  ADD COLUMN IF NOT EXISTS subscription_cancel_at_period_end   BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_invoice_id                   TEXT UNIQUE;
+```
+
+**De paso se corrigió un bug real en `db.js`:** `Users.getAll/getById/
+getByEmail` y sus equivalentes en `Orders`/`Coupons` ignoraban el `error`
+que devuelve Supabase en un SELECT — si la conexión fallaba, se
+comportaban igual que "no existe" en vez de tirar un error real. Esto
+importaba especialmente para la nueva lógica de `invoice.paid` (buscar
+el usuario de una suscripción): con el bug, una falla transitoria de
+conexión hubiera hecho que un cobro real no genere ningún pedido, sin
+ningún rastro del problema. Corregido con `if (error) throw error;` en
+los métodos de lectura.
+
+**Checklist manual pendiente en el Dashboard de Stripe (Valen, antes de
+que esto funcione de punta a punta):**
+1. Ampliar el webhook **live** ya existente (hoy solo escucha
+   `checkout.session.completed`) para que también escuche: `invoice.paid`,
+   `customer.subscription.updated`, `customer.subscription.deleted`.
+2. Crear/ajustar el webhook de **test** (Preview) con los mismos eventos.
+3. Activar el **Customer Portal** en test y en live, con cancelación
+   configurada como **"Cancel at end of billing period"** (no es el
+   default).
+
+**Probado sin tocar Supabase real:** toda la lógica de webhooks
+(clonado de renovación, dedup por reintento, choque de restricción
+UNIQUE, suscripción huérfana, `customer.subscription.updated/deleted`)
+con eventos de Stripe firmados a mano (HMAC-SHA256, mismo esquema que
+`stripe.webhooks.constructEvent`) contra la base en memoria — no hace
+falta una cuenta de Stripe real para probar esta parte. La función
+`nextTuesdayAnchor()` se probó para los 7 días de la semana. Lo que NO
+se pudo probar sin claves reales: la creación real de la Checkout
+Session en modo suscripción, el Stripe Coupon `duration:'once'`, y el
+Customer Portal — para eso hace falta un checkout de verdad en modo
+test contra el deploy de preview (ver más abajo).
+
+**Nota aparte, no relacionada:** encontré una sección vieja "🔴 Lo más
+urgente — sistema de cuentas caído en producción" en este mismo archivo,
+de una sesión anterior — ya estaba resuelta (confirmado hoy: login real
++ lectura de datos reales contra esa misma Supabase funcionó sin
+problema en la sesión de ayer). La borré para que no vuelva a confundir
+a nadie — si hace falta el detalle histórico, está en el historial de
+git de este archivo.
+
+## Fix: botón "Quiero empezar" del formulario de Contacto (sesión 2026-09-04)
+
+Mismo tipo de bug que el de los botones "Elegir plan" (ver sección de
+abajo), pero en el formulario genérico de la sección Contacto/CTA
+(nombre + email, arriba del footer): también tenía
+`onsubmit="return false"`, no hacía nada. A diferencia de los botones de
+plan (que ya tienen plan elegido), acá Valen decidió que el destino sea
+el mismo: mandarlo a crear cuenta, con nombre y email ya completados —
+no un lead manual por WhatsApp.
+
+**Implementación:** `index.html` guarda `{name, email}` en
+`sessionStorage.fh_prefill` y redirige a `/login` (sin querystring —
+nunca poner email en la URL). `login.html` lo lee una sola vez al cargar
+(se borra apenas se usa), precarga el form de "Crear cuenta" y activa esa
+pestaña. Mismo patrón que el prefill de `?plan=` ya existente, pero por
+sessionStorage en vez de querystring porque acá sí hay un email de por
+medio.
+
+**Verificado en navegador:** completar nombre+email en el form de
+Contacto → aterriza en `/login` con la pestaña "Crear cuenta" activa y
+ambos campos ya completados, solo falta poner contraseña.
+
+## Forgot password + cupones flexibles (sesión 2026-09-04)
+
+**"Olvidé mi contraseña" — flujo manual (no email automático):** en
+`login.html` hay un link "¿Olvidaste tu contraseña?" bajo el form de
+login. Abre una sub-vista (mismo patrón de tabs que login/registro): pide
+el email, llama a `POST /api/auth/request-password-reset` (nuevo,
+público, siempre responde `{ok:true}` exista o no el email — evita
+enumeración) y muestra un botón de WhatsApp con mensaje prellenado. **No
+manda email real** — el reset de Resend (rama vieja `forgot-password`,
+sin mergear) sigue bloqueado por falta de dominio propio verificado, y
+el usuario decidió explícitamente resolverlo así por ahora en vez de
+conseguir el dominio. Del lado del servidor, si el email existe, se
+antepone un timestamp a `users.notes` (columna ya existente, sin
+migración) — el admin lo ve tal cual al abrir "Editar usuario" en el
+panel, y resetea la contraseña ahí mismo (esa función ya existía).
+
+**Cupones con tipo de descuento (porcentaje o monto fijo) + monto mínimo
+de compra:** en el panel, "Nuevo cupón" ahora tiene un selector de tipo
+("Porcentaje (%)" / "Monto fijo ($)") que cambia el label/placeholder del
+campo de descuento en vivo, y un campo opcional "Compra mínima para que
+aplique". El cupón solo se aplica si el precio del plan elegido es ≥ ese
+mínimo (sino, `/api/coupons/validate` devuelve 400 explicando el motivo).
+Un descuento fijo nunca deja el precio en negativo (clamp a `basePrice`).
+Se descartó explícitamente "envío gratis" como tipo — no hay costo de
+envío separado en este negocio (precio semanal fijo por plan).
+
+**Migración de base de datos (ya corrida en Supabase por Valen,
+2026-09-04):**
+```sql
+ALTER TABLE coupons RENAME COLUMN discount_percent TO discount_value;
+ALTER TABLE coupons ALTER COLUMN discount_value TYPE NUMERIC;
+ALTER TABLE coupons ADD COLUMN IF NOT EXISTS discount_type TEXT NOT NULL DEFAULT 'percent';
+ALTER TABLE coupons ADD COLUMN IF NOT EXISTS min_order_amount NUMERIC;
+```
+El cupón `FULLHAUS` existente no se tocó — con el rename + default
+`'percent'` queda migrado solo, sin re-crearlo. La tabla `orders` no
+cambió de schema: `discount_percent` (snapshot histórico) queda en 0
+para pedidos con cupón de tipo fijo, y `discount_amount` siempre tiene
+el monto real descontado en dólares — el admin/cliente lo muestra
+correctamente para ambos tipos (`formatOrderDiscount()` en `admin.js`).
+
+**Verificado:** API completa (crear cupón % y fijo, rechazo de % > 100,
+validación con mínimo no alcanzado y alcanzado, clamp de fijo mayor al
+precio, pedido creado con `discountPercent:0`/`discountAmount` correcto)
++ UI completa en navegador (modal admin, tabla con columna "Mínimo",
+resumen de pago del cliente mostrando "$15" en vez de "(0%)", flujo de
+"olvidé mi contraseña" de punta a punta incluido el link de WhatsApp) —
+todo contra una base en memoria local para no tocar la Supabase
+compartida con producción durante el testing.
+
+**Deploy de preview con todo esto (meals + fix de landing + forgot
+password + cupones):**
+https://fuelhaus-5fd8c06o2-valenalias1.vercel.app — requiere la
+migración de arriba ya corrida en Supabase (confirmado por Valen antes
+de deployar).
+
+**⚠️ Pendiente de confirmar con Valen:** al verificar este deploy contra
+la Supabase real, `admin@fuelhaus.com` / `Fuelhaus2025` (credenciales que
+constaban en la nota del vault) devolvió "Email o contraseña
+incorrectos". Puede que la contraseña se haya cambiado en algún momento
+no registrado, o haber sido un problema puntual — no se insistió
+probando más contraseñas. Confirmar la contraseña real del admin antes
+de asumir que sigue siendo esa.
+
+## Fix: los botones "Elegir plan" no llevaban a comprar (sesión 2026-09-04)
+
+**Bug preexistente (no introducido hoy) encontrado al testear "Build your
+week":** en la landing pública (`index.html`), los 4 botones "Elegir
+Structure/Performance/Full System/Full Week" de la sección de planes
+apuntaban a `href="#contacto"` — un formulario decorativo de nombre+email
+al fondo de la página cuyo `<form onsubmit="return false;">` no hace
+absolutamente nada al enviarlo. Un visitante que clickeaba "Elegir X"
+nunca podía comprar: caía en un formulario muerto.
+
+**Fix:** esos 4 botones ahora apuntan a `/login?plan={structure|
+performance|full_system|full_week}`. Cambios en cadena:
+- `login.html`: si hay `?plan=` en la URL, abre directo en la pestaña
+  "Crear cuenta" (más probable que un visitante nuevo no tenga cuenta
+  todavía) y lo preserva a través del login/registro exitoso —
+  `window.location.href = '/home' + planQuery()` en vez de `/home` a
+  secas (login) o `/` (registro, antes mandaba de vuelta a la landing en
+  vez de al onboarding — también corregido).
+- `home.html`: en `init()`, si el usuario no tiene pedidos y llega con
+  `?plan=X` válido, lo aplica directo (`applyPreselectedPlan()`) y salta
+  a "Arma tu semana" sin volver a mostrarle la grilla de planes — el
+  querystring se limpia con `history.replaceState` para no arrastrarlo en
+  refresh/back.
+
+**Verificado end-to-end:** navegar a `/login?plan=performance` → pestaña
+"Crear cuenta" ya activa → registrar → aterriza directo en "Build your
+week" paso 2 de 5 con Performance ya aplicado (10 meals a elegir), sin
+tener que re-elegir el plan. El clic real del botón en la landing (con
+la animación del loader GSAP) no se pudo confirmar por automation por el
+mismo problema de pestaña-en-segundo-plano ya documentado más abajo — es
+un artefacto del entorno de testing, no del sitio (el link es un
+`<a href>` plano sin JS que lo intercepte, confirmado por grep de
+`main.js`).
+
+**Deploy de preview con este fix:**
+https://fuelhaus-gn3x5p657-valenalias1.vercel.app (reemplaza al preview
+anterior de la sesión, que no tenía este arreglo).
+
+## Build your week (selección de meals) — sesión 2026-09-04
+
+**Objetivo:** después de elegir el plan, el usuario elige exactamente qué
+meals quiere dentro de la cantidad incluida (puede repetir platos). Se
+implementó como un paso nuevo en el onboarding, entre "Plan" y "Datos".
+
+**Catálogo (`meals.js`, nuevo):** fuente única de los 8 meals iniciales
+(Sirloin Quinoa Bowl, Beef Burrito, Beef & Rice, Chicken Rice & Broccoli,
+Chicken & Roasted Potatoes, Chicken Milanesa & Rice, Chicken Milanesa &
+Roasted Potatoes, Tilapia & Roasted Potatoes) y de `PLAN_MEAL_COUNTS`
+(cuántas meals exige cada plan, sin contar shots): `structure: 5,
+performance: 10, full_system: 13, full_week: 15`. Cada meal ya trae los
+campos `image`, `calories`, `protein`, `carbs`, `fats` en `null` — listos
+para completar más adelante sin tocar la estructura ni el resto del código
+(cards, admin, Stripe). `server.js` expone `GET /api/meals` (público, sin
+auth) para que el cliente lo consuma sin duplicar el catálogo.
+
+**Fotos:** todavía no hay imágenes reales. Mientras `meal.image` sea
+`null`, la card muestra un degradé de marca (`--cream-dark` → blanco) con
+un ícono de cubiertos centrado — se ve intencional, no roto ni "vacío".
+Cuando se cargue una foto real, la card la muestra automáticamente sin
+cambios de componente.
+
+**Validación:** el conteo es 100% client-side para la UX (botones +/− se
+deshabilitan al llegar al tope, botón "Continuar" solo se habilita con el
+total exacto) **y también server-side** (`isValidMealSelection` en
+`server.js`, corre antes de tocar Stripe/Supabase en los 3 puntos donde se
+puede crear un pedido: `/api/orders`, `/api/orders/checkout` y el webhook
+de Stripe) — rechaza sumas incorrectas e ids inventados con
+`400 Selección de comidas inválida`.
+
+**Persistencia:** la selección se guarda dentro de `orders.preferences.meals`
+(columna JSONB existente, sin migración de schema) como
+`[{ id, name, qty }]` — el `name` siempre se resuelve server-side contra el
+catálogo (nunca se confía en lo que mande el cliente). En el checkout con
+Stripe, la selección viaja en un metadata field propio (`meals`, compacto
+como `{id,qty}`) **separado** del campo `preferences` existente (que ya se
+trunca a 490 caracteres) — así nunca se corta ni rompe el JSON del webhook
+aunque el cliente elija los 8 meals distintos (peor caso medido: ~310
+caracteres, límite de Stripe: 500).
+
+**Admin (`admin.js`):** el modal de detalle de pedido ahora muestra
+"Comidas seleccionadas" con el formato `Nombre ×cantidad` separado por
+comas, leyendo directo de `preferences.meals` (sin necesitar el catálogo).
+
+**i18n:** el onboarding pasó de 4 a 5 pasos (Plan → Comidas → Datos →
+Preferencias → Pago) — se renombraron las claves `step*_of_4` a
+`step*_of_5` en `i18n.js` (ES y EN) y se agregó `progress_meals`,
+`meals_title_html`, `meals_sub`, `meals_progress_line`,
+`meals_remaining_btn`, `err_meals_incomplete`, `w_step2` (welcome ahora
+lista 5 pasos). El texto dinámico de la barra inferior de conteo (igual
+que `pay-plan-name`/cupón) solo se re-traduce en la próxima interacción
+del usuario, no al vuelo al tocar ES/EN — mismo comportamiento preexistente
+del resto del flujo, no es una regresión nueva.
+
+**Probado (ver playbook de testing local sin Supabase más abajo):** los 4
+planes con distintas combinaciones (Structure 5, Performance 10 con 3
+meals distintos, Full System 13, Full Week 15 con 5 meals distintos),
+intentar continuar incompleto (bloqueado por UI y por API), ids
+inventados (rechazado 400), y verificación end-to-end en navegador real
+incluyendo el panel admin y el toggle ES/EN. Precio/Stripe/planes
+existentes no se tocaron — se verificó que el summary de pago sigue
+mostrando el precio correcto de cada plan sin cambios.
+
+**Pendiente (no bloqueante):** `PLAN_NAMES_ADMIN` en `admin.js` no incluye
+`full_week` (bug preexistente, de cuando se agregó el plan — no se tocó
+por estar fuera de alcance de esta sesión) — los pedidos Full Week
+muestran el plan como texto crudo `full_week` en vez de "Full Week" en el
+modal de detalle del admin.
 
 ## Stripe en modo LIVE (sesión 2026-09-04)
 
@@ -27,31 +317,7 @@ de prueba) — no se hizo en esta sesión porque involucra plata real.
 - **Deploy:** https://fuelhaus.vercel.app (auto-deploy vía Vercel, conectado
   a GitHub, rama `main`)
 - **Repo:** https://github.com/valenalias/fuelhaus
-- **Admin:** admin@fuelhaus.com / Fuelhaus2025
-
-## 🔴 Lo más urgente — sistema de cuentas caído en producción
-
-El login y "crear cuenta" en `fuelhaus.vercel.app` **no funcionan ahora
-mismo**. No es un bug de código: la base de datos de Supabase es
-inalcanzable — `ohnedhcnqcmhaggyddjx.supabase.co` no resuelve ni siquiera a
-nivel DNS ("dominio inexistente"), confirmado con los logs de Vercel
-(`vercel logs`) y probando la resolución del dominio desde afuera de Vercel.
-
-Causa más probable: el proyecto de Supabase (plan gratuito) se pausó por
-inactividad y, si quedó pausado mucho tiempo, puede haber sido eliminado.
-
-**Acción pendiente del cliente:** entrar a supabase.com, revisar si el
-proyecto aparece pausado (reactivar) o si ya no está (crear uno nuevo y
-volver a cargar `supabase-schema.sql`). Sin esto resuelto, nadie puede
-loguearse ni registrarse en producción, aunque el resto del sitio funcione
-perfecto.
-
-De paso se encontró y corrigió un bug relacionado en `db.js`: las funciones
-que leen usuarios/pedidos/cupones ignoraban el `error` que devuelve
-Supabase y solo miraban `data` — si la conexión fallaba, se comportaban
-igual que "no existe", ocultando el problema real. Ya corregido (los
-errores de conexión ahora se propagan como error real, no como "no
-encontrado").
+- **Admin:** admin@fuelhaus.com / Fuelhaus2026
 
 ## Rama abierta sin mergear: `forgot-password`
 
@@ -277,3 +543,20 @@ verdadero ≥1024px salvo maximizando/enfocando la ventana real).
 - **Probar localmente sin Supabase:** `python3 -m http.server` dentro de
   `public/` sirve la landing estática (login/checkout no funcionan sin
   Supabase real).
+- **Probar el flujo completo (login/checkout/admin) en local SIN tocar la
+  base de producción:** Preview y Production comparten el mismo Supabase
+  (`vercel env ls` lo confirma), así que ni siquiera un deploy de Preview
+  es un ambiente aislado. Además `SUPABASE_URL`/`SUPABASE_SERVICE_KEY`/
+  `STRIPE_SECRET_KEY` están marcadas como **Sensitive** en Vercel —
+  `vercel env pull` las devuelve vacías, no hay riesgo de que un pull
+  local exponga el secreto real. Para probar de punta a punta sin pisar
+  datos de clientes reales: 1) `cp db.js db.real.js.bak`, 2) reemplazar
+  `db.js` por un stub que implemente `Users`/`Orders`/`Coupons`/
+  `orderNumber` en memoria (arrays JS, mismo shape camelCase que ya usa
+  `server.js` — no hace falta mapear snake_case), con un admin sembrado
+  (`bcrypt.hashSync` de una contraseña de prueba) y el cupón `FULLHAUS`
+  100% para poder crear pedidos `$0` sin necesitar claves de Stripe; 3)
+  `node server.js` sin `.env` (JWT_SECRET tiene default en el código,
+  Stripe queda `null` si falta la key — alcanza para probar todo salvo el
+  Checkout Session real); 4) al terminar, `mv db.real.js.bak db.js` y
+  `git diff db.js` para confirmar que quedó idéntico al original.

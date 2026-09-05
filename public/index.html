@@ -381,7 +381,7 @@
               <li><i class="fa-solid fa-check"></i><span data-i18n="plans.structure_i2">5 activate shots</span></li>
             </ul>
             <p class="plan-desc" data-i18n="plans.structure_desc">Para quien quiere organizar sus almuerzos sin pensar. Consistencia simple, resultados reales.</p>
-            <a href="#contacto" class="btn btn-outline btn-mag btn-full" data-i18n="plans.structure_cta">Elegir Structure</a>
+            <a href="/login?plan=structure" class="btn btn-outline btn-mag btn-full" data-i18n="plans.structure_cta">Elegir Structure</a>
           </div>
           <div class="plan-card plan-featured">
             <div class="plan-badge-top" data-i18n="plans.most_chosen">Más elegido</div>
@@ -399,7 +399,7 @@
               <li><i class="fa-solid fa-check"></i><span data-i18n="plans.performance_i3">5 activate shots</span></li>
             </ul>
             <p class="plan-desc" data-i18n="plans.performance_desc">Almuerzos y cenas de alta proteína bajo control. El plan de quienes van en serio con sus objetivos.</p>
-            <a href="#contacto" class="btn btn-white btn-mag btn-full" data-i18n="plans.performance_cta">Elegir Performance</a>
+            <a href="/login?plan=performance" class="btn btn-white btn-mag btn-full" data-i18n="plans.performance_cta">Elegir Performance</a>
           </div>
           <div class="plan-card">
             <div class="plan-top">
@@ -417,7 +417,7 @@
               <li><i class="fa-solid fa-check"></i><span data-i18n="plans.full_system_i4">3 snacks</span></li>
             </ul>
             <p class="plan-desc" data-i18n="plans.full_system_desc">Tu semana cubierta por completo. Sin improvisaciones, sin compromisos. El sistema definitivo.</p>
-            <a href="#contacto" class="btn btn-outline btn-mag btn-full" data-i18n="plans.full_system_cta">Elegir Full System</a>
+            <a href="/login?plan=full_system" class="btn btn-outline btn-mag btn-full" data-i18n="plans.full_system_cta">Elegir Full System</a>
           </div>
         </div>
 
@@ -444,7 +444,7 @@
                 <span class="price-per" data-i18n="plans.per_week">/ semana</span>
               </div>
               <p class="flagship-savings" data-i18n="plans.full_week_savings">Ahorrás $39/semana</p>
-              <a href="#contacto" class="btn btn-white btn-mag btn-full" data-i18n="plans.full_week_cta">Elegir Full Week</a>
+              <a href="/login?plan=full_week" class="btn btn-white btn-mag btn-full" data-i18n="plans.full_week_cta">Elegir Full Week</a>
             </div>
           </div>
         </div>
@@ -620,10 +620,10 @@
         <span class="eyebrow light" data-i18n="cta.eyebrow">Empezá esta semana</span>
         <h2 class="cta-title" data-i18n-html="cta.title_html">Tu semana, <em>resuelta.</em></h2>
         <p class="cta-sub" data-i18n="cta.sub">Déjanos tus datos y armamos tu plan. Sin compromiso, sin complicaciones.</p>
-        <form class="cta-form" onsubmit="return false;">
+        <form class="cta-form" id="cta-form">
           <div class="cta-fields">
-            <input type="text" placeholder="Tu nombre" data-i18n-placeholder="cta.name_placeholder" class="cta-input" autocomplete="name">
-            <input type="email" placeholder="Tu email" data-i18n-placeholder="cta.email_placeholder" class="cta-input" autocomplete="email">
+            <input type="text" id="cta-name" placeholder="Tu nombre" data-i18n-placeholder="cta.name_placeholder" class="cta-input" autocomplete="name" required>
+            <input type="email" id="cta-email" placeholder="Tu email" data-i18n-placeholder="cta.email_placeholder" class="cta-input" autocomplete="email" required>
           </div>
           <button type="submit" class="btn btn-white btn-mag cta-submit"><span data-i18n="cta.submit">Quiero empezar</span> <i class="fa-solid fa-arrow-right"></i></button>
         </form>
@@ -677,5 +677,18 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
   <script src="js/main.js"></script>
+  <script>
+    // Form de "Contacto" (nombre + email, sin plan todavía): lo manda a
+    // crear cuenta con esos datos ya completados — no guarda nada acá, el
+    // registro real pasa por /api/auth/register en login.html.
+    document.getElementById('cta-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name  = document.getElementById('cta-name').value.trim();
+      const email = document.getElementById('cta-email').value.trim();
+      if (!name || !email) return;
+      sessionStorage.setItem('fh_prefill', JSON.stringify({ name, email }));
+      window.location.href = '/login';
+    });
+  </script>
 </body>
 </html>

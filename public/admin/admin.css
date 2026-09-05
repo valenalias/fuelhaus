@@ -278,7 +278,7 @@ body {
 .plans-stats-title { margin: 1.5rem 0 0.75rem; }
 .plans-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
   margin-bottom: 2.5rem;
 }
@@ -294,19 +294,23 @@ body {
 }
 .plan-stat-card.featured { background: var(--dark-green); }
 .plan-stat-card.dark     { background: var(--black); }
+.plan-stat-card.flagship { background: var(--sage); }
 .plan-stat-card.muted    { background: var(--cream-dark); }
 
 .plan-stat-name  { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gray); }
 .plan-stat-card.featured .plan-stat-name,
-.plan-stat-card.dark .plan-stat-name { color: rgba(255,255,255,0.6); }
+.plan-stat-card.dark .plan-stat-name,
+.plan-stat-card.flagship .plan-stat-name { color: rgba(255,255,255,0.6); }
 
 .plan-stat-num   { font-size: 2.2rem; font-weight: 800; color: var(--black); line-height: 1; }
 .plan-stat-card.featured .plan-stat-num,
-.plan-stat-card.dark .plan-stat-num { color: var(--white); }
+.plan-stat-card.dark .plan-stat-num,
+.plan-stat-card.flagship .plan-stat-num { color: var(--white); }
 
 .plan-stat-label { font-size: 0.72rem; color: var(--gray); font-weight: 500; }
 .plan-stat-card.featured .plan-stat-label,
-.plan-stat-card.dark .plan-stat-label { color: rgba(255,255,255,0.5); }
+.plan-stat-card.dark .plan-stat-label,
+.plan-stat-card.flagship .plan-stat-label { color: rgba(255,255,255,0.5); }
 
 /* Recent */
 .recent-header {
@@ -394,6 +398,7 @@ body {
 .badge-structure   { background: rgba(107,138,94,0.15); color: var(--dark-green); }
 .badge-performance { background: var(--dark-green);     color: var(--white); }
 .badge-full_system { background: var(--black);           color: var(--white); }
+.badge-full_week   { background: var(--sage);            color: var(--white); }
 .badge-none        { background: var(--cream-dark);      color: var(--gray); }
 
 .badge-active   { background: var(--green-bg);  color: var(--green); }
