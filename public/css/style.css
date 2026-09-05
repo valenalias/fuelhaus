@@ -1426,27 +1426,17 @@ thead .compare-featured-col { background: var(--green); color: var(--white); }
   .badge-big { font-size: 16px; }
   .badge-sub { margin-top: 0; font-size: 11px; }
 
-  /* Plans — carrusel horizontal con scroll-snap en vez de la lista
-     apilada: se siente pensado para el dedo (swipe) en vez de una
-     grilla de escritorio angostada. Full bleed edge-to-edge con un
-     poco de la próxima card asomando como pista de que hay más. */
+  /* Plans — lista apilada verticalmente (Structure → Performance → Full
+     Week, en ese orden de lectura), no carrusel horizontal: en celular se
+     lee de arriba a abajo, cada card ocupa el ancho completo disponible. */
   .plans-grid {
     display: flex;
+    flex-direction: column;
     grid-template-columns: none;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
     gap: 16px;
-    max-width: 100%;
-    margin-left: calc(50% - 50vw);
-    margin-right: calc(50% - 50vw);
-    padding: 4px 20px 8px;
   }
-  .plans-grid::-webkit-scrollbar { display: none; }
   .plans-grid .plan-card {
-    flex: 0 0 82%;
-    scroll-snap-align: center;
+    width: 100%;
   }
 
   .flagship-inner { flex-direction: column; align-items: stretch; gap: 24px; }
