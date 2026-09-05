@@ -511,6 +511,19 @@
     .summary-label { color: var(--gray); }
     .summary-value { font-weight: 600; }
     .discount-val  { color: var(--green); font-weight: 700; }
+    .delivery-date-note {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--cream);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.85rem 1rem;
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+    .delivery-date-note i { color: var(--green); }
+    .delivery-date-note strong { text-transform: capitalize; }
 
     .coupon-row { display: flex; gap: 0.6rem; margin-bottom: 0.5rem; }
     .coupon-input-wrap { flex: 1; }
@@ -1056,6 +1069,12 @@
           </div>
         </div>
 
+        <p class="delivery-date-note">
+          <i class="fa-solid fa-calendar-check"></i>
+          <span data-i18n="home.delivery_date_prefix">Tu primera entrega será el</span>
+          <strong id="pay-delivery-date">—</strong>
+        </p>
+
         <div style="margin-bottom:1.5rem">
           <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:0.5rem;letter-spacing:0.02em" data-i18n="home.coupon_label">Cupón de descuento</label>
           <div class="coupon-row">
@@ -1338,11 +1357,27 @@
       goStep('payment');
     }
 
+    /* ── Fecha de la primera entrega ─────────────────────────────────────────*/
+    // Cocina necesita la lista el miércoles, así que un pedido nuevo llega a
+    // tiempo para el domingo más próximo si se hace de lunes a miércoles
+    // inclusive; de jueves a sábado (o si hoy ya es domingo) pasa al domingo
+    // siguiente al inmediato. El cobro en sí siempre es inmediato, el mismo
+    // día del registro — esto solo afecta cuándo llega la comida.
+    const DAYS_UNTIL_FIRST_DELIVERY = { 0: 7, 1: 6, 2: 5, 3: 4, 4: 10, 5: 9, 6: 8 };
+    function firstDeliverySundayDate() {
+      const d = new Date();
+      d.setHours(12, 0, 0, 0);
+      d.setDate(d.getDate() + DAYS_UNTIL_FIRST_DELIVERY[d.getDay()]);
+      return d;
+    }
+
     /* ── Resumen de pago ─────────────────────────────────────────────────────*/
     function updatePaymentSummary() {
       const base = PLAN_PRICES[flow.selectedPlan] || 0;
       document.getElementById('pay-plan-name').textContent  = planName(flow.selectedPlan) || '—';
       document.getElementById('pay-base-price').textContent = '$' + base + t('home.per_week_suffix');
+      document.getElementById('pay-delivery-date').textContent = firstDeliverySundayDate()
+        .toLocaleDateString(currentLang() === 'en' ? 'en-US' : 'es-US', { weekday: 'long', day: '2-digit', month: '2-digit' });
 
       const discRow = document.getElementById('pay-discount-row');
       if (flow.discountAmt > 0) {

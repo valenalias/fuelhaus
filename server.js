@@ -75,6 +75,20 @@ function nextTuesdayAnchor(now = new Date()) {
   return Math.floor(d.getTime() / 1000);
 }
 
+// Cuántos días hasta el próximo domingo para el que un cliente NUEVO que se
+// registra hoy todavía llega a tiempo. Cocina necesita la lista el miércoles,
+// así que la ventana de pedido para el domingo más cercano es de lunes a
+// miércoles inclusive; de jueves a sábado (o si hoy ya es domingo) el pedido
+// pasa directamente al domingo siguiente al inmediato.
+const DAYS_UNTIL_FIRST_DELIVERY = { 0: 7, 1: 6, 2: 5, 3: 4, 4: 10, 5: 9, 6: 8 };
+
+function firstDeliverySundayDate(now = new Date()) {
+  const d = new Date(now);
+  d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() + DAYS_UNTIL_FIRST_DELIVERY[d.getDay()]);
+  return d;
+}
+
 // Sincroniza el estado de la suscripción de Stripe sobre el usuario —
 // usado por checkout.session.completed y por los webhooks de
 // customer.subscription.* para que el admin vea todo sin llamar a Stripe.
@@ -437,15 +451,15 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
         // caracteres) para que la selección de comidas nunca se corte.
         meals:       JSON.stringify(meals).slice(0, 490),
       },
-      // Con billing_cycle_anchor futuro no se genera ninguna factura hoy
-      // (checkout.session.completed llega sin session.invoice) — el primer
-      // pedido real recién se crea cuando invoice.paid dispara para el
-      // primer cobro de verdad, el martes. Esa vez no hay "pedido anterior"
-      // del que clonar meals/preferencias, así que van acá también, en la
-      // propia suscripción, para poder leerlos en ese momento.
+      // El primer cobro se hace YA, el mismo día del registro (sin
+      // billing_cycle_anchor acá) — invoice.paid dispara enseguida y crea el
+      // primer pedido. Recién después, en checkout.session.completed, se
+      // reprograma la suscripción para que las renovaciones de ahí en más
+      // caigan siempre el martes (ver stripe.subscriptions.update más abajo).
+      // Esa primera vez no hay "pedido anterior" del que clonar
+      // meals/preferencias, así que van acá también, en la propia
+      // suscripción, para poder leerlos en ese momento.
       subscription_data: {
-        billing_cycle_anchor: nextTuesdayAnchor(),
-        proration_behavior:   'none',
         metadata: {
           userId:      String(user.id),
           plan,
@@ -486,11 +500,14 @@ app.post('/api/stripe/webhook', async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // checkout.session.completed llega apenas se crea la suscripción, pero con
-  // billing_cycle_anchor futuro todavía NO hay ningún cobro real ese día
-  // (session.invoice viene null) — acá solo activamos al usuario y
-  // sincronizamos customer/subscription; el pedido de verdad (incluido el
-  // primero) se crea siempre en invoice.paid, cuando el cobro realmente pasa.
+  // checkout.session.completed llega apenas se confirma el pago (el primer
+  // cobro ya se hizo, hoy mismo) — acá activamos al usuario, sincronizamos
+  // customer/subscription y reprogramamos el ANCLA de facturación al próximo
+  // martes para que todas las renovaciones de ahí en más caigan ese día,
+  // sin importar qué día se haya registrado el cliente. `proration_behavior:
+  // 'none'` evita que ese cambio de ancla genere un cobro extra ahora — solo
+  // corre la fecha de la próxima renovación. El pedido de verdad (incluido el
+  // primero, recién cobrado) se crea siempre en invoice.paid.
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     try {
@@ -518,6 +535,10 @@ app.post('/api/stripe/webhook', async (req, res) => {
         });
 
         if (session.subscription) {
+          await stripe.subscriptions.update(session.subscription, {
+            billing_cycle_anchor: nextTuesdayAnchor(),
+            proration_behavior:   'none',
+          });
           const subscription = await stripe.subscriptions.retrieve(session.subscription);
           await syncSubscriptionFields(user.id, subscription);
         }
@@ -528,9 +549,9 @@ app.post('/api/stripe/webhook', async (req, res) => {
     }
   }
 
-  // Acá se crea el pedido de verdad — tanto el primer cobro real (que con
-  // billing_cycle_anchor futuro llega días después del signup) como cada
-  // renovación semanal. Ambos se tratan igual: si hay un pedido previo del
+  // Acá se crea el pedido de verdad — tanto el primer cobro real (el mismo
+  // día del registro) como cada renovación semanal (el martes). Ambos se
+  // tratan igual: si hay un pedido previo del
   // usuario, se clona (mismas meals/preferencias); si es el primer cobro y
   // todavía no hay ningún pedido, se leen del metadata de la propia
   // suscripción (guardado ahí en /api/orders/checkout).

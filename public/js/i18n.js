@@ -353,6 +353,7 @@ const I18N = {
       summary_weekly_price: 'Precio semanal',
       summary_discount_label: 'Descuento',
       summary_total: 'Total',
+      delivery_date_prefix: 'Tu primera entrega será el',
       coupon_label: 'Cupón de descuento',
       coupon_placeholder: 'TUCODIGO',
       coupon_apply: 'Aplicar',
@@ -361,7 +362,7 @@ const I18N = {
       coupon_applied_suffix: ' de descuento aplicado',
       confirm_order: 'Confirmar pedido',
       confirming: 'Confirmando…',
-      payment_disclaimer: 'Al confirmar activás el cobro automático semanal de tu plan (cada martes), con entrega dominical en Miami. Podés cancelar cuando quieras desde tu cuenta — si cancelás antes del martes, no se te cobra ni se prepara nada esa semana.',
+      payment_disclaimer: 'Al confirmar se cobra tu plan hoy mismo y activás el cobro automático semanal (las próximas renovaciones caen cada martes), con entrega dominical en Miami. Podés cancelar cuando quieras desde tu cuenta — si cancelás antes del martes, no se te cobra ni se prepara nada la semana siguiente.',
 
       confirmed_eyebrow: '¡Pedido confirmado!',
       confirmed_title_html: 'Tu semana está <em>resuelta.</em>',
@@ -739,6 +740,7 @@ const I18N = {
       summary_weekly_price: 'Weekly price',
       summary_discount_label: 'Discount',
       summary_total: 'Total',
+      delivery_date_prefix: 'Your first delivery will be on',
       coupon_label: 'Discount coupon',
       coupon_placeholder: 'YOURCODE',
       coupon_apply: 'Apply',
@@ -747,7 +749,7 @@ const I18N = {
       coupon_applied_suffix: ' discount applied',
       confirm_order: 'Confirm order',
       confirming: 'Confirming…',
-      payment_disclaimer: 'By confirming you activate automatic weekly billing for your plan (every Tuesday), with Sunday delivery in Miami. You can cancel anytime from your account — cancel before Tuesday and you won\'t be charged or prepped for that week.',
+      payment_disclaimer: 'By confirming your plan is charged today and automatic weekly billing kicks in (future renewals fall every Tuesday), with Sunday delivery in Miami. You can cancel anytime from your account — cancel before Tuesday and you won\'t be charged or prepped for the following week.',
 
       confirmed_eyebrow: 'Order confirmed!',
       confirmed_title_html: 'Your week is <em>solved.</em>',
