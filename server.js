@@ -39,6 +39,18 @@ function resolveMealsForStorage(meals) {
     .map(m => ({ id: m.id, name: MEAL_BY_ID[m.id].name, qty: m.qty }));
 }
 
+// Reconstruye preferencias + meals resueltos a partir de los campos JSON
+// (truncados a 490 caracteres) guardados en el metadata de Stripe — mismo
+// formato tanto en el metadata de la Checkout Session como en el de la
+// suscripción, así que este parser sirve para los dos casos.
+function parsePreferencesFromMeta(meta) {
+  let preferences = {};
+  try { preferences = meta.preferences ? JSON.parse(meta.preferences) : {}; } catch { /* corrupto: seguimos con {} */ }
+  let meals = [];
+  try { meals = meta.meals ? JSON.parse(meta.meals) : []; } catch { /* corrupto: seguimos con [] */ }
+  return { ...preferences, meals: resolveMealsForStorage(meals) };
+}
+
 // Calcula el descuento en dólares de un cupón sobre el precio de un plan.
 // Devuelve null si el cupón no aplica (no llega al monto mínimo de compra) —
 // eso se trata igual que "cupón inválido" en los callers.
@@ -410,20 +422,18 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
 
     const origin = req.headers.origin || `https://${req.get('host')}`;
 
-    // Descuento (si hay cupón) como Stripe Coupon de una sola vez — la
-    // suscripción cobra siempre el precio COMPLETO del plan; el descuento
-    // solo se aplica a esta primera factura, nunca a las renovaciones.
-    const discounts = [];
-    if (estimatedFinal < basePrice) {
-      const stripeCoupon = await stripe.coupons.create({
-        amount_off: Math.round((basePrice - estimatedFinal) * 100),
-        currency:   'usd',
-        duration:   'once',
-        max_redemptions: 1,
-      });
-      discounts.push({ coupon: stripeCoupon.id });
-    }
-
+    // La suscripción en sí NO cobra nada hoy — se crea con billing_cycle_anchor
+    // en el próximo martes (proration_behavior:'none', sin generar ninguna
+    // factura por la diferencia) para que TODAS las renovaciones futuras,
+    // desde la primera, caigan siempre ese día sin importar qué día se haya
+    // registrado el cliente. El cobro de HOY (precio completo, ya con el
+    // descuento del cupón aplicado si corresponde) se hace aparte, como una
+    // factura manual de una sola vez, en el webhook checkout.session.completed
+    // — Stripe no permite reprogramar billing_cycle_anchor a una fecha futura
+    // arbitraria sobre una suscripción ya creada (probado en real: solo
+    // acepta 'now'/'unchanged' en subscriptions.update), así que la única
+    // forma de tener "cobro completo hoy" + "ancla futura común" es separar
+    // ambos cobros en dos objetos de Stripe distintos.
     const sessionParams = {
       mode:                'subscription',
       payment_method_types: ['card'],
@@ -436,7 +446,6 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
         },
         quantity: 1,
       }],
-      discounts,
       metadata: {
         userId:      String(user.id),
         plan,
@@ -451,15 +460,9 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
         // caracteres) para que la selección de comidas nunca se corte.
         meals:       JSON.stringify(meals).slice(0, 490),
       },
-      // El primer cobro se hace YA, el mismo día del registro (sin
-      // billing_cycle_anchor acá) — invoice.paid dispara enseguida y crea el
-      // primer pedido. Recién después, en checkout.session.completed, se
-      // reprograma la suscripción para que las renovaciones de ahí en más
-      // caigan siempre el martes (ver stripe.subscriptions.update más abajo).
-      // Esa primera vez no hay "pedido anterior" del que clonar
-      // meals/preferencias, así que van acá también, en la propia
-      // suscripción, para poder leerlos en ese momento.
       subscription_data: {
+        billing_cycle_anchor: nextTuesdayAnchor(),
+        proration_behavior:   'none',
         metadata: {
           userId:      String(user.id),
           plan,
@@ -500,14 +503,16 @@ app.post('/api/stripe/webhook', async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // checkout.session.completed llega apenas se confirma el pago (el primer
-  // cobro ya se hizo, hoy mismo) — acá activamos al usuario, sincronizamos
-  // customer/subscription y reprogramamos el ANCLA de facturación al próximo
-  // martes para que todas las renovaciones de ahí en más caigan ese día,
-  // sin importar qué día se haya registrado el cliente. `proration_behavior:
-  // 'none'` evita que ese cambio de ancla genere un cobro extra ahora — solo
-  // corre la fecha de la próxima renovación. El pedido de verdad (incluido el
-  // primero, recién cobrado) se crea siempre en invoice.paid.
+  // checkout.session.completed llega apenas se confirma la suscripción — la
+  // suscripción en sí todavía no cobró nada (billing_cycle_anchor futuro, ver
+  // /api/orders/checkout). Acá activamos al usuario, sincronizamos
+  // customer/subscription, y hacemos el cobro de HOY como una factura manual
+  // de una sola vez (precio completo con el descuento del cupón ya aplicado)
+  // — el pedido de este primer cobro se crea directo acá mismo, no en
+  // invoice.paid (esa factura manual no tiene suscripción asociada, así que
+  // invoice.paid la ignora a propósito, ver más abajo). Las renovaciones
+  // semanales de ahí en más sí las crea invoice.paid, cuando Stripe cobra
+  // solo la propia suscripción cada martes.
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     try {
@@ -518,11 +523,14 @@ app.post('/api/stripe/webhook', async (req, res) => {
       } else if (user.stripeSubscriptionId && user.stripeSubscriptionId === session.subscription) {
         // Reintento del webhook para un evento ya procesado — no repetir.
       } else {
-        // El cupón se consume acá (suscripción confirmada), no en el pedido.
+        let couponData = null;
         if (meta.couponCode) {
           const all    = await Coupons.getAll();
           const coupon = all.find(c => c.code.toUpperCase() === meta.couponCode.toUpperCase() && c.active);
-          if (coupon) await Coupons.update(coupon.id, { uses: coupon.uses + 1 });
+          if (coupon) {
+            couponData = coupon;
+            await Coupons.update(coupon.id, { uses: coupon.uses + 1 });
+          }
         }
 
         await Users.update(user.id, {
@@ -535,12 +543,56 @@ app.post('/api/stripe/webhook', async (req, res) => {
         });
 
         if (session.subscription) {
-          await stripe.subscriptions.update(session.subscription, {
-            billing_cycle_anchor: nextTuesdayAnchor(),
-            proration_behavior:   'none',
-          });
           const subscription = await stripe.subscriptions.retrieve(session.subscription);
           await syncSubscriptionFields(user.id, subscription);
+        }
+
+        const basePrice  = Number(meta.basePrice) || 0;
+        const finalPrice = Number(meta.finalPrice) || 0;
+        if (session.customer && finalPrice > 0) {
+          await stripe.invoiceItems.create({
+            customer:    session.customer,
+            amount:      Math.round(finalPrice * 100),
+            currency:    'usd',
+            description: `${PLAN_LABELS[meta.plan] || meta.plan} — primera semana`,
+          });
+          const draft = await stripe.invoices.create({
+            customer:          session.customer,
+            collection_method: 'charge_automatically',
+            auto_advance:      false,
+            metadata:          { userId: String(user.id), plan: meta.plan },
+          });
+          await stripe.invoices.finalizeInvoice(draft.id);
+          const paidInvoice = await stripe.invoices.pay(draft.id);
+
+          if (paidInvoice.status === 'paid') {
+            try {
+              await Orders.create({
+                userId:          user.id,
+                userName:        meta.name + (meta.lastName ? ' ' + meta.lastName : ''),
+                userEmail:       user.email,
+                userPhone:       meta.phone,
+                plan:            meta.plan,
+                planPrice:       basePrice,
+                coupon:          couponData ? couponData.code : null,
+                discountPercent: couponData && couponData.discountType === 'percent' ? couponData.discountValue : 0,
+                discountAmount:  Math.max(0, basePrice - finalPrice),
+                finalPrice,
+                preferences:     parsePreferencesFromMeta(meta),
+                status:          'paid',
+                readByAdmin:     false,
+                stripeInvoiceId: paidInvoice.id,
+              });
+            } catch (err) {
+              if (!(err && err.code === '23505')) throw err; // 23505 = ya existe, ok (reintento del webhook)
+            }
+          } else {
+            // No debería pasar (Checkout ya validó la tarjeta) pero si la
+            // factura queda sin pagar (ej. fondos insuficientes recién ahora)
+            // no se crea ningún pedido — Valen lo ve porque el usuario queda
+            // "active" sin ningún pedido asociado, y lo resuelve por WhatsApp.
+            console.error('checkout.session.completed: la factura del primer cobro no quedó pagada', paidInvoice.id, paidInvoice.status);
+          }
         }
       }
     } catch (err) {
@@ -549,60 +601,58 @@ app.post('/api/stripe/webhook', async (req, res) => {
     }
   }
 
-  // Acá se crea el pedido de verdad — tanto el primer cobro real (el mismo
-  // día del registro) como cada renovación semanal (el martes). Ambos se
-  // tratan igual: si hay un pedido previo del
-  // usuario, se clona (mismas meals/preferencias); si es el primer cobro y
-  // todavía no hay ningún pedido, se leen del metadata de la propia
-  // suscripción (guardado ahí en /api/orders/checkout).
+  // Acá se crean los pedidos de las renovaciones semanales (el martes) — el
+  // primer cobro (factura manual, sin suscripción asociada) ya se procesó
+  // aparte en checkout.session.completed, así que esta factura sin
+  // `invoice.subscription` se ignora a propósito, sin loguear error.
   if (event.type === 'invoice.paid') {
     const invoice = event.data.object;
     try {
-      const existing = await Orders.find(o => o.stripeInvoiceId === invoice.id);
-      if (existing.length === 0) {
-        const user = (await Users.getAll()).find(u => u.stripeSubscriptionId === invoice.subscription);
-        if (!user) {
-          console.error('invoice.paid: no se encontró ningún usuario para la suscripción', invoice.subscription);
-        } else {
-          const [latest] = (await Orders.find(o => o.userId === user.id))
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-          let plan, preferences, userName, userPhone;
-          if (latest) {
-            plan = latest.plan;
-            preferences = latest.preferences;
-            userName = latest.userName;
-            userPhone = latest.userPhone;
+      if (!invoice.subscription) {
+        // Factura manual del primer cobro (u otra factura suelta) — nada que hacer acá.
+      } else {
+        const existing = await Orders.find(o => o.stripeInvoiceId === invoice.id);
+        if (existing.length === 0) {
+          const user = (await Users.getAll()).find(u => u.stripeSubscriptionId === invoice.subscription);
+          if (!user) {
+            console.error('invoice.paid: no se encontró ningún usuario para la suscripción', invoice.subscription);
           } else {
-            const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
-            const subMeta = subscription.metadata || {};
-            plan = subMeta.plan || user.plan;
-            let subPreferences = {};
-            try { subPreferences = subMeta.preferences ? JSON.parse(subMeta.preferences) : {}; } catch { /* corrupto: seguimos con {} */ }
-            let subMeals = [];
-            try { subMeals = subMeta.meals ? JSON.parse(subMeta.meals) : []; } catch { /* corrupto: seguimos con [] */ }
-            preferences = { ...subPreferences, meals: resolveMealsForStorage(subMeals) };
-            userName = subMeta.name ? (subMeta.name + (subMeta.lastName ? ' ' + subMeta.lastName : '')) : (user.name + (user.lastName ? ' ' + user.lastName : ''));
-            userPhone = subMeta.phone || user.phone;
-            if (!subMeta.plan) console.error('invoice.paid: primer cobro sin metadata de la suscripción, usando datos del usuario como fallback', invoice.subscription);
-          }
+            const [latest] = (await Orders.find(o => o.userId === user.id))
+              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-          await Orders.create({
-            userId:          user.id,
-            userName,
-            userEmail:       user.email,
-            userPhone,
-            plan,
-            planPrice:       PLAN_PRICES[plan] || 0,
-            coupon:          null,
-            discountPercent: 0,
-            discountAmount:  0,
-            finalPrice:      (invoice.amount_paid || 0) / 100,
-            preferences,
-            status:          'paid',
-            readByAdmin:     false,
-            stripeInvoiceId: invoice.id,
-          });
+            let plan, preferences, userName, userPhone;
+            if (latest) {
+              plan = latest.plan;
+              preferences = latest.preferences;
+              userName = latest.userName;
+              userPhone = latest.userPhone;
+            } else {
+              const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+              const subMeta = subscription.metadata || {};
+              plan = subMeta.plan || user.plan;
+              preferences = parsePreferencesFromMeta(subMeta);
+              userName = subMeta.name ? (subMeta.name + (subMeta.lastName ? ' ' + subMeta.lastName : '')) : (user.name + (user.lastName ? ' ' + user.lastName : ''));
+              userPhone = subMeta.phone || user.phone;
+              if (!subMeta.plan) console.error('invoice.paid: primer cobro sin metadata de la suscripción, usando datos del usuario como fallback', invoice.subscription);
+            }
+
+            await Orders.create({
+              userId:          user.id,
+              userName,
+              userEmail:       user.email,
+              userPhone,
+              plan,
+              planPrice:       PLAN_PRICES[plan] || 0,
+              coupon:          null,
+              discountPercent: 0,
+              discountAmount:  0,
+              finalPrice:      (invoice.amount_paid || 0) / 100,
+              preferences,
+              status:          'paid',
+              readByAdmin:     false,
+              stripeInvoiceId: invoice.id,
+            });
+          }
         }
       }
     } catch (err) {
