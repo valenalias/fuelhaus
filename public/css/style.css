@@ -655,7 +655,9 @@ em { font-style: italic; }
 }
 .plans-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* 2 planes activos acá (Structure/Performance) — Full System está oculto
+     temporalmente, Full Week vive aparte como flagship. */
+  grid-template-columns: repeat(2, 1fr);
   gap: 20px;
   margin-bottom: 40px;
 }

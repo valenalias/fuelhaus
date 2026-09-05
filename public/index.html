@@ -401,6 +401,11 @@
             <p class="plan-desc" data-i18n="plans.performance_desc">Almuerzos y cenas de alta proteína bajo control. El plan de quienes van en serio con sus objetivos.</p>
             <a href="/login?plan=performance" class="btn btn-white btn-mag btn-full" data-i18n="plans.performance_cta">Elegir Performance</a>
           </div>
+          <!-- Full System oculto temporalmente: por ahora solo planes de
+               5/10/15 meals. Nada se borró (precio/labels en server.js,
+               admin.js) — para reactivarlo: sacar este comentario y el de
+               PLAN_ACTIVE.full_system en server.js. -->
+          <!--
           <div class="plan-card">
             <div class="plan-top">
               <span class="plan-name" data-i18n="plans.full_system_name">Full System</span>
@@ -419,6 +424,7 @@
             <p class="plan-desc" data-i18n="plans.full_system_desc">Tu semana cubierta por completo. Sin improvisaciones, sin compromisos. El sistema definitivo.</p>
             <a href="/login?plan=full_system" class="btn btn-outline btn-mag btn-full" data-i18n="plans.full_system_cta">Elegir Full System</a>
           </div>
+          -->
         </div>
 
         <div class="plan-flagship">
@@ -460,7 +466,7 @@
                   <th class="compare-feature-col"></th>
                   <th data-i18n="plans.structure_name">Structure</th>
                   <th class="compare-featured-col" data-i18n="plans.performance_name">Performance</th>
-                  <th data-i18n="plans.full_system_name">Full System</th>
+                  <!-- Columna de Full System oculta junto con su plan-card, ver arriba -->
                 </tr>
               </thead>
               <tbody>
@@ -468,43 +474,32 @@
                   <td class="compare-feature" data-i18n="compare.row_price">Precio por semana</td>
                   <td>$120</td>
                   <td class="compare-featured-col">$190</td>
-                  <td>$225</td>
                 </tr>
                 <tr>
                   <td class="compare-feature" data-i18n="compare.row_lunches">Almuerzos</td>
                   <td>5</td>
                   <td class="compare-featured-col">5</td>
-                  <td>5</td>
                 </tr>
                 <tr>
                   <td class="compare-feature" data-i18n="compare.row_dinners">Cenas</td>
                   <td class="compare-dash">—</td>
                   <td class="compare-featured-col">5</td>
-                  <td>5</td>
                 </tr>
                 <tr>
                   <td class="compare-feature" data-i18n="compare.row_shots">Activate shots</td>
                   <td>5</td>
                   <td class="compare-featured-col">5</td>
-                  <td>5</td>
                 </tr>
-                <tr>
-                  <td class="compare-feature" data-i18n="compare.row_snacks">Snacks</td>
-                  <td class="compare-dash">—</td>
-                  <td class="compare-featured-col compare-dash">—</td>
-                  <td>3</td>
-                </tr>
+                <!-- Fila de snacks oculta: era pura de Full System (structure/performance no tienen) -->
                 <tr>
                   <td class="compare-feature" data-i18n="compare.row_macros">Personalizado por macros</td>
                   <td><i class="fa-solid fa-check"></i></td>
                   <td class="compare-featured-col"><i class="fa-solid fa-check"></i></td>
-                  <td><i class="fa-solid fa-check"></i></td>
                 </tr>
                 <tr>
                   <td class="compare-feature" data-i18n="compare.row_delivery">Entrega cada domingo</td>
                   <td><i class="fa-solid fa-check"></i></td>
                   <td class="compare-featured-col"><i class="fa-solid fa-check"></i></td>
-                  <td><i class="fa-solid fa-check"></i></td>
                 </tr>
               </tbody>
             </table>

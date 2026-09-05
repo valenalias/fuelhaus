@@ -253,7 +253,9 @@
     /* ── STEP: PLANES ─── */
     .plans-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      /* 3 planes activos (Structure/Performance/Full Week) entran en una
+         sola fila — Full System está oculto temporalmente, ver más abajo. */
+      grid-template-columns: repeat(3, 1fr);
       gap: 1.25rem;
       margin-top: 0.5rem;
     }
@@ -458,32 +460,8 @@
     .field-hint { font-size: 0.73rem; color: var(--gray); margin-top: 0.3rem; display: block; }
     .field textarea { resize: vertical; }
 
-    /* ── STEP: PREFERENCIAS ─── */
-    .goal-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
-      margin-bottom: 1.5rem;
-    }
-    .goal-card {
-      border: 2px solid var(--border);
-      border-radius: 10px;
-      padding: 1rem;
-      cursor: pointer;
-      background: var(--white);
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      transition: all 0.15s;
-    }
-    .goal-card:hover { border-color: var(--sage); }
-    .goal-card.selected { border-color: var(--dark-green); background: rgba(43,61,38,0.04); }
-    .goal-ico { font-size: 1.5rem; flex-shrink: 0; }
-    .goal-text-wrap { display: flex; flex-direction: column; }
-    .goal-name { font-weight: 700; font-size: 0.875rem; color: var(--black); }
-    .goal-desc { font-size: 0.75rem; color: var(--gray); margin-top: 0.1rem; }
-
-    .pref-section-title { font-size: 0.78rem; font-weight: 700; color: var(--black); letter-spacing: 0.02em; margin-bottom: 0.4rem; display: block; }
+    /* ── STEP: DELIVERY DETAILS ─── */
+    .pref-section-title { font-size: 0.78rem; font-weight: 700; color: var(--black); letter-spacing: 0.02em; margin: 1.75rem 0 0.75rem; display: block; text-transform: uppercase; }
 
     /* ── STEP: PAGO ─── */
     .summary-card {
@@ -524,6 +502,13 @@
     }
     .delivery-date-note i { color: var(--green); }
     .delivery-date-note strong { text-transform: capitalize; }
+    .closing-line {
+      text-align: center;
+      font-style: italic;
+      font-size: 0.82rem;
+      color: var(--gray);
+      margin: 0 0 1.25rem;
+    }
 
     .coupon-row { display: flex; gap: 0.6rem; margin-bottom: 0.5rem; }
     .coupon-input-wrap { flex: 1; }
@@ -643,7 +628,6 @@
     @media (max-width: 768px) {
       .plans-grid { grid-template-columns: 1fr; }
       .form-row   { grid-template-columns: 1fr; }
-      .goal-grid  { grid-template-columns: 1fr; }
       .info-grid  { grid-template-columns: 1fr; }
     }
     @media (max-width: 540px) {
@@ -695,16 +679,11 @@
       <div class="prog-line" id="pl-2"></div>
       <div class="prog-step" id="ps-3">
         <div class="prog-dot" id="pd-3">3</div>
-        <span class="prog-label" data-i18n="home.progress_data">Datos</span>
+        <span class="prog-label" data-i18n="home.progress_delivery">Entrega</span>
       </div>
       <div class="prog-line" id="pl-3"></div>
       <div class="prog-step" id="ps-4">
         <div class="prog-dot" id="pd-4">4</div>
-        <span class="prog-label" data-i18n="home.progress_prefs">Preferencias</span>
-      </div>
-      <div class="prog-line" id="pl-4"></div>
-      <div class="prog-step" id="ps-5">
-        <div class="prog-dot" id="pd-5">5</div>
         <span class="prog-label" data-i18n="home.progress_payment">Pago</span>
       </div>
     </div>
@@ -733,10 +712,10 @@
             </div>
             <hr class="divider">
             <div class="info-grid">
-              <div class="info-item"><span class="info-label" data-i18n="home.label_goal">Objetivo</span><span class="info-value" id="acc-goal">—</span></div>
-              <div class="info-item"><span class="info-label" data-i18n="home.label_diet">Dieta</span><span class="info-value" id="acc-diet">—</span></div>
-              <div class="info-item" style="grid-column:1/-1"><span class="info-label" data-i18n="home.label_allergies">Alergias / restricciones</span><span class="info-value" id="acc-allergies">—</span></div>
-              <div class="info-item" style="grid-column:1/-1"><span class="info-label" data-i18n="home.label_avoid">Alimentos a evitar</span><span class="info-value" id="acc-avoid">—</span></div>
+              <div class="info-item" style="grid-column:1/-1"><span class="info-label" data-i18n="home.label_delivery_address">Dirección de entrega</span><span class="info-value" id="acc-address">—</span></div>
+              <div class="info-item"><span class="info-label" data-i18n="home.delivery_window_label">Entrega</span><span class="info-value" id="acc-delivery-window">—</span></div>
+              <div class="info-item"><span class="info-label" data-i18n="home.label_allergies">Alergias / restricciones</span><span class="info-value" id="acc-allergies">—</span></div>
+              <div class="info-item" id="acc-special-note-wrap" style="grid-column:1/-1;display:none"><span class="info-label" data-i18n="home.label_special_note">Nota especial</span><span class="info-value" id="acc-special-note">—</span></div>
             </div>
             <hr class="divider">
             <div class="info-grid">
@@ -795,16 +774,12 @@
               <span class="w-step-label" data-i18n="home.w_step2">Armás tu semana</span>
             </div>
             <div class="w-step">
-              <div class="w-step-ico"><i class="fa-solid fa-user"></i></div>
-              <span class="w-step-label" data-i18n="home.w_step3">Completás tus datos</span>
-            </div>
-            <div class="w-step">
-              <div class="w-step-ico"><i class="fa-solid fa-sliders"></i></div>
-              <span class="w-step-label" data-i18n="home.w_step4">Configurás tus preferencias</span>
+              <div class="w-step-ico"><i class="fa-solid fa-truck"></i></div>
+              <span class="w-step-label" data-i18n="home.w_step3">Completás tus datos de entrega</span>
             </div>
             <div class="w-step">
               <div class="w-step-ico"><i class="fa-solid fa-check-circle"></i></div>
-              <span class="w-step-label" data-i18n="home.w_step5">Confirmás tu pedido</span>
+              <span class="w-step-label" data-i18n="home.w_step4">Confirmás tu pedido</span>
             </div>
           </div>
           <button class="btn-primary" id="start-btn" style="font-size:1rem;padding:1rem 2.5rem">
@@ -819,7 +794,7 @@
     <!-- STEP: PLANES -->
     <div class="step-wrap" id="step-plans">
       <div class="step-content wide">
-        <span class="step-eyebrow" data-i18n="home.step1_of_5">Paso 1 de 5</span>
+        <span class="step-eyebrow" data-i18n="home.step1_of_4">Paso 1 de 4</span>
         <h2 class="step-title" data-i18n-html="home.plans_title_html">Elige tu <em>plan</em></h2>
         <p class="step-sub" data-i18n="home.plans_sub">Todos incluyen 35–50g de proteína por porción. Ingredientes frescos, sin conservantes, entrega dominical.</p>
 
@@ -857,6 +832,12 @@
             <button class="plan-select-btn" data-i18n="home.performance_cta">Elegir Performance</button>
           </div>
 
+          <!-- Full System oculto temporalmente: por ahora solo planes de
+               5/10/15 meals. No se borró nada (precio, labels, meal count
+               siguen intactos en server.js/meals.js) — para reactivarlo:
+               sacar este comentario y el de PLAN_ACTIVE.full_system en
+               server.js. -->
+          <!--
           <div class="plan-card" data-plan="full_system" onclick="selectPlan('full_system', this)">
             <div class="plan-name" data-i18n="home.full_system_name">Full System</div>
             <div class="plan-price-row">
@@ -873,6 +854,7 @@
             </ul>
             <button class="plan-select-btn" data-i18n="home.full_system_cta">Elegir Full System</button>
           </div>
+          -->
 
           <div class="plan-card flagship" data-plan="full_week" onclick="selectPlan('full_week', this)">
             <div class="plan-badge"><i class="fa-solid fa-trophy"></i><span data-i18n="home.most_complete">El más completo</span></div>
@@ -907,7 +889,7 @@
     <!-- STEP: BUILD YOUR WEEK (selección de meals) -->
     <div class="step-wrap" id="step-meals">
       <div class="step-content wide">
-        <span class="step-eyebrow" data-i18n="home.step2_of_5">Paso 2 de 5</span>
+        <span class="step-eyebrow" data-i18n="home.step2_of_4">Paso 2 de 4</span>
         <h2 class="step-title" data-i18n-html="home.meals_title_html">Arma tu <em>semana</em></h2>
         <p class="step-sub" id="meals-sub">Elegí exactamente tus comidas. Repetí las que quieras.</p>
 
@@ -933,13 +915,13 @@
     </div>
 
     <!-- STEP: DATOS PERSONALES -->
-    <div class="step-wrap" id="step-data">
+    <div class="step-wrap" id="step-delivery">
       <div class="step-content">
-        <span class="step-eyebrow" data-i18n="home.step3_of_5">Paso 3 de 5</span>
-        <h2 class="step-title" data-i18n-html="home.data_title_html">Tus datos de <em>contacto</em></h2>
-        <p class="step-sub" data-i18n="home.data_sub">Así sabemos a quién entregarle las comidas y por dónde comunicarnos.</p>
+        <span class="step-eyebrow" data-i18n="home.step3_of_4">Paso 3 de 4</span>
+        <h2 class="step-title" data-i18n-html="home.delivery_title_html">Ya casi <em>está</em></h2>
+        <p class="step-sub" data-i18n="home.delivery_sub">Solo necesitamos algunos datos para preparar y entregar tu pedido.</p>
 
-        <form id="data-form" novalidate>
+        <form id="delivery-form" novalidate>
           <div class="form-row">
             <div class="field">
               <label for="d-name" data-i18n="home.label_first_name">Nombre *</label>
@@ -960,7 +942,48 @@
             <input type="tel" id="d-phone" placeholder="+1 (305) 000-0000" data-i18n-placeholder="home.phone_placeholder" required autocomplete="tel">
             <span class="field-hint" data-i18n="home.phone_hint">Lo usamos para coordinar tu entrega del domingo</span>
           </div>
-          <div class="error-msg" id="data-error"></div>
+
+          <h3 class="pref-section-title" data-i18n="home.delivery_details_title">Datos de entrega</h3>
+
+          <div class="field">
+            <label for="d-address" data-i18n="home.label_address">Dirección *</label>
+            <input type="text" id="d-address" placeholder="123 Main St" data-i18n-placeholder="home.address_placeholder" required autocomplete="street-address">
+          </div>
+          <div class="field">
+            <label for="d-apartment" data-i18n="home.label_apartment">Depto / Unidad (opcional)</label>
+            <input type="text" id="d-apartment" placeholder="Apt 4B" data-i18n-placeholder="home.apartment_placeholder" autocomplete="address-line2">
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="d-city" data-i18n="home.label_city">Ciudad *</label>
+              <input type="text" id="d-city" placeholder="Miami" data-i18n-placeholder="home.city_placeholder" required autocomplete="address-level2">
+            </div>
+            <div class="field">
+              <label for="d-zip" data-i18n="home.label_zip">Código postal *</label>
+              <input type="text" id="d-zip" placeholder="33101" data-i18n-placeholder="home.zip_placeholder" required autocomplete="postal-code">
+            </div>
+          </div>
+          <div class="field">
+            <label for="d-delivery-instructions" data-i18n="home.label_delivery_instructions">Instrucciones de entrega (opcional)</label>
+            <textarea id="d-delivery-instructions" rows="2" placeholder="Ej: portón azul, dejar con el portero..." data-i18n-placeholder="home.delivery_instructions_placeholder"></textarea>
+          </div>
+
+          <p class="delivery-date-note">
+            <i class="fa-solid fa-calendar-check"></i>
+            <span data-i18n="home.delivery_window_label">Entrega</span>:
+            <strong data-i18n="home.delivery_window_sunday_morning">Domingo por la mañana</strong>
+          </p>
+
+          <div class="field">
+            <label for="d-allergies" data-i18n="home.allergies_question">¿Tenés alguna alergia o restricción alimentaria?</label>
+            <textarea id="d-allergies" rows="2" placeholder="Ej: lácteos, gluten, maní..." data-i18n-placeholder="home.allergies_placeholder"></textarea>
+          </div>
+          <div class="field">
+            <label for="d-special-note" data-i18n="home.special_note_question">¿Hay algo más que debamos saber?</label>
+            <textarea id="d-special-note" rows="2" placeholder="Dejanos cualquier indicación especial para tu pedido." data-i18n-placeholder="home.special_note_placeholder"></textarea>
+          </div>
+
+          <div class="error-msg" id="delivery-error"></div>
           <div class="form-actions">
             <button type="button" class="btn-outline" onclick="goStep('meals')"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="home.back">Atrás</span></button>
             <button type="submit" class="btn-primary"><span data-i18n="home.continue">Continuar</span> <i class="fa-solid fa-arrow-right"></i></button>
@@ -969,83 +992,10 @@
       </div>
     </div>
 
-    <!-- STEP: PREFERENCIAS -->
-    <div class="step-wrap" id="step-prefs">
-      <div class="step-content">
-        <span class="step-eyebrow" data-i18n="home.step4_of_5">Paso 4 de 5</span>
-        <h2 class="step-title" data-i18n-html="home.prefs_title_html">Configura tus <em>comidas</em></h2>
-        <p class="step-sub" data-i18n="home.prefs_sub">Con esta información preparamos comidas que se adaptan exactamente a tu cuerpo y objetivos.</p>
-
-        <div style="margin-bottom:1.5rem">
-          <span class="pref-section-title" data-i18n="home.goal_question">¿Cuál es tu objetivo? *</span>
-          <div class="goal-grid">
-            <div class="goal-card" data-goal="fat_loss" onclick="selectGoal('fat_loss',this)">
-              <span class="goal-ico">🔥</span>
-              <div class="goal-text-wrap">
-                <span class="goal-name" data-i18n="home.goal_fat_loss_name">Perder grasa</span>
-                <span class="goal-desc" data-i18n="home.goal_fat_loss_desc">Déficit calórico con alta proteína</span>
-              </div>
-            </div>
-            <div class="goal-card" data-goal="muscle_gain" onclick="selectGoal('muscle_gain',this)">
-              <span class="goal-ico">💪</span>
-              <div class="goal-text-wrap">
-                <span class="goal-name" data-i18n="home.goal_muscle_gain_name">Ganar músculo</span>
-                <span class="goal-desc" data-i18n="home.goal_muscle_gain_desc">Superávit moderado, proteína elevada</span>
-              </div>
-            </div>
-            <div class="goal-card" data-goal="maintenance" onclick="selectGoal('maintenance',this)">
-              <span class="goal-ico">⚖️</span>
-              <div class="goal-text-wrap">
-                <span class="goal-name" data-i18n="home.goal_maintenance_name">Mantenerme</span>
-                <span class="goal-desc" data-i18n="home.goal_maintenance_desc">Balance exacto para tu composición</span>
-              </div>
-            </div>
-            <div class="goal-card" data-goal="healthy" onclick="selectGoal('healthy',this)">
-              <span class="goal-ico">🥗</span>
-              <div class="goal-text-wrap">
-                <span class="goal-name" data-i18n="home.goal_healthy_name">Comer saludable</span>
-                <span class="goal-desc" data-i18n="home.goal_healthy_desc">Nutrición equilibrada para sentirte mejor</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="pref-diet" data-i18n="home.diet_question">¿Seguís algún tipo de dieta?</label>
-          <select id="pref-diet">
-            <option value="none" data-i18n="home.diet_none">Sin preferencia especial</option>
-            <option value="high_protein" data-i18n="home.diet_high_protein">Alta proteína</option>
-            <option value="low_carb" data-i18n="home.diet_low_carb">Baja en carbohidratos</option>
-            <option value="keto" data-i18n="home.diet_keto">Keto</option>
-            <option value="vegan" data-i18n="home.diet_vegan">Vegano</option>
-            <option value="vegetarian" data-i18n="home.diet_vegetarian">Vegetariano</option>
-            <option value="paleo" data-i18n="home.diet_paleo">Paleo</option>
-            <option value="mediterranean" data-i18n="home.diet_mediterranean">Mediterránea</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="pref-allergies" data-i18n="home.allergies_question">¿Tenés alergias o restricciones alimentarias?</label>
-          <textarea id="pref-allergies" rows="2" placeholder="Ej: lactosa, gluten, maní... o escribí 'Ninguna'" data-i18n-placeholder="home.allergies_placeholder"></textarea>
-        </div>
-
-        <div class="field">
-          <label for="pref-avoid" data-i18n="home.avoid_question">¿Qué alimentos preferís evitar?</label>
-          <textarea id="pref-avoid" rows="2" placeholder="Ej: brócoli, picante, mariscos..." data-i18n-placeholder="home.avoid_placeholder"></textarea>
-        </div>
-
-        <div class="error-msg" id="prefs-error"></div>
-        <div class="form-actions">
-          <button class="btn-outline" onclick="goStep('data')"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="home.back">Atrás</span></button>
-          <button class="btn-primary" id="prefs-next-btn" onclick="submitPrefs()"><span data-i18n="home.continue">Continuar</span> <i class="fa-solid fa-arrow-right"></i></button>
-        </div>
-      </div>
-    </div>
-
     <!-- STEP: PAGO -->
     <div class="step-wrap" id="step-payment">
       <div class="step-content">
-        <span class="step-eyebrow" data-i18n="home.step5_of_5">Paso 5 de 5</span>
+        <span class="step-eyebrow" data-i18n="home.step4_of_4">Paso 4 de 4</span>
         <h2 class="step-title" data-i18n-html="home.payment_title_html">Confirmá tu <em>pedido</em></h2>
         <p class="step-sub" data-i18n="home.payment_sub">Revisá el resumen y confirmá. ¡Ya casi está!</p>
 
@@ -1086,9 +1036,11 @@
           </div>
         </div>
 
+        <p class="closing-line" data-i18n="home.closing_line">Una decisión menos. Una semana mejor.</p>
+
         <div class="error-msg" id="payment-error"></div>
         <div class="form-actions">
-          <button class="btn-outline" onclick="goStep('prefs')"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="home.back">Atrás</span></button>
+          <button class="btn-outline" onclick="goStep('delivery')"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="home.back">Atrás</span></button>
           <button class="btn-primary" id="confirm-btn" onclick="confirmOrder()">
             <i class="fa-solid fa-check"></i> <span data-i18n="home.confirm_order">Confirmar pedido</span>
           </button>
@@ -1140,18 +1092,20 @@
     /* ── Datos del flujo ─────────────────────────────────────────────────────*/
     const WHATSAPP_NUMBER = '18184288427';
     const PLAN_PRICES = { structure: 120, performance: 190, full_system: 225, full_week: 265 };
+    // Full System oculto temporalmente (ver server.js PLAN_ACTIVE) — se
+    // chequea también acá para que un link viejo con ?plan=full_system no
+    // deje a alguien a mitad del flujo antes de que el servidor lo rechace.
+    const PLAN_ACTIVE = { structure: true, performance: true, full_system: false, full_week: true };
     /* Nombres/etiquetas traducibles: se resuelven contra el diccionario de
        i18n.js en cada llamada, así respetan el idioma activo aunque el
        usuario lo cambie a mitad del flujo sin recargar la página. */
     function planName(key)        { return t('home.' + key + '_name'); }
-    function goalName(key)        { return t('home.goal_' + key + '_name'); }
-    function dietName(key)        { return t('home.diet_' + key); }
     function orderStatusLabel(key){ return t('home.status_' + key); }
-    const STATUS_CLASSES = { paid: 'paid', processing: 'processing', delivered: 'delivered', cancelled: 'cancelled' };
+    function deliveryWindowLabel(key){ return t('home.delivery_window_' + (key || 'sunday_morning')); }
+    const STATUS_CLASSES = { pending: 'pending', paid: 'paid', preparing: 'preparing', out_for_delivery: 'out_for_delivery', delivered: 'delivered', cancelled: 'cancelled' };
 
     const flow = {
       selectedPlan:  null,
-      selectedGoal:  null,
       appliedCoupon: null,
       discountType:  'percent',
       discountPct:   0,
@@ -1176,7 +1130,7 @@
     }
 
     /* ── Navegación de pasos ─────────────────────────────────────────────────*/
-    const PROGRESS_STEPS = { plans: 1, meals: 2, data: 3, prefs: 4, payment: 5 };
+    const PROGRESS_STEPS = { plans: 1, meals: 2, delivery: 3, payment: 4 };
 
     function goStep(name) {
       document.querySelectorAll('.step-wrap').forEach(s => s.classList.remove('active'));
@@ -1196,7 +1150,7 @@
     }
 
     function updateProgress(active) {
-      for (let i = 1; i <= 5; i++) {
+      for (let i = 1; i <= 4; i++) {
         const step = document.getElementById('ps-' + i);
         const dot  = document.getElementById('pd-' + i);
         const line = document.getElementById('pl-' + i);
@@ -1316,23 +1270,19 @@
         errEl.classList.add('visible');
         return;
       }
-      goStep('data');
+      goStep('delivery');
     }
 
-    /* ── Selección de objetivo ───────────────────────────────────────────────*/
-    function selectGoal(goal, el) {
-      document.querySelectorAll('.goal-card').forEach(c => c.classList.remove('selected'));
-      el.classList.add('selected');
-      flow.selectedGoal = goal;
-    }
-
-    /* ── Submit datos personales ─────────────────────────────────────────────*/
-    document.getElementById('data-form').addEventListener('submit', (e) => {
+    /* ── Submit datos de entrega (contacto + dirección + alergias/nota) ──────*/
+    document.getElementById('delivery-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const name     = document.getElementById('d-name').value.trim();
       const lastName = document.getElementById('d-lastname').value.trim();
       const phone    = document.getElementById('d-phone').value.trim();
-      const errEl    = document.getElementById('data-error');
+      const address  = document.getElementById('d-address').value.trim();
+      const city     = document.getElementById('d-city').value.trim();
+      const zip      = document.getElementById('d-zip').value.trim();
+      const errEl    = document.getElementById('delivery-error');
 
       errEl.classList.remove('visible');
       if (!name || !lastName || !phone) {
@@ -1340,22 +1290,15 @@
         errEl.classList.add('visible');
         return;
       }
-      flow.userData = { name, lastName, phone };
-      goStep('prefs');
-    });
-
-    /* ── Submit preferencias ─────────────────────────────────────────────────*/
-    function submitPrefs() {
-      const errEl = document.getElementById('prefs-error');
-      errEl.classList.remove('visible');
-      if (!flow.selectedGoal) {
-        errEl.textContent = t('home.err_select_goal');
+      if (!address || !city || !zip) {
+        errEl.textContent = t('home.err_delivery_required');
         errEl.classList.add('visible');
         return;
       }
+      flow.userData = { name, lastName, phone };
       updatePaymentSummary();
       goStep('payment');
-    }
+    });
 
     /* ── Fecha de la primera entrega ─────────────────────────────────────────*/
     // Cocina necesita la lista el miércoles, así que un pedido nuevo llega a
@@ -1439,17 +1382,18 @@
     /* ── Confirmar pedido ────────────────────────────────────────────────────*/
     function buildOrderPayload() {
       const payload = {
-        plan:        flow.selectedPlan,
-        lastName:    flow.userData.lastName,
-        phone:       flow.userData.phone,
-        couponCode:  flow.appliedCoupon || undefined,
-        meals:       Object.entries(flow.mealSelections).map(([id, qty]) => ({ id, qty })),
-        preferences: {
-          goal:      flow.selectedGoal,
-          diet:      document.getElementById('pref-diet').value,
-          allergies: document.getElementById('pref-allergies').value.trim() || t('home.none_f'),
-          avoid:     document.getElementById('pref-avoid').value.trim() || t('home.none_m'),
-        },
+        plan:                 flow.selectedPlan,
+        lastName:             flow.userData.lastName,
+        phone:                flow.userData.phone,
+        couponCode:           flow.appliedCoupon || undefined,
+        meals:                Object.entries(flow.mealSelections).map(([id, qty]) => ({ id, qty })),
+        allergies:            document.getElementById('d-allergies').value.trim(),
+        specialNote:          document.getElementById('d-special-note').value.trim(),
+        address:              document.getElementById('d-address').value.trim(),
+        apartment:            document.getElementById('d-apartment').value.trim(),
+        city:                 document.getElementById('d-city').value.trim(),
+        zip:                  document.getElementById('d-zip').value.trim(),
+        deliveryInstructions: document.getElementById('d-delivery-instructions').value.trim(),
       };
       // Actualizar nombre si cambió
       if (flow.userData.name && currentUser) {
@@ -1477,7 +1421,6 @@
       sessionStorage.setItem('fh_checkout_flow', JSON.stringify({
         flow: {
           selectedPlan:   flow.selectedPlan,
-          selectedGoal:   flow.selectedGoal,
           appliedCoupon:  flow.appliedCoupon,
           discountType:   flow.discountType,
           discountPct:    flow.discountPct,
@@ -1486,10 +1429,14 @@
           userData:       flow.userData,
           mealSelections: flow.mealSelections,
         },
-        diet:        document.getElementById('pref-diet').value,
-        allergies:   document.getElementById('pref-allergies').value,
-        avoid:       document.getElementById('pref-avoid').value,
-        couponInput: document.getElementById('coupon-input').value,
+        allergies:            document.getElementById('d-allergies').value,
+        specialNote:          document.getElementById('d-special-note').value,
+        address:              document.getElementById('d-address').value,
+        apartment:            document.getElementById('d-apartment').value,
+        city:                 document.getElementById('d-city').value,
+        zip:                  document.getElementById('d-zip').value,
+        deliveryInstructions: document.getElementById('d-delivery-instructions').value,
+        couponInput:          document.getElementById('coupon-input').value,
       }));
     }
 
@@ -1500,9 +1447,13 @@
       try {
         const snap = JSON.parse(raw);
         Object.assign(flow, snap.flow);
-        document.getElementById('pref-diet').value       = snap.diet || '';
-        document.getElementById('pref-allergies').value  = snap.allergies || '';
-        document.getElementById('pref-avoid').value      = snap.avoid || '';
+        document.getElementById('d-allergies').value            = snap.allergies || '';
+        document.getElementById('d-special-note').value         = snap.specialNote || '';
+        document.getElementById('d-address').value              = snap.address || '';
+        document.getElementById('d-apartment').value             = snap.apartment || '';
+        document.getElementById('d-city').value                  = snap.city || '';
+        document.getElementById('d-zip').value                   = snap.zip || '';
+        document.getElementById('d-delivery-instructions').value = snap.deliveryInstructions || '';
         document.getElementById('coupon-input').value    = snap.couponInput || '';
         if (flow.appliedCoupon) {
           document.getElementById('coupon-input').classList.add('valid');
@@ -1631,7 +1582,7 @@
         // a hacer elegir el plan de nuevo.
         const preselectedPlan = params.get('plan');
         window.history.replaceState(null, '', '/home');
-        if (preselectedPlan && PLAN_PRICES[preselectedPlan]) {
+        if (preselectedPlan && PLAN_PRICES[preselectedPlan] && PLAN_ACTIVE[preselectedPlan]) {
           applyPreselectedPlan(preselectedPlan);
         } else {
           goStep('welcome');
@@ -1672,11 +1623,19 @@
       document.getElementById('acc-phone').textContent  = order.userPhone || user.phone || '—';
       document.getElementById('acc-email').textContent  = order.userEmail || user.email;
 
-      const prefs = order.preferences || {};
-      document.getElementById('acc-goal').textContent     = goalName(prefs.goal)  || '—';
-      document.getElementById('acc-diet').textContent     = dietName(prefs.diet)  || '—';
-      document.getElementById('acc-allergies').textContent= prefs.allergies || t('home.none_f');
-      document.getElementById('acc-avoid').textContent    = prefs.avoid     || t('home.none_m');
+      const prefs    = order.preferences || {};
+      const delivery = prefs.delivery || {};
+      const addressParts = [delivery.address, delivery.apartment, [delivery.city, delivery.zip].filter(Boolean).join(' ')].filter(Boolean);
+      document.getElementById('acc-address').textContent          = addressParts.length ? addressParts.join(', ') : '—';
+      document.getElementById('acc-delivery-window').textContent  = deliveryWindowLabel(delivery.window);
+      document.getElementById('acc-allergies').textContent        = prefs.allergies || t('home.none_f');
+      const noteWrap = document.getElementById('acc-special-note-wrap');
+      if (prefs.specialNote) {
+        noteWrap.style.display = '';
+        document.getElementById('acc-special-note').textContent = prefs.specialNote;
+      } else {
+        noteWrap.style.display = 'none';
+      }
 
       const waMsg = encodeURIComponent(t('home.whatsapp_account_msg', { order: order.orderNumber }));
       document.getElementById('acc-whatsapp-btn').href =

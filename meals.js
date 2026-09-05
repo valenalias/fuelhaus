@@ -53,8 +53,10 @@ const MEALS = [
   },
 ];
 
-// Cantidad de comidas (sin contar activate shots) que trae cada plan — es lo
-// que el usuario tiene que completar exacto en "Build your week".
-const PLAN_MEAL_COUNTS = { structure: 5, performance: 10, full_system: 13, full_week: 15 };
+// Cantidad de comidas (sin contar activate shots ni snacks) que trae cada
+// plan — es lo que el usuario tiene que completar exacto en "Build your
+// week". full_system son 5 almuerzos + 5 cenas = 10 (los 3 snacks NO son
+// "meals" seleccionables acá, quedaba mal contado en 13 antes de este fix).
+const PLAN_MEAL_COUNTS = { structure: 5, performance: 10, full_system: 10, full_week: 15 };
 
 module.exports = { MEALS, PLAN_MEAL_COUNTS };

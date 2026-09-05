@@ -660,10 +660,12 @@ body {
 
 /* ── PEDIDOS: badges de estado ────────────────────────────────────────────── */
 
-.badge-order-paid       { background: var(--green-bg);           color: var(--green); }
-.badge-order-processing { background: var(--amber-bg);           color: var(--amber); }
-.badge-order-delivered  { background: rgba(107,138,94,0.15);     color: var(--dark-green); }
-.badge-order-cancelled  { background: rgba(192,57,43,0.08);      color: var(--error); }
+.badge-order-pending          { background: rgba(138,138,134,0.12); color: var(--gray); }
+.badge-order-paid             { background: var(--green-bg);           color: var(--green); }
+.badge-order-preparing        { background: var(--amber-bg);           color: var(--amber); }
+.badge-order-out_for_delivery { background: rgba(107,138,94,0.15);     color: var(--sage); }
+.badge-order-delivered        { background: rgba(107,138,94,0.15);     color: var(--dark-green); }
+.badge-order-cancelled        { background: rgba(192,57,43,0.08);      color: var(--error); }
 
 .new-row td { font-weight: 600; background: rgba(107,138,94,0.04); }
 

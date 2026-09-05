@@ -1,6 +1,93 @@
 # HANDOFF — FuelHaus
 
-Última actualización: 2026-09-05 (rediseño a cobro inmediato el día del registro + renovaciones al martes, probado de punta a punta con Stripe real en modo test — ver "Autopay semanal", Addendum 2 al final de esa sección)
+Última actualización: 2026-09-05 (simplificación del onboarding a 4 pasos + Delivery details — ver sección "Onboarding simplificado" más abajo, probado de punta a punta local)
+
+## Onboarding simplificado a 4 pasos + Delivery details (sesión 2026-09-05)
+
+**Objetivo:** simplificar el onboarding (sacar objetivo/dieta/alimentos a
+evitar, que no modificaban el producto todavía) y en el mismo movimiento
+dejar completo el flujo hasta la entrega (dirección, ventana de entrega,
+estados del pedido). Sin refactor grande — todo sobre la estructura ya
+existente.
+
+**1. Full System oculto (no borrado).** Nuevo `PLAN_ACTIVE` en
+`server.js` (`{ structure:true, performance:true, full_system:false,
+full_week:true }`) — el checkout rechaza ese plan aunque alguien lo
+mande a mano. En el cliente, la card de Full System quedó comentada
+(no borrada) en `home.html` e `index.html` — reactivar es sacar el
+comentario + poner `full_system:true` en el server. Grillas ajustadas
+a 3/2 columnas para que no quede un hueco vacío. Panel admin **no** se
+tocó (Valen sigue viendo/gestionando pedidos viejos de Full System si
+los hay).
+
+**2. Fix del contador de meals.** `PLAN_MEAL_COUNTS.full_system` estaba
+en 13 (contaba los 3 snacks como si fueran meals) — corregido a 10 (5
+almuerzos + 5 cenas) en `meals.js`, por prolijidad para cuando se
+reactive. Structure(5)/Performance(10)/Full Week(15) ya estaban bien.
+
+**3. Objetivo/dieta/alimentos a evitar: eliminados.** Ya no se piden —
+no modificaban ninguna comida todavía. Lo que se pedía en dos pasos
+separados ("Tus datos" + "Preferencias") ahora es **un solo paso,
+"Delivery details"** (`step-delivery` en `home.html`): nombre/apellido/
+email/teléfono (prefilled del perfil si ya existen) + dirección/depto/
+ciudad/código postal/instrucciones de entrega + alergias (se mantiene)
++ nota especial (nuevo, reemplaza a "alimentos a evitar"). Se muestra
+"Entrega: Domingo por la mañana" fijo (no seleccionable todavía).
+
+**4. Flujo final: Plan → Meals → Delivery details → Pago** (antes eran
+5 pasos). Stepper (`PROGRESS_STEPS`, `updateProgress()`) y todos los
+`home.stepN_of_5` de `i18n.js` pasaron a `_of_4`. Línea sutil antes de
+pagar: "Una decisión menos. Una semana mejor." / "One less decision.
+One better week." (`.closing-line`, itálica y chica, no es una pantalla
+motivacional).
+
+**5. Persistencia — sin migración de SQL.** Todo lo nuevo (allergies,
+specialNote, delivery: {address, apartment, city, zip, instructions,
+window}) vive dentro de la misma columna `preferences` JSONB que ya
+existía (igual que `meals` ya vivía ahí) — no hizo falta tocar
+`supabase-schema.sql`. Validación de dirección/ciudad/código postal
+obligatorios se hace en el servidor (`/api/orders/checkout`), arma el
+objeto `preferences` ahí mismo (ya no confía en lo que mande el
+cliente) y lo pasa igual que antes a `finalizeOrder()` / metadata de
+Stripe — el resto del flujo de checkout/webhooks del autopay semanal
+**no se tocó**.
+
+**6. Estados del pedido ampliados.** `pending / paid / preparing /
+out_for_delivery / delivered / cancelled` (antes: paid/processing/
+delivered/cancelled — `processing` pasó a llamarse `preparing`, sin
+dato real que migrar porque nunca se usaba). Nueva whitelist
+`ORDER_STATUSES` en `server.js`, valida `PUT /api/admin/orders/:id`.
+
+**7. Mensaje automático al marcar "Delivered": preparado, no
+conectado.** `notifyOrderDelivered(order)` en `server.js` se dispara
+cuando el estado pasa a `delivered` (solo la primera vez, no en cada
+re-guardado) — hoy solo loguea el mensaje que habría que mandar ("Tu
+pedido de FuelHaus ya llegó. Tu semana está lista. 💚"). No hay ningún
+canal de WhatsApp/SMS conectado a FuelHaus todavía (el bot "Juana" es
+un proyecto aparte, sin integrar acá) — cuando se decida el canal,
+conectarlo ahí mismo, usando `order.userPhone`.
+
+**Panel admin actualizado:** el modal de detalle de pedido cambió
+"Objetivo/Dieta" por una sección "Entrega" (dirección, ciudad, código
+postal, ventana de entrega, instrucciones) y "Preferencias" ahora
+muestra alergias + nota especial (en vez de "alimentos a evitar"). El
+selector de estado y los badges tienen los 6 estados nuevos.
+
+**Probado de punta a punta localmente** (servidor local con un stub de
+`db.js` en memoria — mismo truco documentado más abajo, sin tocar la
+Supabase compartida): registro → plan Structure (solo 3 planes
+visibles, Full System no aparece) → exactamente 5 meals requeridos y
+bloqueados al llegar al máximo → paso Delivery details con
+nombre/apellido/email prefilled del perfil, dirección/ciudad/código
+postal obligatorios, alergias/nota especial opcionales, "Entrega:
+Domingo por la mañana" visible → pago con cupón FULLHAUS (100%) →
+pedido creado y confirmado. Verificado en la base (stub) que
+`preferences` quedó con `allergies`, `specialNote` y el objeto
+`delivery` completo. Verificado en el panel admin: el pedido se ve con
+todos los datos de entrega, cambiar el estado a "Entregado" disparó el
+log de `notifyOrderDelivered` con el teléfono y mensaje correctos, y la
+vista de cuenta del cliente muestra "Delivered", la dirección combinada
+("123 Test Street, Miami 33101"), "Sunday morning" y la nota especial.
 
 ## 🌿 Rama `weekly-autopay` — no mergeada a `main` todavía
 

@@ -16,6 +16,36 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fuelhaus_jwt_2025_secret';
 const PLAN_PRICES = { structure: 120, performance: 190, full_system: 225, full_week: 265 };
 const PLAN_LABELS = { structure: 'Plan Structure', performance: 'Plan Performance', full_system: 'Plan Full System', full_week: 'Plan Full Week' };
 
+// Full System (el plan con snacks) queda oculto/deshabilitado temporalmente —
+// solo trabajamos con los planes de 5/10/15 meals. Nada de su lógica se borró
+// (precio, label, meal count) para poder reactivarlo más adelante sin volver
+// a escribirlo: solo hay que poner esto en `true` de nuevo y sacar el `hidden`
+// del lado del cliente (home.html/index.html).
+const PLAN_ACTIVE = { structure: true, performance: true, full_system: false, full_week: true };
+
+// Por ahora todos los pedidos se entregan el mismo día/franja — no hay
+// selector todavía. Un solo valor centralizado para poder agregar más
+// ventanas de entrega el día que haga falta sin tocar más que esta línea.
+const DELIVERY_WINDOW = 'sunday_morning';
+
+// Estados posibles de un pedido, de punta a punta. Solo valida el valor que
+// llega del panel admin (`PUT /api/admin/orders/:id`) — no hay más máquina de
+// estados que esta lista por ahora.
+const ORDER_STATUSES = ['pending', 'paid', 'preparing', 'out_for_delivery', 'delivered', 'cancelled'];
+
+// Se dispara cuando un pedido pasa a 'delivered'. Todavía no hay ningún canal
+// de mensajería conectado a FuelHaus (el bot de WhatsApp "Juana" es un
+// proyecto aparte, sin integrar acá) — por ahora solo deja documentado y
+// logueado el mensaje que habría que mandar. Para conectarlo de verdad:
+// llamar acá a la API/librería del canal elegido (WhatsApp Business API,
+// Twilio SMS, etc.) usando `order.userPhone` como destinatario.
+function notifyOrderDelivered(order) {
+  const msg = order.userPhone
+    ? 'Tu pedido de FuelHaus ya llegó. Tu semana está lista. 💚'
+    : null;
+  console.log('[notifyOrderDelivered] TODO: conectar canal de mensajería real. Pendiente de enviar a', order.userPhone || '(sin teléfono)', '—', msg || '(sin teléfono, no se puede armar el mensaje)');
+}
+
 const MEAL_BY_ID = Object.fromEntries(MEALS.map(m => [m.id, m]));
 
 // Valida que la selección de "Build your week" sume exacto la cantidad de
@@ -384,11 +414,21 @@ async function finalizeOrder(meta) {
 
 app.post('/api/orders/checkout', auth, async (req, res) => {
   try {
-    const { plan, lastName, phone, preferences, couponCode, meals } = req.body || {};
+    const {
+      plan, lastName, phone, couponCode, meals,
+      allergies, specialNote,
+      address, apartment, city, zip, deliveryInstructions,
+    } = req.body || {};
 
-    if (!plan || !PLAN_PRICES[plan]) return res.status(400).json({ error: 'Plan inválido' });
+    if (!plan || !PLAN_PRICES[plan] || !PLAN_ACTIVE[plan]) return res.status(400).json({ error: 'Plan inválido' });
     if (!phone?.trim()) return res.status(400).json({ error: 'Número de WhatsApp requerido' });
     if (!isValidMealSelection(plan, meals)) return res.status(400).json({ error: 'Selección de comidas inválida' });
+
+    const cleanAddress = address?.trim() || '';
+    const cleanCity     = city?.trim() || '';
+    const cleanZip      = zip?.trim() || '';
+    if (!cleanAddress || !cleanCity || !cleanZip)
+      return res.status(400).json({ error: 'Dirección, ciudad y código postal son obligatorios' });
 
     const user = await Users.getById(req.user.id);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -397,6 +437,22 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
     const firstName  = req.body.name?.trim() || user.name;
     const cleanLastName = lastName?.trim() || user.lastName || '';
     const cleanPhone    = phone.trim();
+
+    // Se arma acá (no del lado del cliente) para poder validar los campos
+    // obligatorios de entrega arriba — de acá en más viaja igual que antes,
+    // como un JSON de "preferences" que se guarda tal cual en el pedido.
+    const orderPreferences = {
+      allergies:   allergies?.trim() || '',
+      specialNote: specialNote?.trim() || '',
+      delivery: {
+        address:      cleanAddress,
+        apartment:    apartment?.trim() || '',
+        city:         cleanCity,
+        zip:          cleanZip,
+        instructions: deliveryInstructions?.trim() || '',
+        window:       DELIVERY_WINDOW,
+      },
+    };
 
     // Precio estimado solo para decidir si hace falta pasar por Stripe — el
     // descuento real (y el consumo del cupón) se aplica siempre en finalizeOrder.
@@ -413,7 +469,7 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
     if (estimatedFinal <= 0) {
       const order = await finalizeOrder({
         userId: user.id, plan, name: firstName, lastName: cleanLastName, phone: cleanPhone,
-        couponCode, preferences, meals, basePrice, finalPrice: 0,
+        couponCode, preferences: orderPreferences, meals, basePrice, finalPrice: 0,
       });
       return res.status(201).json({ order: { ...order, orderNumber: orderNumber(order.id) } });
     }
@@ -455,7 +511,7 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
         couponCode:  couponCode || '',
         basePrice:   String(basePrice),
         finalPrice:  String(estimatedFinal),
-        preferences: JSON.stringify(preferences || {}).slice(0, 490),
+        preferences: JSON.stringify(orderPreferences).slice(0, 490),
         // Campo propio (no el de `preferences`, que ya se trunca a 490
         // caracteres) para que la selección de comidas nunca se corte.
         meals:       JSON.stringify(meals).slice(0, 490),
@@ -469,7 +525,7 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
           name:        firstName,
           lastName:    cleanLastName,
           phone:       cleanPhone,
-          preferences: JSON.stringify(preferences || {}).slice(0, 490),
+          preferences: JSON.stringify(orderPreferences).slice(0, 490),
           meals:       JSON.stringify(meals).slice(0, 490),
         },
       },
@@ -877,10 +933,13 @@ app.put('/api/admin/orders/:id', adminOnly, async (req, res) => {
     const order = await Orders.getById(id);
     if (!order) return res.status(404).json({ error: 'Pedido no encontrado' });
     const { status, readByAdmin } = req.body || {};
+    if (status !== undefined && !ORDER_STATUSES.includes(status))
+      return res.status(400).json({ error: 'Estado de pedido inválido' });
     const updates = {};
     if (status !== undefined)       updates.status      = status;
     if (readByAdmin !== undefined)  updates.readByAdmin = readByAdmin;
     const updated = await Orders.update(id, updates);
+    if (status === 'delivered' && order.status !== 'delivered') notifyOrderDelivered(updated);
     res.json({ order: { ...updated, orderNumber: orderNumber(updated.id) } });
   } catch (err) {
     console.error(err);

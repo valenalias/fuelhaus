@@ -242,7 +242,7 @@
           </div>
           <div class="stat-card amber">
             <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
-            <div class="stat-body"><span class="stat-num" id="os-processing">—</span><span class="stat-label">En proceso</span></div>
+            <div class="stat-body"><span class="stat-num" id="os-preparing">—</span><span class="stat-label">En preparación</span></div>
           </div>
           <div class="stat-card gray">
             <div class="stat-icon"><i class="fa-solid fa-box-open"></i></div>
@@ -257,8 +257,10 @@
           </div>
           <select id="order-filter-status" class="filter-select">
             <option value="">Todos los estados</option>
+            <option value="pending">Pendientes</option>
             <option value="paid">Pagados</option>
-            <option value="processing">En proceso</option>
+            <option value="preparing">En preparación</option>
+            <option value="out_for_delivery">En camino</option>
             <option value="delivered">Entregados</option>
             <option value="cancelled">Cancelados</option>
           </select>

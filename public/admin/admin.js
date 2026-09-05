@@ -393,10 +393,9 @@ function escapeHtml(str) {
    PEDIDOS
 ════════════════════════════════════════════════════════ */
 
-const ORDER_STATUS_LABELS  = { paid: 'Pagado', processing: 'En proceso', delivered: 'Entregado', cancelled: 'Cancelado' };
+const ORDER_STATUS_LABELS  = { pending: 'Pendiente', paid: 'Pagado', preparing: 'En preparación', out_for_delivery: 'En camino', delivered: 'Entregado', cancelled: 'Cancelado' };
 const PLAN_NAMES_ADMIN     = { structure: 'Structure', performance: 'Performance', full_system: 'Full System', full_week: 'Full Week' };
-const GOAL_NAMES_ADMIN     = { fat_loss: 'Perder grasa', muscle_gain: 'Ganar músculo', maintenance: 'Mantenerme', healthy: 'Comer saludable' };
-const DIET_NAMES_ADMIN     = { none: 'Sin preferencia', high_protein: 'Alta proteína', low_carb: 'Baja en carbos', keto: 'Keto', vegan: 'Vegano', vegetarian: 'Vegetariano', paleo: 'Paleo', mediterranean: 'Mediterránea' };
+const DELIVERY_WINDOW_NAMES_ADMIN = { sunday_morning: 'Domingo por la mañana' };
 
 let allOrders  = [];
 let editingOrderId = null;
@@ -410,11 +409,11 @@ async function loadOrders() {
 }
 
 function renderOrderStats() {
-  const counts = { paid: 0, processing: 0, delivered: 0, cancelled: 0 };
+  const counts = { pending: 0, paid: 0, preparing: 0, out_for_delivery: 0, delivered: 0, cancelled: 0 };
   allOrders.forEach(o => { if (o.status in counts) counts[o.status]++; });
   document.getElementById('os-total').textContent     = allOrders.length;
   document.getElementById('os-paid').textContent      = counts.paid;
-  document.getElementById('os-processing').textContent= counts.processing;
+  document.getElementById('os-preparing').textContent = counts.preparing;
   document.getElementById('os-delivered').textContent = counts.delivered;
 }
 
@@ -495,7 +494,8 @@ function openOrderDetail(id) {
   editingOrderId = id;
 
   document.getElementById('order-modal-title').textContent = 'Pedido ' + order.orderNumber;
-  const prefs = order.preferences || {};
+  const prefs    = order.preferences || {};
+  const delivery = prefs.delivery || {};
   const waLink = 'https://api.whatsapp.com/send?phone=' + (order.userPhone || '').replace(/\D/g,'') + '&text=Hola+' + encodeURIComponent(order.userName);
 
   document.getElementById('order-modal-body').innerHTML = `
@@ -517,12 +517,20 @@ function openOrderDetail(id) {
       </div>
     </div>
     <div class="od-section">
+      <h4>Entrega</h4>
+      <div class="od-grid">
+        <div class="od-item full"><span class="od-label">Dirección</span><span class="od-value">${formatOrderAddress(delivery)}</span></div>
+        <div class="od-item"><span class="od-label">Ciudad</span><span class="od-value">${escapeHtml(delivery.city || '—')}</span></div>
+        <div class="od-item"><span class="od-label">Código postal</span><span class="od-value">${escapeHtml(delivery.zip || '—')}</span></div>
+        <div class="od-item"><span class="od-label">Ventana de entrega</span><span class="od-value">${DELIVERY_WINDOW_NAMES_ADMIN[delivery.window] || delivery.window || '—'}</span></div>
+        ${delivery.instructions ? `<div class="od-item full"><span class="od-label">Instrucciones de entrega</span><span class="od-value">${escapeHtml(delivery.instructions)}</span></div>` : ''}
+      </div>
+    </div>
+    <div class="od-section">
       <h4>Preferencias</h4>
       <div class="od-grid">
-        <div class="od-item"><span class="od-label">Objetivo</span><span class="od-value">${GOAL_NAMES_ADMIN[prefs.goal] || prefs.goal || '—'}</span></div>
-        <div class="od-item"><span class="od-label">Dieta</span><span class="od-value">${DIET_NAMES_ADMIN[prefs.diet] || prefs.diet || '—'}</span></div>
         <div class="od-item full"><span class="od-label">Alergias / restricciones</span><span class="od-value">${escapeHtml(prefs.allergies || 'Ninguna')}</span></div>
-        <div class="od-item full"><span class="od-label">Alimentos a evitar</span><span class="od-value">${escapeHtml(prefs.avoid || 'Ninguno')}</span></div>
+        ${prefs.specialNote ? `<div class="od-item full"><span class="od-label">Nota especial</span><span class="od-value">${escapeHtml(prefs.specialNote)}</span></div>` : ''}
         ${prefs.meals && prefs.meals.length ? `<div class="od-item full"><span class="od-label">Comidas seleccionadas</span><span class="od-value">${prefs.meals.map(m => escapeHtml(m.name) + ' ×' + m.qty).join(', ')}</span></div>` : ''}
       </div>
     </div>
@@ -530,10 +538,12 @@ function openOrderDetail(id) {
       <div class="od-status-wrap">
         <label>Estado del pedido</label>
         <select id="od-status-select">
-          <option value="paid"       ${order.status==='paid'       ?'selected':''}>Pagado</option>
-          <option value="processing" ${order.status==='processing' ?'selected':''}>En proceso</option>
-          <option value="delivered"  ${order.status==='delivered'  ?'selected':''}>Entregado</option>
-          <option value="cancelled"  ${order.status==='cancelled'  ?'selected':''}>Cancelado</option>
+          <option value="pending"          ${order.status==='pending'          ?'selected':''}>Pendiente</option>
+          <option value="paid"             ${order.status==='paid'             ?'selected':''}>Pagado</option>
+          <option value="preparing"        ${order.status==='preparing'        ?'selected':''}>En preparación</option>
+          <option value="out_for_delivery" ${order.status==='out_for_delivery' ?'selected':''}>En camino</option>
+          <option value="delivered"        ${order.status==='delivered'        ?'selected':''}>Entregado</option>
+          <option value="cancelled"        ${order.status==='cancelled'        ?'selected':''}>Cancelado</option>
         </select>
       </div>
     </div>
@@ -592,6 +602,13 @@ function formatDiscount(c) {
 // server.js) — en ese caso se muestra el monto real descontado en su lugar.
 function formatOrderDiscount(o) {
   return o.discountPercent > 0 ? '−' + o.discountPercent + '%' : '−$' + o.discountAmount;
+}
+
+// Arma "calle, depto" en una sola línea legible (ciudad/CP van aparte, ya
+// tienen su propio od-item) — se omite el depto si no se cargó.
+function formatOrderAddress(delivery) {
+  const parts = [delivery.address, delivery.apartment].filter(Boolean).map(escapeHtml);
+  return parts.length ? parts.join(', ') : '—';
 }
 
 function updateDiscountFieldUI() {
