@@ -7,6 +7,7 @@ const jwt     = require('jsonwebtoken');
 const Stripe  = require('stripe');
 const { Users, Orders, Coupons, orderNumber } = require('./db');
 const { MEALS, PLAN_MEAL_COUNTS } = require('./meals');
+const { notifyOsOrderPaid } = require('./fuelhaus-os-sync');
 
 const app        = express();
 const PORT       = process.env.PORT || 3000;
@@ -743,6 +744,9 @@ app.post('/api/stripe/webhook', async (req, res) => {
         // Factura suelta sin suscripción asociada — nada que hacer acá.
       } else {
         const existing = await Orders.find(o => o.stripeInvoiceId === invoice.id);
+        let orderForOsSync = null;
+        let userForOsSync = null;
+
         if (existing.length === 0) {
           const user = (await Users.getAll()).find(u => u.stripeSubscriptionId === invoice.subscription);
           if (!user) {
@@ -767,7 +771,7 @@ app.post('/api/stripe/webhook', async (req, res) => {
               if (!subMeta.plan) console.error('invoice.paid: primer cobro sin metadata de la suscripción, usando datos del usuario como fallback', invoice.subscription);
             }
 
-            await Orders.create({
+            orderForOsSync = await Orders.create({
               userId:          user.id,
               userName,
               userEmail:       user.email,
@@ -783,7 +787,23 @@ app.post('/api/stripe/webhook', async (req, res) => {
               readByAdmin:     false,
               stripeInvoiceId: invoice.id,
             });
+            userForOsSync = user;
           }
+        } else {
+          // El pedido ya existía (otra entrega del mismo webhook lo creó
+          // antes) — igual intentamos sincronizar con el OS: si esa vez
+          // falló (OS caído), esta entrega de Stripe es gratis para
+          // reintentar el catch-up sin esperar a la reconciliación manual.
+          orderForOsSync = existing[0];
+          userForOsSync = await Users.getById(orderForOsSync.userId);
+        }
+
+        // Sincronización con FuelHaus OS — nunca debe poder tirar abajo el
+        // webhook (ver fuelhaus-os-sync.js: ya no lanza, pero el try/catch
+        // acá es una segunda red de contención a propósito).
+        if (orderForOsSync) {
+          try { await notifyOsOrderPaid(orderForOsSync, userForOsSync); }
+          catch (syncErr) { console.error('[fuelhaus-os-sync] error inesperado, no debería pasar:', syncErr); }
         }
       }
     } catch (err) {
