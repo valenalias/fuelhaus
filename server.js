@@ -416,11 +416,6 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
         quantity: 1,
       }],
       discounts,
-      subscription_data: {
-        billing_cycle_anchor: nextTuesdayAnchor(),
-        proration_behavior:   'none',
-        metadata: { userId: String(user.id), plan },
-      },
       metadata: {
         userId:      String(user.id),
         plan,
@@ -434,6 +429,25 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
         // Campo propio (no el de `preferences`, que ya se trunca a 490
         // caracteres) para que la selección de comidas nunca se corte.
         meals:       JSON.stringify(meals).slice(0, 490),
+      },
+      // Con billing_cycle_anchor futuro no se genera ninguna factura hoy
+      // (checkout.session.completed llega sin session.invoice) — el primer
+      // pedido real recién se crea cuando invoice.paid dispara para el
+      // primer cobro de verdad, el martes. Esa vez no hay "pedido anterior"
+      // del que clonar meals/preferencias, así que van acá también, en la
+      // propia suscripción, para poder leerlos en ese momento.
+      subscription_data: {
+        billing_cycle_anchor: nextTuesdayAnchor(),
+        proration_behavior:   'none',
+        metadata: {
+          userId:      String(user.id),
+          plan,
+          name:        firstName,
+          lastName:    cleanLastName,
+          phone:       cleanPhone,
+          preferences: JSON.stringify(preferences || {}).slice(0, 490),
+          meals:       JSON.stringify(meals).slice(0, 490),
+        },
       },
       success_url: `${origin}/home?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${origin}/home?checkout=cancelled`,
@@ -465,94 +479,111 @@ app.post('/api/stripe/webhook', async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
+  // checkout.session.completed llega apenas se crea la suscripción, pero con
+  // billing_cycle_anchor futuro todavía NO hay ningún cobro real ese día
+  // (session.invoice viene null) — acá solo activamos al usuario y
+  // sincronizamos customer/subscription; el pedido de verdad (incluido el
+  // primero) se crea siempre en invoice.paid, cuando el cobro realmente pasa.
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     try {
-      const existing = await Orders.find(o => o.stripeSessionId === session.id);
-      if (existing.length === 0) {
-        const meta = session.metadata || {};
-        let preferences = {};
-        try { preferences = meta.preferences ? JSON.parse(meta.preferences) : {}; } catch { /* truncado o corrupto: seguimos sin preferencias sueltas */ }
-        let meals = [];
-        try { meals = meta.meals ? JSON.parse(meta.meals) : []; } catch { /* no debería pasar: ver comentario en /api/orders/checkout */ }
-        const order = await finalizeOrder({
-          userId:                meta.userId,
-          plan:                  meta.plan,
-          name:                  meta.name,
-          lastName:              meta.lastName,
-          phone:                 meta.phone,
-          couponCode:            meta.couponCode,
-          preferences,
-          meals,
-          basePrice:             Number(meta.basePrice) || 0,
-          finalPrice:            Number(meta.finalPrice) || 0,
-          stripeSessionId:       session.id,
-          // En modo suscripción no hay payment_intent (viene null) — el
-          // comprobante real de la primera factura es session.invoice.
-          stripePaymentIntentId: session.payment_intent || null,
-          stripeInvoiceId:       session.invoice || null,
+      const meta = session.metadata || {};
+      const user = await Users.getById(meta.userId);
+      if (!user) {
+        console.error('checkout.session.completed: usuario no encontrado', meta.userId);
+      } else if (user.stripeSubscriptionId && user.stripeSubscriptionId === session.subscription) {
+        // Reintento del webhook para un evento ya procesado — no repetir.
+      } else {
+        // El cupón se consume acá (suscripción confirmada), no en el pedido.
+        if (meta.couponCode) {
+          const all    = await Coupons.getAll();
+          const coupon = all.find(c => c.code.toUpperCase() === meta.couponCode.toUpperCase() && c.active);
+          if (coupon) await Coupons.update(coupon.id, { uses: coupon.uses + 1 });
+        }
+
+        await Users.update(user.id, {
+          name:             meta.name || user.name,
+          lastName:         meta.lastName || user.lastName || '',
+          phone:            meta.phone || user.phone,
+          plan:             meta.plan,
+          status:           'active',
+          stripeCustomerId: session.customer || user.stripeCustomerId || null,
         });
 
-        // Guarda customer/subscription de Stripe en el usuario para poder
-        // manejar la suscripción después (portal, cancelación, renovaciones).
-        if (session.customer) {
-          await Users.update(order.userId, { stripeCustomerId: session.customer });
-        }
         if (session.subscription) {
           const subscription = await stripe.subscriptions.retrieve(session.subscription);
-          await syncSubscriptionFields(order.userId, subscription);
+          await syncSubscriptionFields(user.id, subscription);
         }
       }
     } catch (err) {
-      console.error('Error creando el pedido desde el webhook de Stripe:', err);
+      console.error('Error procesando checkout.session.completed:', err);
       return res.status(500).end();
     }
   }
 
-  // Renovación semanal automática: invoice.paid dispara tanto para la
-  // primera factura (billing_reason 'subscription_create', ya manejada
-  // arriba) como para cada renovación real ('subscription_cycle') — acá
-  // solo procesamos esta última, clonando el pedido más reciente del
-  // usuario (mismas meals/preferencias, se repiten solas cada semana).
+  // Acá se crea el pedido de verdad — tanto el primer cobro real (que con
+  // billing_cycle_anchor futuro llega días después del signup) como cada
+  // renovación semanal. Ambos se tratan igual: si hay un pedido previo del
+  // usuario, se clona (mismas meals/preferencias); si es el primer cobro y
+  // todavía no hay ningún pedido, se leen del metadata de la propia
+  // suscripción (guardado ahí en /api/orders/checkout).
   if (event.type === 'invoice.paid') {
     const invoice = event.data.object;
-    if (invoice.billing_reason === 'subscription_cycle') {
-      try {
-        const existing = await Orders.find(o => o.stripeInvoiceId === invoice.id);
-        if (existing.length === 0) {
-          const user = (await Users.getAll()).find(u => u.stripeSubscriptionId === invoice.subscription);
-          if (!user) {
-            console.error('invoice.paid (renovación): no se encontró ningún usuario para la suscripción', invoice.subscription);
+    try {
+      const existing = await Orders.find(o => o.stripeInvoiceId === invoice.id);
+      if (existing.length === 0) {
+        const user = (await Users.getAll()).find(u => u.stripeSubscriptionId === invoice.subscription);
+        if (!user) {
+          console.error('invoice.paid: no se encontró ningún usuario para la suscripción', invoice.subscription);
+        } else {
+          const [latest] = (await Orders.find(o => o.userId === user.id))
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+          let plan, preferences, userName, userPhone;
+          if (latest) {
+            plan = latest.plan;
+            preferences = latest.preferences;
+            userName = latest.userName;
+            userPhone = latest.userPhone;
           } else {
-            const [latest] = (await Orders.find(o => o.userId === user.id))
-              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            if (!latest) console.error('invoice.paid (renovación): el usuario', user.id, 'no tiene ningún pedido previo para clonar — se crea uno básico');
-            await Orders.create({
-              userId:          user.id,
-              userName:        latest ? latest.userName : (user.name + (user.lastName ? ' ' + user.lastName : '')),
-              userEmail:       user.email,
-              userPhone:       latest ? latest.userPhone : user.phone,
-              plan:            latest ? latest.plan : user.plan,
-              planPrice:       latest ? latest.planPrice : (PLAN_PRICES[user.plan] || 0),
-              coupon:          null,
-              discountPercent: 0,
-              discountAmount:  0,
-              finalPrice:      (invoice.amount_paid || 0) / 100,
-              preferences:     latest ? latest.preferences : {},
-              status:          'paid',
-              readByAdmin:     false,
-              stripeInvoiceId: invoice.id,
-            });
+            const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+            const subMeta = subscription.metadata || {};
+            plan = subMeta.plan || user.plan;
+            let subPreferences = {};
+            try { subPreferences = subMeta.preferences ? JSON.parse(subMeta.preferences) : {}; } catch { /* corrupto: seguimos con {} */ }
+            let subMeals = [];
+            try { subMeals = subMeta.meals ? JSON.parse(subMeta.meals) : []; } catch { /* corrupto: seguimos con [] */ }
+            preferences = { ...subPreferences, meals: resolveMealsForStorage(subMeals) };
+            userName = subMeta.name ? (subMeta.name + (subMeta.lastName ? ' ' + subMeta.lastName : '')) : (user.name + (user.lastName ? ' ' + user.lastName : ''));
+            userPhone = subMeta.phone || user.phone;
+            if (!subMeta.plan) console.error('invoice.paid: primer cobro sin metadata de la suscripción, usando datos del usuario como fallback', invoice.subscription);
           }
+
+          await Orders.create({
+            userId:          user.id,
+            userName,
+            userEmail:       user.email,
+            userPhone,
+            plan,
+            planPrice:       PLAN_PRICES[plan] || 0,
+            coupon:          null,
+            discountPercent: 0,
+            discountAmount:  0,
+            finalPrice:      (invoice.amount_paid || 0) / 100,
+            preferences,
+            status:          'paid',
+            readByAdmin:     false,
+            stripeInvoiceId: invoice.id,
+          });
         }
-      } catch (err) {
-        // Choque de la restricción UNIQUE de stripe_invoice_id: otra entrega
-        // del webhook ya creó este pedido — no es un error real, no reintentar.
-        if (err && err.code === '23505') { /* ya existe, ok */ }
-        else {
-          console.error('Error creando la renovación desde invoice.paid:', err);
-          return res.status(500).end();
-        }
+      }
+    } catch (err) {
+      // Choque de la restricción UNIQUE de stripe_invoice_id: otra entrega
+      // del webhook ya creó este pedido — no es un error real, no reintentar.
+      if (err && err.code === '23505') { /* ya existe, ok */ }
+      else {
+        console.error('Error creando el pedido desde invoice.paid:', err);
+        return res.status(500).end();
       }
     }
   }

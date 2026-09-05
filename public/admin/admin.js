@@ -446,7 +446,7 @@ function renderOrdersTable() {
 
   tbody.innerHTML = filtered.map(o => `
     <tr class="${!o.readByAdmin ? 'new-row' : ''}">
-      <td style="font-weight:700;font-family:monospace">${escapeHtml(o.orderNumber)}${!o.readByAdmin ? ' <span style="background:#e74c3c;color:#fff;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:4px;font-family:sans-serif">Nuevo</span>' : ''}${!o.stripeSessionId && o.stripeInvoiceId ? ' <span style="background:var(--sage);color:#fff;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:4px;font-family:sans-serif" title="Cobro automático semanal, no un pedido nuevo">🔁 Renovación</span>' : ''}</td>
+      <td style="font-weight:700;font-family:monospace">${escapeHtml(o.orderNumber)}${!o.readByAdmin ? ' <span style="background:#e74c3c;color:#fff;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:4px;font-family:sans-serif">Nuevo</span>' : ''}${!o.stripeSessionId && o.stripeInvoiceId ? ' <span style="background:var(--sage);color:#fff;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:4px;font-family:sans-serif" title="Cobro automático de la suscripción semanal (primer cobro o renovación), no un checkout nuevo">🔁 Cobro automático</span>' : ''}</td>
       <td><div class="user-cell"><div class="user-avatar">${userInitials(o.userName)}</div><div><div class="user-name">${escapeHtml(o.userName)}</div><div style="font-size:0.78rem;color:var(--gray)">${escapeHtml(o.userEmail)}</div></div></div></td>
       <td>${planBadge(o.plan)}</td>
       <td style="font-weight:700">$${o.finalPrice}</td>
