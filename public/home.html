@@ -1660,10 +1660,11 @@
     }
 
     function subscriptionStatusLabel(user) {
-      const dateStr = user.subscriptionCurrentPeriodEnd
-        ? new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString(currentLang() === 'en' ? 'en-US' : 'es-US', { day: '2-digit', month: '2-digit', year: 'numeric' })
-        : '';
       if (user.subscriptionStatus === 'canceled') return t('home.sub_status_canceled');
+      // Antes del primer cobro (billing_cycle_anchor todavía no pasó),
+      // Stripe no expone current_period_end — no mostramos una fecha vacía.
+      if (!user.subscriptionCurrentPeriodEnd) return t('home.sub_status_active_no_date');
+      const dateStr = new Date(user.subscriptionCurrentPeriodEnd).toLocaleDateString(currentLang() === 'en' ? 'en-US' : 'es-US', { day: '2-digit', month: '2-digit', year: 'numeric' });
       if (user.subscriptionCancelAtPeriodEnd) return t('home.sub_status_canceling', { date: dateStr });
       return t('home.sub_status_active', { date: dateStr });
     }

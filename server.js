@@ -78,13 +78,20 @@ function nextTuesdayAnchor(now = new Date()) {
 // Sincroniza el estado de la suscripción de Stripe sobre el usuario —
 // usado por checkout.session.completed y por los webhooks de
 // customer.subscription.* para que el admin vea todo sin llamar a Stripe.
+//
+// OJO: en versiones recientes de la API de Stripe (confirmado con la API
+// 2026-07-29 en uso acá) `current_period_end` ya NO está en la raíz del
+// objeto subscription — se movió a `items.data[0].current_period_end`. Y
+// `cancel_at_period_end` quedó siempre en `false`; lo que realmente indica
+// que la cancelación quedó programada para el fin del período es
+// `cancel_at` (timestamp), no ese booleano.
 async function syncSubscriptionFields(userId, subscription) {
+  const periodEnd = subscription.items?.data?.[0]?.current_period_end || null;
   await Users.update(userId, {
     stripeSubscriptionId:            subscription.id,
     subscriptionStatus:              subscription.status,
-    subscriptionCurrentPeriodEnd:    subscription.current_period_end
-      ? new Date(subscription.current_period_end * 1000).toISOString() : null,
-    subscriptionCancelAtPeriodEnd:   Boolean(subscription.cancel_at_period_end),
+    subscriptionCurrentPeriodEnd:    periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+    subscriptionCancelAtPeriodEnd:   Boolean(subscription.cancel_at),
   });
 }
 
