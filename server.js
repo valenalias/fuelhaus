@@ -105,9 +105,10 @@ function isValidDiscountFields(discountType, discountValue) {
 const BILLING_DAY_OF_WEEK = 2;
 
 // Timestamp Unix (segundos) del próximo martes estrictamente posterior a
-// ahora. Se usa como `billing_cycle_anchor` de Stripe para que la
-// suscripción cobre el precio completo ahora (cubre desde hoy hasta ese
-// martes) y de ahí en más siempre los martes.
+// ahora. Se usa como `billing_cycle_anchor` de la suscripción semanal (creada
+// aparte del cobro de hoy, ver /api/orders/checkout) para que todas las
+// renovaciones futuras, sin importar qué día se dio de alta cada cliente,
+// caigan siempre ese día.
 function nextTuesdayAnchor(now = new Date()) {
   const d = new Date(now);
   d.setHours(12, 0, 0, 0); // mediodía para no pisarse con cambios de horario
@@ -152,6 +153,34 @@ async function syncSubscriptionFields(userId, subscription) {
 }
 
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
+
+// La suscripción semanal se crea con `subscriptions.create` (llamada directa
+// a la API, no Checkout Session) para poder cobrar hoy aparte y alinear la
+// renovación al martes — pero a diferencia de una Checkout Session, acá
+// `price_data.product` exige el ID de un Product real de Stripe, no un
+// `product_data` inline. Se resuelve con un ID fijo y determinístico por
+// plan: se intenta recuperar, y si todavía no existe (primera vez que se usa
+// ese plan) se crea una única vez — nunca se duplica.
+const PLAN_PRODUCT_IDS = {
+  structure:   'fuelhaus_plan_structure',
+  performance: 'fuelhaus_plan_performance',
+  full_week:   'fuelhaus_plan_full_week',
+};
+
+async function ensurePlanProductId(plan) {
+  const id = PLAN_PRODUCT_IDS[plan];
+  if (!id) throw new Error(`Sin Product de Stripe configurado para el plan "${plan}"`);
+  try {
+    await stripe.products.retrieve(id);
+  } catch (err) {
+    if (err && err.code === 'resource_missing') {
+      await stripe.products.create({ id, name: PLAN_LABELS[plan] || plan });
+    } else {
+      throw err;
+    }
+  }
+  return id;
+}
 
 // `verify` guarda el body crudo en req.rawBody sin dejar de parsear el JSON
 // normal para el resto de las rutas — lo necesita el webhook de Stripe para
@@ -478,30 +507,44 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
 
     const origin = req.headers.origin || `https://${req.get('host')}`;
 
-    // La suscripción en sí NO cobra nada hoy — se crea con billing_cycle_anchor
-    // en el próximo martes (proration_behavior:'none', sin generar ninguna
-    // factura por la diferencia) para que TODAS las renovaciones futuras,
-    // desde la primera, caigan siempre ese día sin importar qué día se haya
-    // registrado el cliente. El cobro de HOY (precio completo, ya con el
-    // descuento del cupón aplicado si corresponde) se hace aparte, como una
-    // factura manual de una sola vez, en el webhook checkout.session.completed
-    // — Stripe no permite reprogramar billing_cycle_anchor a una fecha futura
-    // arbitraria sobre una suscripción ya creada (probado en real: solo
-    // acepta 'now'/'unchanged' en subscriptions.update), así que la única
-    // forma de tener "cobro completo hoy" + "ancla futura común" es separar
-    // ambos cobros en dos objetos de Stripe distintos.
+    // Checkout de un solo pago (mode:'payment') por el monto real de HOY, ya
+    // con el descuento del cupón aplicado — así Stripe muestra y cobra en el
+    // momento el importe correcto, sin el "USD 0.00 vence hoy" que salía
+    // antes al crear directamente la suscripción con billing_cycle_anchor
+    // futuro. La suscripción semanal (alineada al martes para todos, sin
+    // cobrar nada extra hoy) se crea aparte, por API, en el webhook
+    // checkout.session.completed, una vez que este pago ya se confirmó —
+    // invisible para el cliente, no es una pantalla de Stripe.
+    const discounts = [];
+    if (estimatedFinal < basePrice) {
+      const stripeCoupon = await stripe.coupons.create({
+        amount_off: Math.round((basePrice - estimatedFinal) * 100),
+        currency:   'usd',
+        duration:   'once',
+        max_redemptions: 1,
+      });
+      discounts.push({ coupon: stripeCoupon.id });
+    }
+
     const sessionParams = {
-      mode:                'subscription',
+      mode:                'payment',
       payment_method_types: ['card'],
       line_items: [{
         price_data: {
           currency:     'usd',
           product_data: { name: PLAN_LABELS[plan] || plan },
           unit_amount:  Math.round(basePrice * 100),
-          recurring:    { interval: 'week' },
         },
         quantity: 1,
       }],
+      discounts,
+      // Guarda la tarjeta usada en el customer para poder cobrar la
+      // suscripción semanal más adelante sin que el cliente tenga que
+      // volver a ingresarla (cobro "off session", igual que cualquier
+      // renovación automática).
+      payment_intent_data: {
+        setup_future_usage: 'off_session',
+      },
       metadata: {
         userId:      String(user.id),
         plan,
@@ -516,24 +559,16 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
         // caracteres) para que la selección de comidas nunca se corte.
         meals:       JSON.stringify(meals).slice(0, 490),
       },
-      subscription_data: {
-        billing_cycle_anchor: nextTuesdayAnchor(),
-        proration_behavior:   'none',
-        metadata: {
-          userId:      String(user.id),
-          plan,
-          name:        firstName,
-          lastName:    cleanLastName,
-          phone:       cleanPhone,
-          preferences: JSON.stringify(orderPreferences).slice(0, 490),
-          meals:       JSON.stringify(meals).slice(0, 490),
-        },
-      },
       success_url: `${origin}/home?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${origin}/home?checkout=cancelled`,
     };
     if (user.stripeCustomerId) sessionParams.customer = user.stripeCustomerId;
-    else sessionParams.customer_email = user.email;
+    else {
+      sessionParams.customer_email  = user.email;
+      // Solo hace falta pedirle a Stripe que cree el Customer cuando todavía
+      // no hay uno — si ya existe (`customer` de arriba) no hay nada que crear.
+      sessionParams.customer_creation = 'always';
+    }
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 
@@ -559,16 +594,22 @@ app.post('/api/stripe/webhook', async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // checkout.session.completed llega apenas se confirma la suscripción — la
-  // suscripción en sí todavía no cobró nada (billing_cycle_anchor futuro, ver
-  // /api/orders/checkout). Acá activamos al usuario, sincronizamos
-  // customer/subscription, y hacemos el cobro de HOY como una factura manual
-  // de una sola vez (precio completo con el descuento del cupón ya aplicado)
-  // — el pedido de este primer cobro se crea directo acá mismo, no en
-  // invoice.paid (esa factura manual no tiene suscripción asociada, así que
-  // invoice.paid la ignora a propósito, ver más abajo). Las renovaciones
-  // semanales de ahí en más sí las crea invoice.paid, cuando Stripe cobra
-  // solo la propia suscripción cada martes.
+  // checkout.session.completed llega apenas se confirma el pago de HOY (un
+  // pago único, mode:'payment' — ver /api/orders/checkout). Acá: 1) se crea
+  // el pedido de esta primera semana directo desde ese pago, y 2) se crea la
+  // suscripción semanal por API (no por Checkout) para que las renovaciones
+  // de ahí en más caigan siempre el martes — invisible para el cliente, no
+  // es una pantalla de Stripe, así que no le muestra ningún "$0 hoy".
+  //
+  // Las dos partes son idempotentes por separado para que un reintento del
+  // webhook (o uno que se cae a mitad de camino) nunca duplique nada:
+  // - El pedido de hoy queda protegido por `stripeSessionId` (columna UNIQUE
+  //   en la base) — `alreadyProcessed` evita además volver a consumir el
+  //   cupón, que no es idempotente.
+  // - La suscripción se crea solo si el usuario todavía no tiene una
+  //   (`user.stripeSubscriptionId`), y la llamada a Stripe además lleva un
+  //   `idempotencyKey` atado al id de la Checkout Session, por si el
+  //   webhook llega dos veces casi al mismo tiempo.
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     try {
@@ -577,15 +618,46 @@ app.post('/api/stripe/webhook', async (req, res) => {
       if (!user) {
         console.error('checkout.session.completed: usuario no encontrado', meta.userId);
       } else {
-        // Activación (nombre/plan/status/cupón consumido) — protegida por
-        // este chequeo porque consumir el cupón (uses+1) NO es idempotente;
-        // en un reintento del webhook ya no vuelve a entrar acá.
-        if (!user.stripeSubscriptionId || user.stripeSubscriptionId !== session.subscription) {
-          if (meta.couponCode) {
-            const all    = await Coupons.getAll();
-            const coupon = all.find(c => c.code.toUpperCase() === meta.couponCode.toUpperCase() && c.active);
-            if (coupon) await Coupons.update(coupon.id, { uses: coupon.uses + 1 });
-          }
+        const basePrice  = Number(meta.basePrice) || 0;
+        const finalPrice = Number(meta.finalPrice) || 0;
+
+        // El cupón solo se busca (lectura, sin consumir todavía) para poder
+        // completar los campos del pedido — recién se descuenta un uso más
+        // abajo, y solo si el pedido se termina creando de verdad ahora. Así,
+        // si un reintento encuentra el pedido ya creado (23505), no vuelve a
+        // sumar un uso del cupón ni a reescribir los datos del usuario.
+        let couponData = null;
+        if (meta.couponCode) {
+          const all = await Coupons.getAll();
+          couponData = all.find(c => c.code.toUpperCase() === meta.couponCode.toUpperCase() && c.active) || null;
+        }
+
+        let orderJustCreated = true;
+        try {
+          await Orders.create({
+            userId:                 user.id,
+            userName:               meta.name + (meta.lastName ? ' ' + meta.lastName : ''),
+            userEmail:              user.email,
+            userPhone:              meta.phone,
+            plan:                   meta.plan,
+            planPrice:              basePrice,
+            coupon:                 couponData ? couponData.code : null,
+            discountPercent:        couponData && couponData.discountType === 'percent' ? couponData.discountValue : 0,
+            discountAmount:         Math.max(0, basePrice - finalPrice),
+            finalPrice,
+            preferences:            parsePreferencesFromMeta(meta),
+            status:                 'paid',
+            readByAdmin:            false,
+            stripeSessionId:        session.id,
+            stripePaymentIntentId:  session.payment_intent || null,
+          });
+        } catch (err) {
+          if (err && err.code === '23505') orderJustCreated = false; // ya existe, reintento del webhook
+          else throw err;
+        }
+
+        if (orderJustCreated) {
+          if (couponData) await Coupons.update(couponData.id, { uses: couponData.uses + 1 });
 
           await Users.update(user.id, {
             name:             meta.name || user.name,
@@ -595,90 +667,53 @@ app.post('/api/stripe/webhook', async (req, res) => {
             status:           'active',
             stripeCustomerId: session.customer || user.stripeCustomerId || null,
           });
-
-          if (session.subscription) {
-            const subscription = await stripe.subscriptions.retrieve(session.subscription);
-            await syncSubscriptionFields(user.id, subscription);
-          }
         }
 
-        // Cobro de HOY (factura manual, precio completo ya con el descuento
-        // del cupón aplicado) — a propósito FUERA del if de arriba: si un
-        // intento anterior activó al usuario pero se cayó antes de llegar
-        // acá (ya pasó una vez en real), un reintento del webhook tiene que
-        // poder retomar el cobro igual. Las idempotencyKey atadas al id de
-        // la Checkout Session hacen que reintentar estas dos llamadas a
-        // Stripe sea seguro (devuelven el mismo invoice item/factura ya
-        // creados en vez de duplicarlos) y el dedup real de "ya se creó el
-        // pedido" lo da la restricción UNIQUE de stripe_invoice_id.
-        const basePrice  = Number(meta.basePrice) || 0;
-        const finalPrice = Number(meta.finalPrice) || 0;
-        if (session.customer && finalPrice > 0) {
-          let couponData = null;
-          if (meta.couponCode) {
-            const all = await Coupons.getAll();
-            couponData = all.find(c => c.code.toUpperCase() === meta.couponCode.toUpperCase()) || null;
-          }
+        // Suscripción semanal — se crea una sola vez por usuario. Si ya
+        // existe (reintento del webhook, o algo la creó en un intento
+        // anterior que se cayó después), no se toca de nuevo.
+        if (!user.stripeSubscriptionId && session.customer && session.payment_intent) {
+          const paymentIntent  = await stripe.paymentIntents.retrieve(session.payment_intent);
+          const paymentMethod  = paymentIntent.payment_method;
 
-          await stripe.invoiceItems.create({
-            customer:    session.customer,
-            amount:      Math.round(finalPrice * 100),
-            currency:    'usd',
-            description: `${PLAN_LABELS[meta.plan] || meta.plan} — primera semana`,
-          }, { idempotencyKey: `fh_invitem_${session.id}` });
-
-          let invoice = await stripe.invoices.create({
-            customer:          session.customer,
-            collection_method: 'charge_automatically',
-            auto_advance:      false,
-            metadata:          { userId: String(user.id), plan: meta.plan },
-          }, { idempotencyKey: `fh_invoice_${session.id}` });
-
-          if (invoice.status === 'draft') {
-            invoice = await stripe.invoices.finalizeInvoice(invoice.id);
-          }
-          // Al finalizar una factura con collection_method:'charge_automatically'
-          // Stripe ya intenta cobrarla en el momento (probado en real: para
-          // cuando llegamos a pagarla explícito, ya estaba paid y .pay()
-          // tiraba "Invoice is already paid") — solo llamamos a .pay() si
-          // finalizeInvoice la dejó todavía sin cobrar, y ante cualquier
-          // error ahí (incluida esa carrera) recién confiamos en el estado
-          // real de la factura, no en si la llamada tiró excepción o no.
-          if (invoice.status !== 'paid') {
-            try {
-              invoice = await stripe.invoices.pay(invoice.id);
-            } catch {
-              invoice = await stripe.invoices.retrieve(invoice.id);
-            }
-          }
-
-          if (invoice.status === 'paid') {
-            try {
-              await Orders.create({
-                userId:          user.id,
-                userName:        meta.name + (meta.lastName ? ' ' + meta.lastName : ''),
-                userEmail:       user.email,
-                userPhone:       meta.phone,
-                plan:            meta.plan,
-                planPrice:       basePrice,
-                coupon:          couponData ? couponData.code : null,
-                discountPercent: couponData && couponData.discountType === 'percent' ? couponData.discountValue : 0,
-                discountAmount:  Math.max(0, basePrice - finalPrice),
-                finalPrice,
-                preferences:     parsePreferencesFromMeta(meta),
-                status:          'paid',
-                readByAdmin:     false,
-                stripeInvoiceId: invoice.id,
-              });
-            } catch (err) {
-              if (!(err && err.code === '23505')) throw err; // 23505 = ya existe, ok (reintento del webhook)
-            }
+          if (!paymentMethod) {
+            console.error('checkout.session.completed: sin método de pago para crear la suscripción', session.id);
           } else {
-            // No debería pasar (Checkout ya validó la tarjeta) pero si la
-            // factura queda sin pagar (ej. fondos insuficientes recién ahora)
-            // no se crea ningún pedido — Valen lo ve porque el usuario queda
-            // "active" sin ningún pedido asociado, y lo resuelve por WhatsApp.
-            console.error('checkout.session.completed: la factura del primer cobro no quedó pagada', invoice.id, invoice.status);
+            // `setup_future_usage:'off_session'` (seteado al crear la sesión)
+            // ya deja este método de pago guardado en el customer — acá solo
+            // falta marcarlo como el default para que las próximas facturas
+            // de la suscripción lo usen solas.
+            await stripe.customers.update(session.customer, {
+              invoice_settings: { default_payment_method: paymentMethod },
+            });
+
+            const productId = await ensurePlanProductId(meta.plan);
+            const subscription = await stripe.subscriptions.create({
+              customer:             session.customer,
+              default_payment_method: paymentMethod,
+              items: [{
+                price_data: {
+                  currency:  'usd',
+                  product:   productId,
+                  unit_amount: Math.round(basePrice * 100),
+                  recurring: { interval: 'week' },
+                },
+              }],
+              billing_cycle_anchor: nextTuesdayAnchor(),
+              proration_behavior:   'none',
+              metadata: {
+                userId:      String(user.id),
+                plan:        meta.plan,
+                name:        meta.name,
+                lastName:    meta.lastName,
+                phone:       meta.phone,
+                preferences: meta.preferences,
+                meals:       meta.meals,
+              },
+            }, { idempotencyKey: `fh_sub_${session.id}` });
+
+            await Users.update(user.id, { stripeCustomerId: session.customer });
+            await syncSubscriptionFields(user.id, subscription);
           }
         }
       }
@@ -689,14 +724,14 @@ app.post('/api/stripe/webhook', async (req, res) => {
   }
 
   // Acá se crean los pedidos de las renovaciones semanales (el martes) — el
-  // primer cobro (factura manual, sin suscripción asociada) ya se procesó
-  // aparte en checkout.session.completed, así que esta factura sin
-  // `invoice.subscription` se ignora a propósito, sin loguear error.
+  // primer cobro ya se procesó aparte en checkout.session.completed (es un
+  // pago único, no una factura de esta suscripción), así que cualquier
+  // factura sin `invoice.subscription` se ignora a propósito, sin loguear error.
   if (event.type === 'invoice.paid') {
     const invoice = event.data.object;
     try {
       if (!invoice.subscription) {
-        // Factura manual del primer cobro (u otra factura suelta) — nada que hacer acá.
+        // Factura suelta sin suscripción asociada — nada que hacer acá.
       } else {
         const existing = await Orders.find(o => o.stripeInvoiceId === invoice.id);
         if (existing.length === 0) {
@@ -776,6 +811,21 @@ app.post('/api/stripe/webhook', async (req, res) => {
       console.error('Error procesando customer.subscription.deleted:', err);
       return res.status(500).end();
     }
+  }
+
+  // Cobro fallido de una renovación: no se crea ningún pedido (no hay nada
+  // para preparar). Solo lo dejamos registrado — el estado "past_due" ya
+  // queda reflejado en el usuario aparte, vía customer.subscription.updated.
+  // Sin dunning personalizado todavía, a propósito.
+  if (event.type === 'invoice.payment_failed') {
+    const invoice = event.data.object;
+    console.error('[invoice.payment_failed] Cobro fallido — no se crea pedido.', {
+      invoiceId:     invoice.id,
+      customer:      invoice.customer,
+      subscription:  invoice.subscription || null,
+      amountDue:     invoice.amount_due,
+      attemptCount:  invoice.attempt_count,
+    });
   }
 
   res.json({ received: true });

@@ -67,11 +67,6 @@ INSERT INTO users (name, last_name, email, password_hash, role, phone, plan, sta
 VALUES ('Admin', '', 'admin@fuelhaus.com', '$2b$10$bFglWOGU1uDonYOk4pHHlecRZ.SSrYNMKz0i6tcsDD.iTvorkqCZS', 'admin', '', NULL, 'active', '')
 ON CONFLICT (email) DO NOTHING;
 
--- ── Seed: cupón FULLHAUS (100% de descuento) ─────────────────────────────────
-INSERT INTO coupons (code, discount_type, discount_value, max_uses, uses, active)
-VALUES ('FULLHAUS', 'percent', 100, NULL, 0, TRUE)
-ON CONFLICT (code) DO NOTHING;
-
 -- ╔══════════════════════════════════════════════════════════════════╗
 -- ║  MIGRACIÓN (correr esto en la base ya existente en Supabase, no   ║
 -- ║  hace falta tocar nada más de lo de arriba — CREATE TABLE IF NOT  ║
