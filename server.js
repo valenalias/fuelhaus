@@ -104,11 +104,13 @@ function isValidDiscountFields(discountType, discountValue) {
 // 0=domingo … 2=martes.
 const BILLING_DAY_OF_WEEK = 2;
 
-// Timestamp Unix (segundos) del próximo martes estrictamente posterior a
-// ahora. Se usa como `billing_cycle_anchor` de la suscripción semanal (creada
-// aparte del cobro de hoy, ver /api/orders/checkout) para que todas las
-// renovaciones futuras, sin importar qué día se dio de alta cada cliente,
-// caigan siempre ese día.
+// Timestamp Unix (segundos) del próximo martes estrictamente posterior a la
+// fecha que se le pase (por defecto, ahora). Se usa para dos cosas distintas:
+// - Como referencia general, "el próximo martes desde una fecha".
+// - En checkout.session.completed, pasándole firstDeliverySundayDate(): como
+//   esa fecha siempre cae domingo, da directamente el martes posterior a la
+//   PRIMERA entrega (no el martes inmediato desde hoy) — ahí arranca el
+//   autopay semanal; de ahí en más, todas las renovaciones caen ese mismo día.
 function nextTuesdayAnchor(now = new Date()) {
   const d = new Date(now);
   d.setHours(12, 0, 0, 0); // mediodía para no pisarse con cambios de horario
@@ -687,6 +689,13 @@ app.post('/api/stripe/webhook', async (req, res) => {
               invoice_settings: { default_payment_method: paymentMethod },
             });
 
+            // El pago de hoy ya cubre la primera entrega — el autopay semanal
+            // recién tiene que arrancar en el martes POSTERIOR a esa primera
+            // entrega (nunca el martes inmediato desde hoy, o se cobraría dos
+            // veces la misma semana). Como firstDeliverySundayDate() siempre
+            // cae domingo, nextTuesdayAnchor() sobre esa fecha da directamente
+            // el martes 2 días después, sin más cálculo que eso.
+            const firstDeliveryDate = firstDeliverySundayDate();
             const productId = await ensurePlanProductId(meta.plan);
             const subscription = await stripe.subscriptions.create({
               customer:             session.customer,
@@ -699,7 +708,7 @@ app.post('/api/stripe/webhook', async (req, res) => {
                   recurring: { interval: 'week' },
                 },
               }],
-              billing_cycle_anchor: nextTuesdayAnchor(),
+              billing_cycle_anchor: nextTuesdayAnchor(firstDeliveryDate),
               proration_behavior:   'none',
               metadata: {
                 userId:      String(user.id),
