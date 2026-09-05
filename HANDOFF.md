@@ -1,6 +1,6 @@
 # HANDOFF — FuelHaus
 
-Última actualización: 2026-09-05 (autopay semanal probado de punta a punta con Stripe real en modo test — ver "Autopay semanal", con el addendum de fixes al final de esa sección)
+Última actualización: 2026-09-05 (rediseño a cobro inmediato el día del registro + renovaciones al martes, probado de punta a punta con Stripe real en modo test — ver "Autopay semanal", Addendum 2 al final de esa sección)
 
 ## 🌿 Rama `weekly-autopay` — no mergeada a `main` todavía
 
@@ -36,15 +36,36 @@ manual de Stripe) guardado en
 `C:\Users\valen\.claude\plans\reactive-noodling-clock.md` — este resumen
 es la versión corta.
 
-**Día de corte = día de cobro = martes** para TODOS los suscriptores, sin
-importar qué día se hayan suscripto (investigado: HelloFresh corta 5 días
-antes de la entrega, que es exactamente martes para una entrega de
-domingo — coincide con lo que cocina necesita, que es la lista 3 días
-antes del sábado de prep, o sea miércoles; martes deja 1 día de margen).
-Se logra con `subscription_data.billing_cycle_anchor` calculado por
-`nextTuesdayAnchor()` en `server.js` — cobra el precio completo ahora
-mismo (cubre desde el signup hasta ese martes) y de ahí en más siempre
-los martes, sin importar el día de la semana en que alguien se suscriba.
+**Diseño final (revisado 2026-09-05, ver Addendum 2 más abajo — esto ya
+NO es "diferir el primer cobro al martes", es el modelo con cobro
+inmediato):**
+
+- **Cliente nuevo:** el cobro de la primera semana se hace **el mismo
+  día del registro** (precio completo, con el cupón ya aplicado si
+  corresponde) — no espera al martes. Técnicamente es una **factura
+  manual aparte** (`stripe.invoiceItems.create` + `stripe.invoices.create`
+  + `finalizeInvoice`), no la primera factura de la suscripción — Stripe
+  no permite cobrar completo hoy Y converger la suscripción al martes
+  con un solo objeto (ver Addendum 2, hallazgo 1). El pedido de esa
+  primera semana se crea directo en el webhook `checkout.session.completed`.
+- **Fecha de entrega de esa primera semana:** un pedido hecho de **lunes
+  a miércoles inclusive** llega para el domingo más próximo; de **jueves
+  a sábado** (o si ya es domingo) pasa al domingo siguiente al inmediato
+  — porque cocina necesita la lista el miércoles. Es un cutoff
+  DISTINTO al de cancelación (ver abajo). Calculado en dos lugares con
+  la misma tabla `DAYS_UNTIL_FIRST_DELIVERY` (0=dom…6=sáb → días hasta
+  el domingo entregable): `firstDeliverySundayDate()` en `server.js`
+  (no se usa para cobrar, solo referencia) y su equivalente en
+  `public/home.html` para mostrar "Tu primera entrega será el…" antes de
+  pagar.
+- **Renovaciones (semana 2 en adelante):** la propia suscripción de
+  Stripe se crea con `billing_cycle_anchor` en el próximo martes
+  (`nextTuesdayAnchor()`) y `proration_behavior:'none'` — no cobra nada
+  el día del signup, converge a TODOS los suscriptores en el mismo
+  martes de ahí en más, sin importar qué día se hayan dado de alta.
+  Estas sí se crean en `invoice.paid` como siempre.
+- **Cancelación de un suscriptor existente:** sigue siendo "antes del
+  martes" (Customer Portal, sin cambios — ver más abajo).
 
 **Cancelación = Stripe Customer Portal** (`POST /api/subscription/portal`,
 botón "Gestionar mi suscripción" en la vista de cuenta) — cancela al
@@ -60,10 +81,11 @@ ya resueltas) en un pedido nuevo, sin que el cliente tenga que volver a
 elegir nada. El pedido de la primera semana sigue creándose vía
 `checkout.session.completed`, como antes.
 
-**Cupón de descuento: solo la primera semana.** Se aplica como un Stripe
-Coupon (`duration: 'once'`) por separado, no se mezcla con el precio
-recurrente — la suscripción siempre cobra el precio COMPLETO del plan;
-el descuento desaparece solo después de la primera factura.
+**Cupón de descuento: solo la primera semana.** El monto ya descontado
+se cobra directo en la factura manual de la primera semana (ver arriba)
+— la suscripción en sí nunca conoce el cupón, siempre está configurada
+al precio COMPLETO del plan, así que el descuento desaparece solo
+después de esa primera factura sin ninguna lógica extra.
 
 **Un cupón que deja el precio en $0 sigue siendo un pedido único, sin
 suscripción de Stripe** — decisión explícita, no se auto-renueva.
@@ -199,6 +221,79 @@ hasta el final de tu período... el 8 de septiembre") → webhook
 cuenta mostrando "Se cancela el 08/09/2026 — hasta esa fecha seguís
 recibiendo tus entregas ya pagadas". Todos los usuarios/pedidos de
 prueba se borraron de la base real al terminar.
+
+### Addendum 2 — rediseño a cobro inmediato (sesión 2026-09-05, más tarde el mismo día)
+
+Después de todo lo de arriba, Valen pidió un cambio de diseño: en vez de
+diferir SIEMPRE el primer cobro al martes (lo que significaba que
+alguien que se registra un sábado recién paga y sabe si su tarjeta
+funciona el martes siguiente), quería que **el cobro de la primera
+semana se haga el mismo día del registro**, y que las renovaciones de
+ahí en más sí converjan al martes. Después precisó el cutoff de entrega:
+"que puedan pedir hasta miércoles inclusive para recibir el domingo, y
+ya hacer el pago en el momento; pero para cancelar (cliente existente)
+que sea hasta antes del martes" — dos cutoffs distintos a propósito, no
+un error.
+
+Se probó en real (mismo patrón: rama `weekly-autopay`, tarjeta 4242,
+usuarios `qa-*` descartables borrados al final) y aparecieron 2 bugs
+reales más, los dos por asumir mal cómo se comporta la API de Stripe sin
+haberlo probado:
+
+**1. `subscriptions.update` NO acepta una fecha futura arbitraria en
+`billing_cycle_anchor`** (solo en la creación). El primer intento de
+este rediseño fue: crear la suscripción SIN ancla (cobra ya, al precio
+completo) y después, en `checkout.session.completed`, reprogramarla al
+martes con `subscriptions.update(id, { billing_cycle_anchor:
+nextTuesdayAnchor() })`. Stripe lo rechazó con
+`StripeInvalidRequestError: When updating an existing subscription,
+billing_cycle_anchor must be either unset, 'now', or 'unchanged'` — ese
+parámetro solo admite una fecha futura arbitraria al CREAR la
+suscripción, no al actualizarla. Tampoco sirve `billing_cycle_anchor_config`
+(solo vale para intervalos mensuales/anuales, no semanales — confirmado
+en la documentación oficial de Stripe). **Solución final:** la
+suscripción se crea con el ancla en el próximo martes desde el
+principio (como en el diseño original, no cobra nada hoy) y el cobro de
+HOY se hace aparte, como una factura manual de una sola vez
+(`invoiceItems.create` + `invoices.create` + `finalizeInvoice`) contra
+el mismo customer — dos objetos de Stripe separados en vez de uno.
+
+**2. `finalizeInvoice()` con `collection_method:'charge_automatically'`
+ya intenta cobrar la factura como parte de la finalización.** El primer
+intento de la factura manual llamaba a `invoices.pay()` después de
+`finalizeInvoice()` "por las dudas" — y Stripe tiraba `Invoice is
+already paid` porque el cobro ya se había hecho solo, silenciosamente,
+dentro de `finalizeInvoice()`. Ese error explotaba ANTES de crear el
+pedido, así que el cliente quedaba cobrado de verdad pero sin ningún
+pedido para cocina. **Fix:** solo se llama a `.pay()` si la factura
+sigue sin estar pagada después de `finalizeInvoice()`, y ante cualquier
+error ahí se confía en el estado real de la factura (`retrieve`), nunca
+en si la llamada tiró excepción.
+
+**De paso, un tercer problema de diseño (no de la API de Stripe):** el
+guard que evita reprocesar `checkout.session.completed` dos veces
+(comparando `stripeSubscriptionId`) protegía TODO el bloque, incluido el
+cobro de hoy. Como el bug #2 de arriba hacía que el bloque se cayera
+justo DESPUÉS de activar al usuario pero ANTES de cobrar, el reintento
+automático de Stripe llegaba, veía al usuario "ya activado" y se
+saltaba TODO el resto — el cobro nunca se reintentaba, para siempre, sin
+ningún error visible (el webhook respondía 200). **Fix:** el guard
+ahora protege solo la activación (consumir el cupón no es idempotente);
+el cobro de hoy corre siempre que haga falta, protegido por su cuenta
+con un `idempotencyKey` atado al id de la Checkout Session (evita
+duplicar el invoice item/factura en un reintento real) más la
+restricción UNIQUE de `stripe_invoice_id` para el pedido.
+
+**Verificado en real, 3 checkouts de punta a punta** (dos con los bugs
+de arriba reproducidos y confirmados en `vercel logs`, el tercero ya con
+el fix): suscripción creada con ancla correcta en el próximo martes
+("USD 0.00 vence hoy, luego USD 120.00 por semana a partir del 8 de
+septiembre de 2026" — probado un sábado), pedido de la primera semana
+creado en el momento con `finalPrice` correcto y `stripeInvoiceId` de la
+factura manual, sin duplicados. Usuarios/pedidos de prueba borrados de
+la base real al terminar (quedaron 2-3 suscripciones huérfanas en modo
+test de Stripe, de los intentos fallidos antes del fix — sin impacto,
+es modo test, no hace falta limpiarlas a mano).
 
 ## Fix: botón "Quiero empezar" del formulario de Contacto (sesión 2026-09-04)
 
