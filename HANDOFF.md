@@ -1,6 +1,31 @@
 # HANDOFF — FuelHaus
 
-Última actualización: 2026-09-05 (ver sección "Autopay semanal (suscripciones)" — sesión más reciente)
+Última actualización: 2026-09-05 (autopay semanal probado de punta a punta con Stripe real en modo test — ver "Autopay semanal", con el addendum de fixes al final de esa sección)
+
+## 🌿 Rama `weekly-autopay` — no mergeada a `main` todavía
+
+Todo el trabajo de esta sesión (meals, cupones flexibles, forgot password,
+fix de landing, y autopay semanal) vive en la rama `weekly-autopay`
+(pusheada a GitHub, no mergeada a `main` — decisión de Valen, no se
+mergeó porque el autopay necesitaba probarse de punta a punta primero).
+
+Preview estable de esta rama: https://fuelhaus-git-weekly-autopay-valenalias1.vercel.app
+
+**Antes de mergear a `main` (y por lo tanto a producción):**
+1. Confirmar que la migración de Supabase (ver sección de autopay abajo)
+   ya está corrida — **ya lo está**, corrida por Valen 2026-09-05.
+2. El webhook de Stripe en modo **live** todavía NO tiene los eventos
+   nuevos (`invoice.paid`, `customer.subscription.updated`,
+   `customer.subscription.deleted`) — solo escucha
+   `checkout.session.completed`. Hay que ampliarlo en el Dashboard antes
+   de que el autopay funcione en producción real.
+3. Activar el Customer Portal en modo **live** (además del de test, que
+   ya se probó) con "Cancel at end of billing period".
+4. Vercel Deployment Protection: el webhook de producción
+   (`fuelhaus.vercel.app`) probablemente NO tiene este problema porque
+   los dominios de Production no quedan protegidos por default (ver
+   nota técnica abajo) — de todos modos, conviene confirmarlo con un
+   evento de prueba antes de dar por sentado que funciona.
 
 ## Autopay semanal (suscripciones recurrentes de Stripe) — sesión 2026-09-05
 
@@ -97,6 +122,83 @@ de una sesión anterior — ya estaba resuelta (confirmado hoy: login real
 problema en la sesión de ayer). La borré para que no vuelva a confundir
 a nadie — si hace falta el detalle histórico, está en el historial de
 git de este archivo.
+
+### Addendum — probado de punta a punta con un checkout real en Stripe test, 3 hallazgos importantes
+
+Después de escribir todo lo de arriba se probó con un checkout real
+(tarjeta de prueba 4242, rama `weekly-autopay` pusheada a GitHub para
+tener una URL de preview estable). Aparecieron 3 problemas reales que ya
+están corregidos en el código, pero vale la pena dejarlos anotados
+porque no eran obvios de antemano:
+
+**1. Vercel Deployment Protection bloqueaba el webhook (401).** Los
+deploys de Preview de este proyecto tienen activada la protección SSO de
+Vercel — cualquier request externo (incluido el webhook de Stripe) que
+no esté autenticado con una sesión de Vercel recibe un 401 "Protected
+deployment" **antes** de llegar a nuestro código (no aparece nada en
+`vercel logs`, porque el request nunca llega a la función). Esto es
+invisible hasta que efectivamente se prueba un webhook real contra un
+deploy de Preview — con `checkout.session.completed` sin webhooks reales
+no se nota, pero con autopay (que depende 100% de webhooks) es
+bloqueante. **Solución:** activar "Protection Bypass for Automation" en
+Vercel (Project → Settings → Deployment Protection), y agregar el
+secreto que genera como query param en la URL del webhook de Stripe:
+`...?x-vercel-protection-bypass=EL_SECRETO`. El secreto real de este
+proyecto quedó guardado en el 1Password/notas de Valen (no en este
+archivo). **Esto es específico de Preview** — los dominios de Production
+normalmente no tienen esta protección activa por default, pero conviene
+confirmarlo antes de asumir que producción no la necesita.
+
+**2. El pedido no puede crearse en `checkout.session.completed` con
+`billing_cycle_anchor` futuro.** Con el ancla de facturación en el
+próximo martes, Stripe NO genera ninguna factura el día del signup
+(`session.invoice` llega `null`, se cobra literalmente $0 ese día) — el
+primer cobro real recién pasa el martes. Esto se descubrió recién al
+hacer un checkout real: el pedido se creaba igual con
+`finalPrice: 120` aunque no se había cobrado nada ese día, y el cobro
+real del martes se iba a ignorar (el código asumía que
+`billing_reason: 'subscription_create'` ya estaba cubierto por
+`checkout.session.completed`, lo cual es falso con ancla futura).
+**Fix:** `checkout.session.completed` ya NO crea ningún pedido — solo
+activa al usuario y sincroniza `stripeCustomerId`/suscripción. El pedido
+(primer cobro real O renovación, tratados exactamente igual) se crea
+siempre en `invoice.paid`, sin filtrar por `billing_reason`. Cuando no
+hay ningún pedido previo del que clonar meals/preferencias (el primer
+cobro), se leen del `metadata` de la propia suscripción de Stripe
+(guardado ahí mismo en `/api/orders/checkout`, además de en el metadata
+de la sesión). Verificado con eventos `invoice.paid` sintéticos pero
+firmados con el secreto real del webhook, contra la suscripción real
+creada en el checkout — primer pedido (FH-0005) y renovación (FH-0006)
+se crearon correctamente.
+
+**3. Campos de la API de Stripe reciente (`2026-07-29.dahlia`)
+distintos a lo documentado en ejemplos viejos.** Confirmado con un
+evento real de `customer.subscription.updated` (cancelación desde el
+Customer Portal):
+- `subscription.current_period_end` **ya no existe en la raíz** del
+  objeto — se movió a `subscription.items.data[0].current_period_end`.
+- `subscription.cancel_at_period_end` **queda siempre en `false`** en
+  esta versión — lo que indica que la cancelación quedó programada para
+  el fin del período es `subscription.cancel_at` (timestamp), junto con
+  `cancellation_details.reason`.
+
+  `syncSubscriptionFields()` en `server.js` ya usa los campos correctos.
+  Si en el futuro Stripe actualiza la API version del proyecto, revisar
+  este mapeo de nuevo — son exactamente el tipo de cambios silenciosos
+  que no rompen nada visiblemente (el webhook sigue respondiendo 200)
+  pero dejan datos vacíos/incorrectos.
+
+**Verificado en el navegador, con Stripe real en modo test:**
+suscripción creada con precio y fecha de ancla correctos ("USD 0.00
+vence hoy, luego USD 120.00 por semana a partir del 8 de septiembre"),
+primer pedido y renovación creados correctamente vía `invoice.paid`,
+Customer Portal mostrando el plan/precio/fecha de cobro reales, botón
+"Cancelar suscripción" → mensaje de política exacto ("seguirá disponible
+hasta el final de tu período... el 8 de septiembre") → webhook
+`customer.subscription.updated` sincronizado correctamente → vista de
+cuenta mostrando "Se cancela el 08/09/2026 — hasta esa fecha seguís
+recibiendo tus entregas ya pagadas". Todos los usuarios/pedidos de
+prueba se borraron de la base real al terminar.
 
 ## Fix: botón "Quiero empezar" del formulario de Contacto (sesión 2026-09-04)
 
