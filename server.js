@@ -520,52 +520,83 @@ app.post('/api/stripe/webhook', async (req, res) => {
       const user = await Users.getById(meta.userId);
       if (!user) {
         console.error('checkout.session.completed: usuario no encontrado', meta.userId);
-      } else if (user.stripeSubscriptionId && user.stripeSubscriptionId === session.subscription) {
-        // Reintento del webhook para un evento ya procesado — no repetir.
       } else {
-        let couponData = null;
-        if (meta.couponCode) {
-          const all    = await Coupons.getAll();
-          const coupon = all.find(c => c.code.toUpperCase() === meta.couponCode.toUpperCase() && c.active);
-          if (coupon) {
-            couponData = coupon;
-            await Coupons.update(coupon.id, { uses: coupon.uses + 1 });
+        // Activación (nombre/plan/status/cupón consumido) — protegida por
+        // este chequeo porque consumir el cupón (uses+1) NO es idempotente;
+        // en un reintento del webhook ya no vuelve a entrar acá.
+        if (!user.stripeSubscriptionId || user.stripeSubscriptionId !== session.subscription) {
+          if (meta.couponCode) {
+            const all    = await Coupons.getAll();
+            const coupon = all.find(c => c.code.toUpperCase() === meta.couponCode.toUpperCase() && c.active);
+            if (coupon) await Coupons.update(coupon.id, { uses: coupon.uses + 1 });
+          }
+
+          await Users.update(user.id, {
+            name:             meta.name || user.name,
+            lastName:         meta.lastName || user.lastName || '',
+            phone:            meta.phone || user.phone,
+            plan:             meta.plan,
+            status:           'active',
+            stripeCustomerId: session.customer || user.stripeCustomerId || null,
+          });
+
+          if (session.subscription) {
+            const subscription = await stripe.subscriptions.retrieve(session.subscription);
+            await syncSubscriptionFields(user.id, subscription);
           }
         }
 
-        await Users.update(user.id, {
-          name:             meta.name || user.name,
-          lastName:         meta.lastName || user.lastName || '',
-          phone:            meta.phone || user.phone,
-          plan:             meta.plan,
-          status:           'active',
-          stripeCustomerId: session.customer || user.stripeCustomerId || null,
-        });
-
-        if (session.subscription) {
-          const subscription = await stripe.subscriptions.retrieve(session.subscription);
-          await syncSubscriptionFields(user.id, subscription);
-        }
-
+        // Cobro de HOY (factura manual, precio completo ya con el descuento
+        // del cupón aplicado) — a propósito FUERA del if de arriba: si un
+        // intento anterior activó al usuario pero se cayó antes de llegar
+        // acá (ya pasó una vez en real), un reintento del webhook tiene que
+        // poder retomar el cobro igual. Las idempotencyKey atadas al id de
+        // la Checkout Session hacen que reintentar estas dos llamadas a
+        // Stripe sea seguro (devuelven el mismo invoice item/factura ya
+        // creados en vez de duplicarlos) y el dedup real de "ya se creó el
+        // pedido" lo da la restricción UNIQUE de stripe_invoice_id.
         const basePrice  = Number(meta.basePrice) || 0;
         const finalPrice = Number(meta.finalPrice) || 0;
         if (session.customer && finalPrice > 0) {
+          let couponData = null;
+          if (meta.couponCode) {
+            const all = await Coupons.getAll();
+            couponData = all.find(c => c.code.toUpperCase() === meta.couponCode.toUpperCase()) || null;
+          }
+
           await stripe.invoiceItems.create({
             customer:    session.customer,
             amount:      Math.round(finalPrice * 100),
             currency:    'usd',
             description: `${PLAN_LABELS[meta.plan] || meta.plan} — primera semana`,
-          });
-          const draft = await stripe.invoices.create({
+          }, { idempotencyKey: `fh_invitem_${session.id}` });
+
+          let invoice = await stripe.invoices.create({
             customer:          session.customer,
             collection_method: 'charge_automatically',
             auto_advance:      false,
             metadata:          { userId: String(user.id), plan: meta.plan },
-          });
-          await stripe.invoices.finalizeInvoice(draft.id);
-          const paidInvoice = await stripe.invoices.pay(draft.id);
+          }, { idempotencyKey: `fh_invoice_${session.id}` });
 
-          if (paidInvoice.status === 'paid') {
+          if (invoice.status === 'draft') {
+            invoice = await stripe.invoices.finalizeInvoice(invoice.id);
+          }
+          // Al finalizar una factura con collection_method:'charge_automatically'
+          // Stripe ya intenta cobrarla en el momento (probado en real: para
+          // cuando llegamos a pagarla explícito, ya estaba paid y .pay()
+          // tiraba "Invoice is already paid") — solo llamamos a .pay() si
+          // finalizeInvoice la dejó todavía sin cobrar, y ante cualquier
+          // error ahí (incluida esa carrera) recién confiamos en el estado
+          // real de la factura, no en si la llamada tiró excepción o no.
+          if (invoice.status !== 'paid') {
+            try {
+              invoice = await stripe.invoices.pay(invoice.id);
+            } catch {
+              invoice = await stripe.invoices.retrieve(invoice.id);
+            }
+          }
+
+          if (invoice.status === 'paid') {
             try {
               await Orders.create({
                 userId:          user.id,
@@ -581,7 +612,7 @@ app.post('/api/stripe/webhook', async (req, res) => {
                 preferences:     parsePreferencesFromMeta(meta),
                 status:          'paid',
                 readByAdmin:     false,
-                stripeInvoiceId: paidInvoice.id,
+                stripeInvoiceId: invoice.id,
               });
             } catch (err) {
               if (!(err && err.code === '23505')) throw err; // 23505 = ya existe, ok (reintento del webhook)
@@ -591,7 +622,7 @@ app.post('/api/stripe/webhook', async (req, res) => {
             // factura queda sin pagar (ej. fondos insuficientes recién ahora)
             // no se crea ningún pedido — Valen lo ve porque el usuario queda
             // "active" sin ningún pedido asociado, y lo resuelve por WhatsApp.
-            console.error('checkout.session.completed: la factura del primer cobro no quedó pagada', paidInvoice.id, paidInvoice.status);
+            console.error('checkout.session.completed: la factura del primer cobro no quedó pagada', invoice.id, invoice.status);
           }
         }
       }
