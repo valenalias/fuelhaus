@@ -1,6 +1,254 @@
 # HANDOFF — FuelHaus
 
-Última actualización: 2026-09-05 (simplificación del onboarding a 4 pasos + Delivery details — ver sección "Onboarding simplificado" más abajo, probado de punta a punta local)
+Última actualización: 2026-09-10 (excepción de billing de un cliente + reconciliador automático de suscripciones — ver sección inmediatamente abajo. La sección "ESTADO ACTUAL" de 2026-09-05 sigue vigente para todo lo demás de checkout/billing/Stripe; esta la complementa, no la reemplaza)
+
+## Excepción de delivery + bug real encontrado: suscripciones que no se crean (sesión 2026-09-10)
+
+**Caso puntual (ya resuelto):** Axel Lema (usuario id 19, pedido `FH-0012`) pagó
+un jueves y se decidió manualmente incluirlo en la entrega de ESE domingo en
+vez del domingo siguiente que hubiera calculado `firstDeliverySundayDate()`.
+Al auditar se encontró que **su suscripción semanal nunca se había creado**
+— `stripe_subscription_id` en `null`, cero Subscriptions en Stripe para su
+customer, aunque el pedido y el pago estaban perfectamente bien. Se
+solucionó a mano creando la suscripción vía API con `billing_cycle_anchor`
+fijado al martes posterior a la entrega manual y `proration_behavior:'none'`
+(sin cobrar nada extra) — sin tocar el pedido ya pagado ni el cutoff global.
+
+**Causa probable (no 100% confirmable, logs de Vercel Hobby ya vencidos):**
+Stripe mostró que el webhook devolvió **HTTP 500 con body vacío** para el
+`checkout.session.completed` de este pedido, y reintentó automáticamente sin
+éxito. El handler de ese evento hace **~9 llamadas de red seguidas sin
+paralelizar** (5 a Supabase + 4 a Stripe) para crear pedido + suscripción —
+Vercel Hobby corta cualquier función a los **10 segundos, sin excepción, no
+configurable**. La hipótesis más consistente con la evidencia: esa cadena
+superó el límite ese día (Stripe/Supabase con latencia elevada, cold start,
+etc.) y Vercel mató la función a mitad de camino — no parece un bug
+determinístico en los parámetros, porque recrear la suscripción a mano con
+la misma lógica funcionó a la primera.
+
+**Arreglo estructural (implementado esta sesión, no solo el caso de Axel):**
+en vez de tocar el webhook (delicado, con varias rondas previas de fixes
+finos en el orden de las operaciones — no se tocó), se agregó un
+**reconciliador automático** que detecta y repara este estado solo, sin
+depender de que alguien lo note:
+
+- `subscription-reconcile.js` (nuevo, raíz del repo): busca usuarios con
+  `stripeCustomerId` seteado, `stripeSubscriptionId` en `null` (la señal
+  correcta de "nunca se creó" — un usuario cancelado sigue teniendo su id
+  viejo, nunca queda en null) y al menos un pedido con `stripeSessionId` no
+  nulo (descarta a propósito los pedidos de cupón 100%, que jamás deben
+  generar una suscripción real). Reusa `billingInternals` expuesto por
+  `server.js` (mismas funciones que usa `checkout.session.completed`, cero
+  lógica duplicada). Re-chequea el usuario justo antes de crear, por si el
+  webhook ya lo resolvió mientras tanto. `idempotencyKey` atado al id del
+  pedido (`fh_sub_reconcile_<orderId>`) para que correrlo repetido nunca
+  duplique una suscripción. 23 tests nuevos (`subscription-reconcile.test.js`),
+  deps 100% inyectables, sin Stripe/Supabase reales en los tests.
+- `POST /api/admin/reconcile-subscriptions` (adminOnly) — versión manual
+  desde el panel/Postman, mismo código.
+- `GET /api/cron/reconcile-subscriptions` — versión para el cron de Vercel,
+  protegida con `CRON_SECRET` (nueva env var, ver `.env.example`) en vez del
+  JWT de admin, porque Vercel Cron no manda ese JWT. Sin `CRON_SECRET`
+  configurado en Vercel, este endpoint rechaza todo — **hace falta cargar
+  esa variable en Vercel para que el cron funcione**.
+- `vercel.json`: `crons` con `"0 12 * * *"` (una vez por día, mediodía UTC)
+  — **el plan Hobby no permite más frecuente que 1 vez por día**, así que no
+  es el "cada 15-30 min" que se planteó al principio; es el máximo que da
+  el plan actual sin pagar Pro. Si hace falta más frecuencia, la alternativa
+  sería un cron externo (cron-job.org, GitHub Actions) pegándole al mismo
+  endpoint — no implementado, quedaría para si esto vuelve a pasar seguido.
+
+**Pendiente de Valen para que el cron quede activo:** cargar `CRON_SECRET`
+(cualquier string random) en Vercel → Environment Variables (Production).
+Sin eso, el cron diario va a fallar con 401 silenciosamente.
+
+**Sin cambios de código en:** `checkout.session.completed` (no se tocó, es
+delicado), cutoff global, ningún otro cliente.
+
+## ESTADO ACTUAL — FuelHaus Web + Stripe (sesión 2026-09-05, autoritativo)
+
+Este resumen reemplaza como fuente de verdad a las secciones de abajo para
+todo lo relacionado a checkout/billing/Stripe. Las secciones viejas quedan
+como historial (útiles para entender el "por qué" de algunas decisiones)
+pero **si algo de abajo contradice esto, vale lo que dice acá**.
+
+### 1. Terminado en esta sesión
+
+- **Fix del bug "$0 hoy" en el checkout.** El primer pago pasó de crear
+  la suscripción de Stripe directamente (con cobro diferido al ciclo)
+  a un `mode:'payment'` por el monto real de hoy — ya con el cupón
+  parcial aplicado si corresponde. La suscripción semanal se crea aparte,
+  por API, una vez confirmado ese pago.
+- **Fix del billing anchor.** El primer `billing_cycle_anchor` de la
+  suscripción pasó de "el próximo martes desde HOY" (bug: alta un lunes
+  → cobraba de nuevo al día siguiente) a "el martes **posterior a la
+  primera entrega**" — `nextTuesdayAnchor(firstDeliverySundayDate())`.
+  Validado matemáticamente para los 7 días de alta posibles.
+- **`invoice.payment_failed`.** Nuevo handler mínimo: solo loguea, no
+  crea pedido, sin dunning. El estado `past_due` ya queda reflejado en
+  el usuario aparte vía `customer.subscription.updated` (sin tocar).
+- **Ronda visual/copy** (sin tocar Stripe/billing): planes en mobile
+  pasan de carrusel horizontal a lista apilada; se eliminaron ~16
+  referencias a "personalizado por macros" en toda la web (meta tags,
+  JSON-LD incluida la FAQ, hero, badges, proceso, onboarding); se sacó
+  "Plan Full System" del JSON-LD `ItemList` (quedaba visible para
+  buscadores aunque la card está oculta); la tabla de comparación pasa
+  a 3 columnas (Structure/Performance/Full Week) con una fila "Comidas"
+  (5/10/15) en vez de separar Almuerzos/Cenas.
+- **Verificación de "Manage subscription"** (solo investigación, sin
+  cambios de código) — ver punto dedicado más abajo.
+
+### 2. En producción ahora mismo
+
+- **Commit en `main`**: `4e9108c`, deployado y confirmado `Ready` en
+  Vercel (alias `fuelhaus.vercel.app`).
+- **Planes activos**: Structure $120/sem (5 comidas, 5 activate shots),
+  Performance $190/sem (10 comidas — marketing lo describe como "5
+  almuerzos + 5 cenas" pero el backend es un pool único de 10 meals sin
+  distinción real lunch/dinner, 5 activate shots), Full Week $265/sem
+  (15 comidas, 7 activate shots). Full System **oculto, no borrado**
+  ($225, `PLAN_ACTIVE.full_system: false` en `server.js`, cards
+  comentadas en `home.html`/`index.html`).
+- **Onboarding**: 4 pasos — Elegí tu plan → Armá tu semana (Build your
+  week) → Delivery details → Confirmar/Pago. Sin preguntas de
+  objetivo/dieta/alimentos a evitar (ya se habían sacado antes de esta
+  sesión). Cutoff de primera entrega (`firstDeliverySundayDate()` en
+  `server.js`): alta lunes-miércoles → domingo próximo; alta
+  jueves-domingo → domingo de la semana **siguiente** a la próxima.
+- **Lógica de billing**: pago inicial inmediato (`mode:'payment'`,
+  cualquier día de la semana) cubre la primera entrega. La suscripción
+  semanal se crea aparte, por API (`stripe.subscriptions.create`, no
+  Checkout Session — invisible para el cliente), anclada al martes
+  posterior a esa primera entrega. De ahí en más, todas las renovaciones
+  caen los martes, siempre a precio completo (ningún descuento de la
+  primera semana se repite).
+- **Autopay**: las renovaciones semanales llegan por `invoice.paid`
+  (`billing_reason: subscription_cycle`), clonan plan/preferences/meals
+  del pedido más reciente del usuario, dedup por `stripeInvoiceId`
+  (columna UNIQUE + catch de `23505`).
+- **Cupones**: en uso real solo quedan dos casos — sin cupón, y cupón
+  parcial válido. `FULLHAUS` (100%, cupón de pruebas) fue **desactivado
+  manualmente por Valen desde Admin** (no borrado); su seed en
+  `supabase-schema.sql` se sacó para que no se regenere en un entorno
+  nuevo, pero la lógica de 100% (branch `estimatedFinal <= 0` →
+  `finalizeOrder()`, sin Stripe) sigue en el código a propósito, sin
+  usarse. `AXEL15` es un cupón parcial real, usado por un cliente real
+  ("Axel") de forma completamente genérica — **no hay ningún código
+  específico para él ni para ningún cupón puntual** (confirmado por
+  grep).
+- **Stripe**: confirmado en modo **LIVE** (se vio un `cs_live_...` real
+  en un checkout de producción). El webhook live tiene que escuchar
+  estos 5 eventos: `checkout.session.completed`, `invoice.paid`,
+  `invoice.payment_failed` (nuevo esta sesión — confirmar que esté
+  agregado en el Dashboard), `customer.subscription.updated`,
+  `customer.subscription.deleted`.
+- **Customer Portal**: endpoint `POST /api/subscription/portal` existe
+  (gate server-side: `user.stripeCustomerId`). El botón del cliente
+  ("Gestionar mi suscripción") se gatea en `user.stripeSubscriptionId`
+  — ver el punto dedicado más abajo. La configuración de cancelación
+  del Portal ("Cancel at end of billing period" vs. inmediata) **no
+  está verificada desde acá** — es un toggle del Dashboard de Stripe,
+  Valen tiene que confirmarlo.
+- **Emails**: la app **no envía ningún email** (no hay Resend/SendGrid
+  ni nada similar conectado — confirmado por grep). Los únicos emails
+  que un cliente podría recibir son los automáticos de Stripe (recibos
+  de pago) **si Valen los activó** en Dashboard → Settings → Emails —
+  no verificable desde el código.
+
+### 3. Pendiente
+
+- Confirmar en el Dashboard de Stripe que el webhook live escucha los
+  5 eventos completos (en particular `invoice.payment_failed`, que se
+  agregó recién esta sesión).
+- Confirmar la configuración de cancelación del Customer Portal
+  ("Cancel at end of billing period").
+- Confirmar si Stripe tiene activado el envío automático de
+  recibos/emails.
+- `notifyOrderDelivered()` sigue siendo un stub de solo-log (no manda
+  WhatsApp/SMS real todavía) — conectar cuando haya un canal real.
+- Overflow horizontal preexistente (~8–16px en mobile) en la sección
+  "Comida real" y en la imagen de galería — no relacionado con esta
+  ronda, documentado para otra vuelta, sin tocar.
+- El nuevo flujo de billing (`mode:'payment'` + anchor post-entrega) se
+  validó con un harness propio que simula Stripe (fiel a la
+  documentación oficial) + un smoke test manual en producción sin
+  completar pagos — **no se corrió contra Stripe test-mode real**
+  porque no había una clave `sk_test_...` disponible en este entorno.
+  La primera compra real de un cliente nuevo es, de hecho, la primera
+  vez que este flujo corre contra Stripe de verdad — vale la pena que
+  Valen la revise a mano (pedido creado bien, suscripción creada con
+  el anchor correcto).
+
+### 4. NO tocar sin revisar antes
+
+- **La arquitectura payment→subscription es deliberada.** Stripe NO
+  permite reprogramar el `billing_cycle_anchor` de una suscripción ya
+  creada a una fecha futura arbitraria (solo acepta `'now'`/
+  `'unchanged'`) — por eso el primer cobro es un pago único aparte y la
+  suscripción se crea nueva, ya con el anchor correcto, en vez de
+  intentar "corregir" una suscripción existente. Si alguna vez aparece
+  una suscripción con el anchor mal puesto, la única corrección posible
+  es cancelarla y crear una nueva — nunca `subscriptions.update()` con
+  un anchor futuro.
+- **`PLAN_PRODUCT_IDS`/`ensurePlanProductId()`** en `server.js` usan IDs
+  determinísticos fijos por plan (`fuelhaus_plan_structure`, etc.) — no
+  cambiarlos sin migrar también las suscripciones activas que ya
+  referencian esos Product IDs en Stripe.
+- **El branch de cupón 100%** (`estimatedFinal <= 0` → `finalizeOrder()`,
+  sin Stripe, sin suscripción) sigue en el código a propósito aunque
+  hoy no se use — no borrarlo sin discutirlo, y no reactivar `FULLHAUS`
+  ni ningún otro cupón 100% sin una decisión explícita de Valen.
+- **El orden de operaciones en el webhook `checkout.session.completed`
+  importa.** `Orders.create()` se intenta PRIMERO; el consumo del
+  cupón (`Coupons.update` con `uses+1`) y el `Users.update()` con datos
+  personales/`stripeCustomerId` **solo** ocurren si esa inserción fue
+  realmente nueva esta vez (variable `orderJustCreated`, ver
+  `server.js` alrededor de la línea 615-670). No reordenar esto sin
+  entender por qué — evita duplicar el uso de un cupón ante un
+  reintento de webhook.
+- **No tocar nada de FuelHaus OS**, producción de pedidos, inventario o
+  recetas desde este repo/hilo — eso se maneja en un hilo de trabajo
+  separado.
+- **`PLAN_ACTIVE.full_system: false`** y las cards de Full System
+  comentadas (no borradas) en `home.html`/`index.html` van siempre
+  juntas — reactivar el plan exige tocar server y cliente a la vez o
+  queda un estado inconsistente (visible en un lado, rechazado en el
+  otro).
+
+### Archivos principales tocados en esta sesión
+
+- `server.js` — checkout (`mode:'payment'`), webhooks (idempotencia,
+  billing anchor, `invoice.payment_failed`)
+- `supabase-schema.sql` — se sacó el seed de `FULLHAUS`
+- `public/css/style.css`, `public/index.html`, `public/home.html`,
+  `public/js/i18n.js` — ronda visual/copy
+
+### Commits importantes (más reciente primero)
+
+- `4e9108c` — Ronda visual: planes mobile apilados, saca copy de
+  personalización por macros
+- `186c2a8` — Ancla el primer autopay al martes posterior a la primera
+  entrega
+- `8d810f1` — Corrige el checkout para cobrar el monto real hoy, no $0
+- `745b226` — Simplifica el onboarding a 4 pasos y completa el flujo
+  hasta la entrega (sesión anterior, ver historial abajo)
+
+### "Manage subscription" — comportamiento confirmado
+
+Investigado a pedido de Valen tras encontrar una cuenta vieja de prueba
+(cupón `FULLHAUS` 100%) sin el botón visible — **sin cambios de código**,
+solo verificación:
+
+- Gate del lado del cliente: `user.stripeSubscriptionId` (`home.html`,
+  función que arma la vista de cuenta).
+- Gate del endpoint del servidor: `user.stripeCustomerId`
+  (`POST /api/subscription/portal`, `server.js`).
+- En el flujo actual ambos campos se setean siempre juntos (mismo
+  webhook `checkout.session.completed`), así que no hay caso real donde
+  uno exista sin el otro para un cliente nuevo.
+- Cuentas viejas creadas con un cupón 100% (sin Customer/Subscription
+  de Stripe) correctamente no ven el botón — comportamiento esperado,
+  no un bug.
 
 ## Onboarding simplificado a 4 pasos + Delivery details (sesión 2026-09-05)
 

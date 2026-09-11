@@ -914,6 +914,46 @@ app.get('/api/admin/stats', adminOnly, async (req, res) => {
   }
 });
 
+// ── Admin: Reconciliación de suscripciones ────────────────────────────────────
+// Autocorrige el caso descubierto con Axel Lema (FH-0012, 2026-09-10): un
+// cliente con pedido pagado de verdad por Stripe pero sin la suscripción
+// semanal creada (checkout.session.completed la crea aparte, después del
+// pedido — si esa parte falla, ej. timeout de la función serverless, el
+// pedido queda bien pero el cliente se queda sin autopay). Ver
+// subscription-reconcile.js para la lógica completa. Disparado también una
+// vez por día por el cron de vercel.json — este endpoint es la versión
+// manual, para poder correrlo desde el panel sin esperar al cron.
+app.post('/api/admin/reconcile-subscriptions', adminOnly, async (req, res) => {
+  try {
+    const { createReconciler, defaultDeps } = require('./subscription-reconcile');
+    const results = await createReconciler(defaultDeps()).reconcileAll();
+    res.json({ results });
+  } catch (err) {
+    console.error('Error reconciliando suscripciones:', err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+// Versión para el cron de vercel.json (ver ese archivo) — Vercel manda
+// `Authorization: Bearer $CRON_SECRET` en cada llamada programada si existe
+// esa variable de entorno; sin `CRON_SECRET` configurado, este endpoint
+// rechaza todo (nunca corre "abierto"). Público a propósito (Vercel Cron no
+// manda el JWT de admin), pero solo ejecuta con el secreto correcto.
+app.get('/api/cron/reconcile-subscriptions', async (req, res) => {
+  if (!process.env.CRON_SECRET || req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
+    return res.status(401).end();
+  }
+  try {
+    const { createReconciler, defaultDeps } = require('./subscription-reconcile');
+    const results = await createReconciler(defaultDeps()).reconcileAll();
+    console.log('[cron/reconcile-subscriptions]', JSON.stringify(results));
+    res.json({ results });
+  } catch (err) {
+    console.error('Error en el cron de reconciliación de suscripciones:', err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
 // ── Admin: Usuarios ──────────────────────────────────────────────────────────
 
 app.get('/api/admin/users', adminOnly, async (req, res) => {
@@ -1130,3 +1170,14 @@ if (require.main === module) {
 }
 
 module.exports = app;
+// Expuesto para scripts/subscription-reconcile.js — reusa exactamente las
+// mismas funciones que checkout.session.completed, sin duplicar la lógica
+// de billing (ver HANDOFF: caso Axel Lema, 2026-09-10).
+module.exports.billingInternals = {
+  stripe,
+  PLAN_PRICES,
+  ensurePlanProductId,
+  nextTuesdayAnchor,
+  firstDeliverySundayDate,
+  syncSubscriptionFields,
+};
