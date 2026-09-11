@@ -26,6 +26,12 @@ function buildPayload(order, user) {
     meals: (order.preferences && Array.isArray(order.preferences.meals) ? order.preferences.meals : [])
       .filter(m => m && m.id && Number.isInteger(m.qty) && m.qty > 0)
       .map(m => ({ externalMealId: m.id, quantity: m.qty })),
+    // Monto real cobrado por Stripe en esta factura (invoice.amount_paid,
+    // ver el webhook invoice.paid en server.js) — nunca un precio de
+    // lista. `undefined` si el pedido no tiene el campo cargado (dato
+    // viejo/inconsistente): el OS lo trata como "venta no disponible", no
+    // como $0.
+    paidAmount: typeof order.finalPrice === 'number' ? order.finalPrice : undefined,
   };
 }
 

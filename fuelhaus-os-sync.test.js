@@ -23,6 +23,7 @@ function order(overrides = {}) {
     userEmail: 'ana@example.com',
     userPhone: '+13051234567',
     preferences: { meals: [{ id: 'sirloin_quinoa_bowl', name: 'Sirloin Quinoa Bowl', qty: 3 }] },
+    finalPrice: 89.99,
     ...overrides,
   };
 }
@@ -55,6 +56,16 @@ test('buildPayload: filtra líneas de meals corruptas (sin id o qty inválido)',
 test('buildPayload: preferences.meals ausente da un array vacío, no lanza', () => {
   const payload = buildPayload(order({ preferences: {} }), user);
   assert.deepEqual(payload.meals, []);
+});
+
+test('buildPayload: manda paidAmount = finalPrice (monto real cobrado por Stripe)', () => {
+  const payload = buildPayload(order({ finalPrice: 74.5 }), user);
+  assert.equal(payload.paidAmount, 74.5);
+});
+
+test('buildPayload: sin finalPrice cargado, paidAmount queda undefined (nunca $0 inventado)', () => {
+  const payload = buildPayload(order({ finalPrice: undefined }), user);
+  assert.equal(payload.paidAmount, undefined);
 });
 
 test('notifyOsOrderPaid: sin FUELHAUS_OS_INGEST_URL/TOKEN configurados, se omite sin llamar fetch', async (t) => {
