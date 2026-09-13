@@ -184,10 +184,10 @@ function renderRecentTable() {
         <div class="user-avatar">${userInitials(u.name)}</div>
         <span class="user-name">${escapeHtml(u.name)}</span>
       </div></td>
-      <td style="color:var(--gray)">${escapeHtml(u.email)}</td>
-      <td>${planBadge(u.plan)}</td>
-      <td>${statusBadge(u.status)}</td>
-      <td class="date-cell">${formatDate(u.createdAt)}</td>
+      <td data-label="Email" style="color:var(--gray)">${escapeHtml(u.email)}</td>
+      <td data-label="Plan">${planBadge(u.plan)}</td>
+      <td data-label="Estado">${statusBadge(u.status)}</td>
+      <td data-label="Registro" class="date-cell">${formatDate(u.createdAt)}</td>
     </tr>
   `).join('');
 }
@@ -227,11 +227,11 @@ function renderUsersTable() {
         <div class="user-avatar">${userInitials(u.name)}</div>
         <span class="user-name">${escapeHtml(u.name)}</span>
       </div></td>
-      <td style="color:var(--gray);font-size:0.85rem">${escapeHtml(u.email)}</td>
-      <td>${planBadge(u.plan)}</td>
-      <td>${statusBadge(u.status)}</td>
-      <td class="date-cell">${formatDate(u.createdAt)}</td>
-      <td>
+      <td data-label="Email" style="color:var(--gray);font-size:0.85rem">${escapeHtml(u.email)}</td>
+      <td data-label="Plan">${planBadge(u.plan)}</td>
+      <td data-label="Estado">${statusBadge(u.status)}</td>
+      <td data-label="Registro" class="date-cell">${formatDate(u.createdAt)}</td>
+      <td class="td-actions">
         <div class="action-btns">
           <button class="btn-action" title="Editar" onclick="openModal(${u.id})">
             <i class="fa-solid fa-pen"></i>
@@ -446,13 +446,13 @@ function renderOrdersTable() {
   tbody.innerHTML = filtered.map(o => `
     <tr class="${!o.readByAdmin ? 'new-row' : ''}">
       <td style="font-weight:700;font-family:monospace">${escapeHtml(o.orderNumber)}${!o.readByAdmin ? ' <span style="background:#e74c3c;color:#fff;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:4px;font-family:sans-serif">Nuevo</span>' : ''}${!o.stripeSessionId && o.stripeInvoiceId ? ' <span style="background:var(--sage);color:#fff;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:4px;font-family:sans-serif" title="Cobro automático de la suscripción semanal (primer cobro o renovación), no un checkout nuevo">🔁 Cobro automático</span>' : ''}</td>
-      <td><div class="user-cell"><div class="user-avatar">${userInitials(o.userName)}</div><div><div class="user-name">${escapeHtml(o.userName)}</div><div style="font-size:0.78rem;color:var(--gray)">${escapeHtml(o.userEmail)}</div></div></div></td>
-      <td>${planBadge(o.plan)}</td>
-      <td style="font-weight:700">$${o.finalPrice}</td>
-      <td style="font-size:0.8rem;color:var(--gray)">${o.coupon ? '<span style="font-family:monospace;font-weight:700;color:var(--dark-green)">' + escapeHtml(o.coupon) + '</span> (' + formatOrderDiscount(o) + ')' : '—'}</td>
-      <td><span class="badge badge-order-${escapeHtml(o.status)}">${ORDER_STATUS_LABELS[o.status] || o.status}</span></td>
-      <td class="date-cell">${formatDate(o.createdAt)}</td>
-      <td>
+      <td data-label="Cliente"><div class="user-cell"><div class="user-avatar">${userInitials(o.userName)}</div><div><div class="user-name">${escapeHtml(o.userName)}</div><div style="font-size:0.78rem;color:var(--gray)">${escapeHtml(o.userEmail)}</div></div></div></td>
+      <td data-label="Plan">${planBadge(o.plan)}</td>
+      <td data-label="Total" style="font-weight:700">$${o.finalPrice}</td>
+      <td data-label="Cupón" style="font-size:0.8rem;color:var(--gray)">${o.coupon ? '<span style="font-family:monospace;font-weight:700;color:var(--dark-green)">' + escapeHtml(o.coupon) + '</span> (' + formatOrderDiscount(o) + ')' : '—'}</td>
+      <td data-label="Estado"><span class="badge badge-order-${escapeHtml(o.status)}">${ORDER_STATUS_LABELS[o.status] || o.status}</span></td>
+      <td data-label="Fecha" class="date-cell">${formatDate(o.createdAt)}</td>
+      <td class="td-actions">
         <div class="action-btns">
           <button class="btn-action" title="Ver detalle" onclick="openOrderDetail(${o.id})"><i class="fa-solid fa-eye"></i></button>
           <button class="btn-action delete" title="Eliminar" onclick="deleteOrder(${o.id}, '${escapeHtml(o.orderNumber)}')"><i class="fa-solid fa-trash"></i></button>
@@ -646,13 +646,13 @@ function renderCouponsTable() {
   tbody.innerHTML = allCoupons.map(c => `
     <tr>
       <td class="coupon-code-cell">${escapeHtml(c.code)}</td>
-      <td style="font-weight:700">${formatDiscount(c)}</td>
-      <td>${c.minOrderAmount ? '$' + c.minOrderAmount : '—'}</td>
-      <td>${c.uses}</td>
-      <td>${c.maxUses || '∞ Ilimitado'}</td>
-      <td><span class="${c.active ? 'badge-coupon-active' : 'badge-coupon-inactive'}">${c.active ? 'Activo' : 'Inactivo'}</span></td>
-      <td class="date-cell">${formatDate(c.createdAt)}</td>
-      <td>
+      <td data-label="Descuento" style="font-weight:700">${formatDiscount(c)}</td>
+      <td data-label="Mínimo">${c.minOrderAmount ? '$' + c.minOrderAmount : '—'}</td>
+      <td data-label="Usos">${c.uses}</td>
+      <td data-label="Usos máx.">${c.maxUses || '∞ Ilimitado'}</td>
+      <td data-label="Estado"><span class="${c.active ? 'badge-coupon-active' : 'badge-coupon-inactive'}">${c.active ? 'Activo' : 'Inactivo'}</span></td>
+      <td data-label="Creado" class="date-cell">${formatDate(c.createdAt)}</td>
+      <td class="td-actions">
         <div class="action-btns">
           <button class="btn-action" title="Editar" onclick="openCouponModal(${c.id})"><i class="fa-solid fa-pen"></i></button>
           <button class="btn-toggle" onclick="toggleCoupon(${c.id})">${c.active ? 'Desactivar' : 'Activar'}</button>

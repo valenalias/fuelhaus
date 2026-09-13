@@ -757,18 +757,86 @@ body {
     margin-left: 0;
   }
   .topbar-hamburger { display: flex; }
+  .topbar { padding: 0 1rem; }
   .admin-main { padding: 1.25rem; }
   .stats-row { grid-template-columns: repeat(2, 1fr); }
   .plans-row { grid-template-columns: repeat(2, 1fr); }
   .modal-grid { grid-template-columns: 1fr; }
+  .od-grid { grid-template-columns: 1fr; }
+
+  /* Evitar zoom automático de iOS al enfocar inputs (necesita font-size >= 16px) */
+  .search-wrap input,
+  .filter-select,
+  .field input,
+  .field select,
+  .field textarea,
+  .od-status-wrap select { font-size: 16px; }
+
+  /* Botones de acción más grandes para tocar con el dedo */
+  .btn-action { width: 38px; height: 38px; font-size: 0.85rem; }
+  .action-btns { gap: 0.5rem; }
+  .btn-toggle { padding: 0.5rem 0.85rem; }
+
+  /* ── Tablas → tarjetas apilables ── */
+  .table-wrap, .recent-table-wrap {
+    background: transparent;
+    box-shadow: none;
+    overflow-x: visible;
+  }
+  .data-table thead { display: none; }
+  .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100%; }
+  .data-table tbody tr {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 0.9rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+  .data-table tbody tr:last-child { margin-bottom: 0; }
+  .data-table tbody tr:hover { background: var(--white); }
+  .data-table td {
+    padding: 0.5rem 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .data-table td:last-child { border-bottom: none; padding-bottom: 0; }
+  .data-table td:first-child {
+    padding: 0 0 0.65rem;
+    margin-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 1rem;
+  }
+  .data-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--gray);
+    margin-bottom: 0.25rem;
+  }
+  .data-table td.td-actions { padding-top: 0.65rem; }
+  .data-table td.td-actions .action-btns { justify-content: flex-start; }
+
+  /* Modal de pedido: si no entran los 3 botones en una fila, que bajen ordenados */
+  .modal-actions { flex-wrap: wrap; }
+  .modal-actions-spacer { flex-basis: 100%; height: 0; order: 1; }
+  #od-delete-btn { order: 2; }
+  #order-modal-cancel, #od-save-btn { order: 3; }
 }
 
 @media (max-width: 480px) {
   .stats-row { grid-template-columns: 1fr 1fr; }
   .plans-row { grid-template-columns: 1fr 1fr; }
+  .plans-row .plan-stat-card:last-child { grid-column: 1 / -1; }
   .filters-bar { flex-direction: column; }
   .search-wrap, .filter-select { width: 100%; }
   .section-head { flex-direction: column; align-items: flex-start; }
+  .section-head .btn-primary { width: 100%; justify-content: center; }
+  .modal-actions #od-delete-btn,
+  .modal-actions #order-modal-cancel,
+  .modal-actions #od-save-btn { flex: 1; justify-content: center; }
+  .toast { left: 1rem; right: 1rem; bottom: 1rem; max-width: none; text-align: center; }
 }
 
 /* Overlay del sidebar en móvil */
