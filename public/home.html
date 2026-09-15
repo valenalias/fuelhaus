@@ -1301,16 +1301,40 @@
     });
 
     /* ── Fecha de la primera entrega ─────────────────────────────────────────*/
-    // Cocina necesita la lista el miércoles, así que un pedido nuevo llega a
-    // tiempo para el domingo más próximo si se hace de lunes a miércoles
-    // inclusive; de jueves a sábado (o si hoy ya es domingo) pasa al domingo
+    // Cocina necesita la lista el miércoles a las 15:00 (hora de Miami), así
+    // que un pedido nuevo llega a tiempo para el domingo más próximo si se
+    // hace de lunes a miércoles ANTES de esa hora; de miércoles 15:00 en
+    // adelante (o de jueves a sábado, o si hoy ya es domingo) pasa al domingo
     // siguiente al inmediato. El cobro en sí siempre es inmediato, el mismo
-    // día del registro — esto solo afecta cuándo llega la comida.
+    // día del registro — esto solo afecta cuándo llega la comida. Se evalúa
+    // siempre en hora de Miami, sin importar el huso horario del navegador
+    // del cliente — debe reflejar exactamente lo mismo que calcula el server
+    // (server.js, firstDeliverySundayDate) al procesar el pago.
+    const ORDER_CUTOFF_TIMEZONE = 'America/New_York';
+    const ORDER_CUTOFF_WEDNESDAY_HOUR = 15;
     const DAYS_UNTIL_FIRST_DELIVERY = { 0: 7, 1: 6, 2: 5, 3: 4, 4: 10, 5: 9, 6: 8 };
+
+    function miamiDateParts(now) {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: ORDER_CUTOFF_TIMEZONE,
+        weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', hour12: false,
+      }).formatToParts(now);
+      const get = (type) => parts.find((p) => p.type === type).value;
+      const weekdayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+      let hour = Number(get('hour'));
+      if (hour === 24) hour = 0;
+      return { year: Number(get('year')), month: Number(get('month')), day: Number(get('day')), weekday: weekdayMap[get('weekday')], hour };
+    }
+
     function firstDeliverySundayDate() {
-      const d = new Date();
-      d.setHours(12, 0, 0, 0);
-      d.setDate(d.getDate() + DAYS_UNTIL_FIRST_DELIVERY[d.getDay()]);
+      const { year, month, day, weekday, hour } = miamiDateParts(new Date());
+      let daysUntil = DAYS_UNTIL_FIRST_DELIVERY[weekday];
+      if (weekday === 3 && hour >= ORDER_CUTOFF_WEDNESDAY_HOUR) {
+        daysUntil += 7;
+      }
+      const d = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+      d.setUTCDate(d.getUTCDate() + daysUntil);
       return d;
     }
 

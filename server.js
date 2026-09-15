@@ -8,6 +8,7 @@ const Stripe  = require('stripe');
 const { Users, Orders, Coupons, orderNumber } = require('./db');
 const { MEALS, PLAN_MEAL_COUNTS } = require('./meals');
 const { notifyOsOrderPaid } = require('./fuelhaus-os-sync');
+const { firstDeliverySundayDate } = require('./delivery-cutoff');
 
 const app        = express();
 const PORT       = process.env.PORT || 3000;
@@ -119,20 +120,6 @@ function nextTuesdayAnchor(now = new Date()) {
   if (daysUntil === 0) daysUntil = 7; // si hoy ya es martes, el próximo, no hoy
   d.setDate(d.getDate() + daysUntil);
   return Math.floor(d.getTime() / 1000);
-}
-
-// Cuántos días hasta el próximo domingo para el que un cliente NUEVO que se
-// registra hoy todavía llega a tiempo. Cocina necesita la lista el miércoles,
-// así que la ventana de pedido para el domingo más cercano es de lunes a
-// miércoles inclusive; de jueves a sábado (o si hoy ya es domingo) el pedido
-// pasa directamente al domingo siguiente al inmediato.
-const DAYS_UNTIL_FIRST_DELIVERY = { 0: 7, 1: 6, 2: 5, 3: 4, 4: 10, 5: 9, 6: 8 };
-
-function firstDeliverySundayDate(now = new Date()) {
-  const d = new Date(now);
-  d.setHours(12, 0, 0, 0);
-  d.setDate(d.getDate() + DAYS_UNTIL_FIRST_DELIVERY[d.getDay()]);
-  return d;
 }
 
 // Sincroniza el estado de la suscripción de Stripe sobre el usuario —
