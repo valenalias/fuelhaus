@@ -1,6 +1,112 @@
 # HANDOFF — FuelHaus
 
-Última actualización: 2026-09-10 (excepción de billing de un cliente + reconciliador automático de suscripciones — ver sección inmediatamente abajo. La sección "ESTADO ACTUAL" de 2026-09-05 sigue vigente para todo lo demás de checkout/billing/Stripe; esta la complementa, no la reemplaza)
+Última actualización: 2026-09-15 (excepción de Axel Lema vía Stripe + corte de pedidos nuevos a miércoles 15:00 hora de Miami — ver sección inmediatamente abajo, ya en producción. Todo lo anterior sigue vigente)
+
+## Excepción Axel Lema (saltear 1 semana) + corte de pedidos a miércoles 15:00 (sesión 2026-09-15)
+
+**Excepción puntual de Axel — RESUELTA sin tocar código.** Pidió no
+recibir la entrega del domingo 20/9. El cobro semanal de ese martes
+(15/9, invoice `08K3TQXV-0001` de `sub_1UEINVHww86nN62IvnIQq8LH`, $190)
+ya se había cobrado y pagado antes de poder frenarlo (creada 8:00,
+cobrada 9:01) — se investigó en vivo con Claude in Chrome sobre el
+dashboard de Stripe (Valen lo abrió ya logueado; no hizo falta ninguna
+Restricted key). Solución aplicada: Valen emitió una **nota de
+crédito** por el total ($190), motivo **"Pedido cambiado o
+cancelado"**, método **"Reembolsar"** (Stripe no tiene botón directo
+de reembolso sobre una factura ya paga — el camino es "Emitir una nota
+de crédito" y ahí elegir Reembolsar en vez de Crédito para el
+cliente). No se tocó la suscripción ni el `billing_cycle_anchor`: el
+martes 22/9 cobra normal, para la entrega del 27/9. Excluir a Axel de
+la entrega del 20/9 es 100% operativo/manual — no hay nada que frenar
+en el sistema (`fuelhaus_production_weeks` sigue vacía en el OS).
+
+**Corte de pedidos nuevos cambiado a miércoles 15:00 hora de Miami
+(commit `6ce01d3`, pusheado y deployado a producción —
+`dpl_4nXwWtYom9MdzTo8f3GRbSgv3Ze2`, alias `fuelhaus.vercel.app`
+confirmado).** Antes contaba el miércoles completo; ahora de miércoles
+15:00 en adelante pasa al domingo siguiente al inmediato, igual que ya
+pasaba de jueves a sábado. Se extrajo `firstDeliverySundayDate()` de
+`server.js` a su propio módulo sin dependencias, `delivery-cutoff.js`
+(mismo criterio que `subscription-reconcile.js`), con 4 tests nuevos
+en `delivery-cutoff.test.js` — así se puede testear la fecha sin
+arrastrar Supabase/Stripe. El cálculo quedó anclado siempre a hora de
+Miami (`America/New_York`, vía `Intl.DateTimeFormat`) en vez de la
+hora del servidor — de paso corrige un bug latente donde un pedido de
+noche en Miami (que ya es otro día en UTC, el huso en el que corre
+Vercel) podía calcular mal el día. Se actualizó la copia idéntica en
+`public/home.html` (preview de fecha de entrega antes de pagar).
+
+**Cómo se probó** (mismo playbook de más abajo, sin tocar Supabase
+real): stub de `db.js` en memoria, `node server.js` local, pedido de
+punta a punta con cupón `FULLHAUS` 100% hasta `FH-0001` confirmado. Los
+4 casos límite (miércoles 14:59/15:00/19:30 Miami, jueves) se
+verificaron inyectando fechas simuladas en la consola del navegador
+sobre el código real de `home.html` — no solo en el módulo aislado.
+`db.js` restaurado idéntico al original al terminar (`git diff` vacío)
+y el server de prueba apagado por su PID puntual (no
+`taskkill /F /IM node.exe`, ver gotcha de la sesión 2026-09-12 más
+abajo). Al verificar el deploy en producción con Claude in Chrome, la
+landing pareció trabada en el loader inicial — era la pestaña en
+segundo plano pausando las animaciones GSAP (artefacto de la
+automatización del navegador, no bug real); forzando el timeline se
+confirmó que renderiza bien.
+
+## Panel admin optimizado para mobile (sesión 2026-09-12, en producción)
+
+**Pedido de Valen:** el panel admin (`public/admin/`) no estaba pensado para
+usarse desde el celular — las tablas de Clientes/Pedidos/Cupones solo hacían
+scroll horizontal, look desktop forzado en pantalla chica.
+
+**Qué cambió (`public/admin/admin.css`, `admin.js`, `index.html`):**
+- **Tablas → tarjetas apilables por debajo de 768px:** cada `<tr>` se
+  convierte en una tarjeta (fondo blanco, sombra, radio) con la primera
+  columna (nombre/nº de pedido/código de cupón) como título sin etiqueta y
+  el resto de las columnas etiquetadas arriba del valor vía
+  `data-label="..."` + `::before { content: attr(data-label) }` en CSS —
+  hubo que agregar ese atributo a cada `<td>` generado en `admin.js` (tablas
+  de clientes, pedidos, cupones y la de "últimos registros" del dashboard).
+  Los botones de acción quedan en su propia fila sin etiqueta
+  (`class="td-actions"`).
+- **Inputs a 16px en mobile:** por debajo de los 16px, iOS Safari hace zoom
+  automático al enfocar un campo — se fuerza ese tamaño en buscadores,
+  selects y campos de los modales solo dentro del breakpoint mobile.
+- **Botones de acción más grandes:** `.btn-action` pasa de 30px a 38px de
+  lado en mobile (más fácil de tocar con el dedo).
+- **Modal de detalle de pedido:** `.od-grid` pasa a una sola columna en
+  mobile (antes quedaba fijo en 2 columnas aunque el modal fuera angosto).
+  Los 3 botones de la barra de acciones (Eliminar / Cerrar / Guardar
+  estado) usan `flex-wrap` con `order` explícito para que, si no entran en
+  una fila en pantallas muy angostas, bajen en el orden correcto en vez de
+  amontonarse — el spacer div ahora tiene `class="modal-actions-spacer"`
+  para poder forzar el salto de línea con `flex-basis:100%`.
+- Ajustes menores: la 5ta card de "Distribución por plan" (Sin plan) ocupa
+  el ancho completo en vez de quedar sola en una grilla de a 2; el toast ya
+  no se corta en pantallas angostas; "Nuevo cliente"/"Nuevo cupón" ocupan
+  el ancho completo en mobile.
+
+**Cómo se probó:** siguiendo el playbook ya documentado más abajo ("Probar
+el flujo completo... en local SIN tocar la base de producción") — se armó
+un `db.js` stub en memoria con datos de prueba (nombres largos, direcciones
+largas, pedido sin leer, cupón inactivo) para estresar el layout, se corrió
+`node server.js` local, y se validó con Claude in Chrome en una ventana
+angosta (~500px, el mínimo que permite esta máquina por el escalado de
+Windows — ver nota de "pestañas en segundo plano" más abajo) las 4
+secciones y los 2 modales principales. Al terminar se restauró el `db.js`
+real sin diffs (confirmado con `git status`).
+
+**Gotcha de sesión — `taskkill /F /IM node.exe /T` mata TODOS los procesos
+Node de la máquina, no solo el del server de prueba:** al apagar el server
+local se usó ese comando por nombre de imagen en vez de por PID puntual, y
+terminó ~12 procesos `node.exe` que no tenían nada que ver (probablemente
+otras terminales/extensiones/watchers de Valen). La próxima vez que haga
+falta levantar un server local de este proyecto para probar algo, guardar
+el PID al lanzarlo (o buscarlo por puerto con `netstat`/`Get-NetTCPConnection`)
+y matar solo ese proceso puntual.
+
+**Deploy:** commit `bf4e683` en `main`, pusheado y deployado a producción
+(`https://fuelhaus-q8xgl3em4-valenalias1.vercel.app` → `fuelhaus.vercel.app`).
+Pendiente: que Valen lo confirme desde su celular real (probado en sesión
+solo con Chrome desktop en ventana angosta, no un dispositivo físico).
 
 ## Excepción de delivery + bug real encontrado: suscripciones que no se crean (sesión 2026-09-10)
 
