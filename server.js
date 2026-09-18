@@ -623,8 +623,9 @@ app.post('/api/stripe/webhook', async (req, res) => {
         }
 
         let orderJustCreated = true;
+        let createdOrder = null;
         try {
-          await Orders.create({
+          createdOrder = await Orders.create({
             userId:                 user.id,
             userName:               meta.name + (meta.lastName ? ' ' + meta.lastName : ''),
             userEmail:              user.email,
@@ -657,6 +658,25 @@ app.post('/api/stripe/webhook', async (req, res) => {
             status:           'active',
             stripeCustomerId: session.customer || user.stripeCustomerId || null,
           });
+        }
+
+        // Sincronización con FuelHaus OS del PRIMER pedido del cliente. Antes
+        // solo sincronizaba invoice.paid (renovaciones), y este primer cobro
+        // (pago único de la Checkout Session, no una factura de la
+        // suscripción) nunca llegaba al OS. La ingesta del OS es idempotente
+        // por externalOrderId, así que en un reintento del webhook (pedido ya
+        // existente) se busca ese pedido y se vuelve a notificar: sirve de
+        // catch-up si el OS estaba caído la vez anterior. Va ANTES de crear la
+        // suscripción para que un error de Stripe más abajo no lo impida, y
+        // nunca puede tirar abajo el webhook (notifyOsOrderPaid no lanza y
+        // además va envuelto en try/catch, igual que en invoice.paid).
+        try {
+          const orderForOsSync = createdOrder
+            || (await Orders.find(o => o.stripeSessionId === session.id))[0]
+            || null;
+          if (orderForOsSync) await notifyOsOrderPaid(orderForOsSync, user);
+        } catch (syncErr) {
+          console.error('[fuelhaus-os-sync] error inesperado en el primer pedido, no debería pasar:', syncErr);
         }
 
         // Suscripción semanal — se crea una sola vez por usuario. Si ya
