@@ -59,4 +59,10 @@ const MEALS = [
 // "meals" seleccionables acá, quedaba mal contado en 13 antes de este fix).
 const PLAN_MEAL_COUNTS = { structure: 5, performance: 10, full_system: 10, full_week: 15 };
 
-module.exports = { MEALS, PLAN_MEAL_COUNTS };
+// Cantidad de activate shots que incluye cada plan por semana (mismos números
+// que el texto de los planes en home.html/index.html). Es lo que se manda al
+// OS como `shotQuantity` para que producción/packaging cuente los shots de
+// cada pedido — sin esto eran solo texto de marketing.
+const PLAN_SHOT_COUNTS = { structure: 5, performance: 5, full_system: 5, full_week: 7 };
+
+module.exports = { MEALS, PLAN_MEAL_COUNTS, PLAN_SHOT_COUNTS };

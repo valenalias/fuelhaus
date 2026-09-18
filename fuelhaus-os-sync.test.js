@@ -123,3 +123,26 @@ test('notifyOsOrderPaid: manda el token compartido en el header x-fuelhaus-token
   assert.equal(capturedHeaders['x-fuelhaus-token'], 'test-token');
   restoreEnv();
 });
+
+test('buildPayload: manda shotQuantity según el plan (5/5/5/7)', () => {
+  assert.equal(buildPayload(order({ plan: 'structure' }), user).shotQuantity, 5);
+  assert.equal(buildPayload(order({ plan: 'performance' }), user).shotQuantity, 5);
+  assert.equal(buildPayload(order({ plan: 'full_system' }), user).shotQuantity, 5);
+  assert.equal(buildPayload(order({ plan: 'full_week' }), user).shotQuantity, 7);
+});
+
+test('buildPayload: plan desconocido o ausente -> shotQuantity undefined, nunca 0 inventado', () => {
+  assert.equal(buildPayload(order({ plan: 'plan_inexistente' }), user).shotQuantity, undefined);
+  assert.equal(buildPayload(order({ plan: null }), user).shotQuantity, undefined);
+  assert.equal(buildPayload(order(), user).shotQuantity, undefined);
+});
+
+test('buildPayload: nombres heredados de Object.prototype no cuentan como plan', () => {
+  assert.equal(buildPayload(order({ plan: 'constructor' }), user).shotQuantity, undefined);
+  assert.equal(buildPayload(order({ plan: 'toString' }), user).shotQuantity, undefined);
+});
+
+test('PLAN_SHOT_COUNTS cubre exactamente los mismos planes que PLAN_MEAL_COUNTS', () => {
+  const { PLAN_SHOT_COUNTS, PLAN_MEAL_COUNTS } = require('./meals');
+  assert.deepEqual(Object.keys(PLAN_SHOT_COUNTS).sort(), Object.keys(PLAN_MEAL_COUNTS).sort());
+});

@@ -12,7 +12,15 @@
 // (ver .env.example) — si falta cualquiera de las dos, se omite la
 // sincronización (logueado), no se intenta igual.
 
+const { PLAN_SHOT_COUNTS } = require('./meals');
+
 const TIMEOUT_MS = 4000;
+
+// Shots incluidos en el plan del pedido. `undefined` (no 0) si el plan es
+// desconocido o falta: el OS lo trata como "sin dato", nunca como "cero shots".
+function shotQuantityForPlan(plan) {
+  return Object.prototype.hasOwnProperty.call(PLAN_SHOT_COUNTS, plan) ? PLAN_SHOT_COUNTS[plan] : undefined;
+}
 
 function buildPayload(order, user) {
   return {
@@ -32,6 +40,8 @@ function buildPayload(order, user) {
     // viejo/inconsistente): el OS lo trata como "venta no disponible", no
     // como $0.
     paidAmount: typeof order.finalPrice === 'number' ? order.finalPrice : undefined,
+    // Cantidad de activate shots del plan (ver PLAN_SHOT_COUNTS en meals.js).
+    shotQuantity: shotQuantityForPlan(order.plan),
   };
 }
 
