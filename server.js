@@ -660,25 +660,6 @@ app.post('/api/stripe/webhook', async (req, res) => {
           });
         }
 
-        // Sincronización con FuelHaus OS del PRIMER pedido del cliente. Antes
-        // solo sincronizaba invoice.paid (renovaciones), y este primer cobro
-        // (pago único de la Checkout Session, no una factura de la
-        // suscripción) nunca llegaba al OS. La ingesta del OS es idempotente
-        // por externalOrderId, así que en un reintento del webhook (pedido ya
-        // existente) se busca ese pedido y se vuelve a notificar: sirve de
-        // catch-up si el OS estaba caído la vez anterior. Va ANTES de crear la
-        // suscripción para que un error de Stripe más abajo no lo impida, y
-        // nunca puede tirar abajo el webhook (notifyOsOrderPaid no lanza y
-        // además va envuelto en try/catch, igual que en invoice.paid).
-        try {
-          const orderForOsSync = createdOrder
-            || (await Orders.find(o => o.stripeSessionId === session.id))[0]
-            || null;
-          if (orderForOsSync) await notifyOsOrderPaid(orderForOsSync, user);
-        } catch (syncErr) {
-          console.error('[fuelhaus-os-sync] error inesperado en el primer pedido, no debería pasar:', syncErr);
-        }
-
         // Suscripción semanal — se crea una sola vez por usuario. Si ya
         // existe (reintento del webhook, o algo la creó en un intento
         // anterior que se cayó después), no se toca de nuevo.
@@ -732,6 +713,27 @@ app.post('/api/stripe/webhook', async (req, res) => {
             await Users.update(user.id, { stripeCustomerId: session.customer });
             await syncSubscriptionFields(user.id, subscription);
           }
+        }
+
+        // Sincronización con FuelHaus OS del PRIMER pedido del cliente. Antes
+        // solo sincronizaba invoice.paid (renovaciones), y este primer cobro
+        // (pago único de la Checkout Session, no una factura de la
+        // suscripción) nunca llegaba al OS. Va AL FINAL, después de crear la
+        // suscripción, a propósito: Vercel Hobby corta la función a los 10 s
+        // y este handler ya hace ~9 llamadas de red (ver HANDOFF, caso Axel
+        // Lema) — la llamada al OS (hasta 4 s de timeout) nunca debe competir
+        // con lo crítico. Si la función se corta acá, Stripe reintenta el
+        // webhook: el pedido ya existe (23505), se lo busca por stripeSessionId
+        // y se vuelve a notificar; la ingesta del OS es idempotente por
+        // externalOrderId, así que reintentar es seguro. Nunca puede tirar
+        // abajo el webhook (notifyOsOrderPaid no lanza y va en try/catch).
+        try {
+          const orderForOsSync = createdOrder
+            || (await Orders.find(o => o.stripeSessionId === session.id))[0]
+            || null;
+          if (orderForOsSync) await notifyOsOrderPaid(orderForOsSync, user);
+        } catch (syncErr) {
+          console.error('[fuelhaus-os-sync] error inesperado en el primer pedido, no debería pasar:', syncErr);
         }
       }
     } catch (err) {
