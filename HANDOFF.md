@@ -1,6 +1,21 @@
 # HANDOFF — FuelHaus
 
-Última actualización: 2026-09-15 (excepción de Axel Lema vía Stripe + corte de pedidos nuevos a miércoles 15:00 hora de Miami — ver sección inmediatamente abajo, ya en producción. Todo lo anterior sigue vigente)
+Última actualización: 2026-09-18 (sync con el FuelHaus OS: shots por plan + primer pago + rotación de token — ver la primera sección, ya en producción. Todo lo anterior sigue vigente)
+
+## Sync Web → FuelHaus OS: shots, primer pago y rotación de token (sesión 2026-09-18)
+
+**Commits en `main` (deployados, `fuelhaus.vercel.app` corre `30c150a`):**
+- `af1b48d` — `PLAN_SHOT_COUNTS` en `meals.js` (structure 5, performance 5, full_system 5, full_week 7) y `buildPayload` (`fuelhaus-os-sync.js`) manda `shotQuantity`; plan desconocido/ausente → `undefined`, nunca 0. Así el OS descuenta botella y sticker de shot.
+- `8e67269` + `30c150a` — el **primer pago** de un cliente nuevo (`checkout.session.completed`, pago único de la Checkout Session) ahora también avisa al OS con `notifyOsOrderPaid`; antes solo lo hacía `invoice.paid` (renovaciones), por eso el OS nunca recibió un pedido nuevo. El aviso va **al final del handler, después de crear la suscripción** (Vercel Hobby corta a 10 s y el handler ya hace ~9 llamadas de red, ver caso Axel abajo: el aviso, con hasta 4 s de timeout, nunca debe competir con lo crítico). Si la función se corta ahí, Stripe reintenta el webhook, el pedido ya existe (23505), se lo busca por `stripeSessionId` y se re-notifica; la ingesta del OS es idempotente por `externalOrderId`.
+- Solo probado con `node --check` + 33/33 tests (`npm test`); **NO probado contra el webhook real de Stripe todavía.**
+
+**Config Web↔OS rotada el 2026-09-18:** `FUELHAUS_OS_INGEST_TOKEN` (nuevo, sensible) y `FUELHAUS_OS_INGEST_URL=https://ia-studio-navy.vercel.app` en el proyecto Vercel `fuelhaus`, mismo valor de token que `FUELHAUS_WEB_INGEST_TOKEN` en el OS (proyecto `ia-studio`). Lado OS verificado con curl (token nuevo + `{}` → 400; incorrecto/sin token → 401). Este lado no es legible (variable sensible): **se confirma con el próximo pedido real** — en los logs de Vercel buscar `[fuelhaus-os-sync] OK` (bien) o `respondió 401` (token no coincide → re-rotar). Un fallo de sync NUNCA pierde el pedido: queda en `orders` y se recupera con el reconcile del OS (`scripts/fuelhaus-web-reconcile.ts --order-ids N --dry-run`). Playbook en el vault: `05 Procedimientos/Rotar token Web-OS de FuelHaus y verificar la conexion.md`.
+
+**Advertencias:**
+- La regla de "a qué domingo entra un pedido" (`delivery-cutoff.js`) está duplicada en el OS (`lib/fuelhaus/production-week-schedule.ts`, con tests espejo). Si se cambia el corte de miércoles 15:00, cambiar los dos.
+- El push a `main` auto-deploya (3-30 min). No hacer `vercel deploy --prod` manual encima: queda un deployment huérfano sin alias.
+- Pedido #12 (Axel, entregado el 13-sep por excepción manual) y #3/#1 (pruebas/$0) **no se reconcilian** al OS a propósito — la regla los mandaría a semanas falsas.
+- Sin resolver: la renovación de Axel del martes 15-sep (pagada y luego reembolsada con nota de crédito) no dejó ningún pedido en `orders` — no se investigó por qué. Mirar que la renovación del martes 22-sep sí cree su pedido y llegue al OS.
 
 ## Excepción Axel Lema (saltear 1 semana) + corte de pedidos a miércoles 15:00 (sesión 2026-09-15)
 
