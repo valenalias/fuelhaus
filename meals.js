@@ -51,7 +51,45 @@ const MEALS = [
     description: 'Grilled tilapia · roasted potatoes · broccoli',
     image: null, calories: null, protein: null, carbs: null, fats: null,
   },
+
+  // ── Meals exclusivos de un cliente (2026-09-25) ─────────────────────────────
+  // Variantes con gramajes propios de un cliente. NO salen en el catálogo
+  // público (/api/meals los filtra) y solo los puede elegir su dueño
+  // (`exclusiveUserId`, ver isValidMealSelection en server.js). Cada uno tiene
+  // su propio meal + receta + mapping en el OS, así que NO alteran a los meals
+  // globales de arriba. Recetas exactas en el OS (fuelhaus_meals "· Axel").
+  {
+    id: 'axel_chicken_milanesa_roasted_potatoes',
+    exclusiveUserId: 19, // Axel Lema
+    name: 'Chicken Milanesa & Roasted Potatoes',
+    description: 'Milanesa 180 g · roasted potatoes 170 g · cabbage, carrot & onion mix 130 g',
+    image: null, calories: null, protein: null, carbs: null, fats: null,
+  },
+  {
+    id: 'axel_chicken_milanesa_rice',
+    exclusiveUserId: 19,
+    name: 'Chicken Milanesa & Rice',
+    description: 'Milanesa 180 g · rice 170 g · broccoli 100 g',
+    image: null, calories: null, protein: null, carbs: null, fats: null,
+  },
+  {
+    id: 'axel_sirloin_quinoa_bowl',
+    exclusiveUserId: 19,
+    name: 'Sirloin Quinoa Bowl',
+    description: 'Sirloin 180 g · quinoa 170 g · spinach 50 g · mushrooms 40 g · onion 40 g',
+    image: null, calories: null, protein: null, carbs: null, fats: null,
+  },
+  {
+    id: 'axel_sirloin_roasted_potatoes',
+    exclusiveUserId: 19,
+    name: 'Sirloin & Roasted Potatoes',
+    description: 'Sirloin 180 g · roasted potatoes 170 g · spinach 130 g',
+    image: null, calories: null, protein: null, carbs: null, fats: null,
+  },
 ];
+
+// Catálogo que ve el público en "Build your week": sin los exclusivos.
+const PUBLIC_MEALS = MEALS.filter(m => m.exclusiveUserId === undefined);
 
 // Cantidad de comidas (sin contar activate shots ni snacks) que trae cada
 // plan — es lo que el usuario tiene que completar exacto en "Build your
@@ -65,4 +103,4 @@ const PLAN_MEAL_COUNTS = { structure: 5, performance: 10, full_system: 10, full_
 // cada pedido — sin esto eran solo texto de marketing.
 const PLAN_SHOT_COUNTS = { structure: 5, performance: 5, full_system: 5, full_week: 7 };
 
-module.exports = { MEALS, PLAN_MEAL_COUNTS, PLAN_SHOT_COUNTS };
+module.exports = { MEALS, PUBLIC_MEALS, PLAN_MEAL_COUNTS, PLAN_SHOT_COUNTS };

@@ -6,8 +6,9 @@ const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
 const Stripe  = require('stripe');
 const { Users, Orders, Coupons, orderNumber } = require('./db');
-const { MEALS, PLAN_MEAL_COUNTS } = require('./meals');
+const { MEALS, PUBLIC_MEALS, PLAN_MEAL_COUNTS } = require('./meals');
 const { notifyOsOrderPaid } = require('./fuelhaus-os-sync');
+const { getInvoiceSubscriptionId, getInvoiceSubscriptionMetadata, isPayableRenewalInvoice } = require('./stripe-invoice');
 const { firstDeliverySundayDate } = require('./delivery-cutoff');
 
 const app        = express();
@@ -52,12 +53,15 @@ const MEAL_BY_ID = Object.fromEntries(MEALS.map(m => [m.id, m]));
 
 // Valida que la selección de "Build your week" sume exacto la cantidad de
 // comidas del plan, con ids reales y cantidades enteras positivas.
-function isValidMealSelection(plan, meals) {
+function isValidMealSelection(plan, meals, userId) {
   const required = PLAN_MEAL_COUNTS[plan];
   if (!required || !Array.isArray(meals) || meals.length === 0) return false;
   let total = 0;
   for (const m of meals) {
     if (!m || !MEAL_BY_ID[m.id] || !Number.isInteger(m.qty) || m.qty <= 0) return false;
+    // Los meals exclusivos de un cliente solo los puede elegir su dueño.
+    const owner = MEAL_BY_ID[m.id].exclusiveUserId;
+    if (owner !== undefined && owner !== userId) return false;
     total += m.qty;
   }
   return total === required;
@@ -208,7 +212,7 @@ app.get('/home',  (_req, res) => res.sendFile(path.join(ROOT, 'home.html')));
 // ── Catálogo de comidas (público, solo lectura) ───────────────────────────────
 
 app.get('/api/meals', (_req, res) => {
-  res.json({ meals: MEALS, planMealCounts: PLAN_MEAL_COUNTS });
+  res.json({ meals: PUBLIC_MEALS, planMealCounts: PLAN_MEAL_COUNTS });
 });
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
@@ -323,7 +327,7 @@ app.post('/api/orders', auth, async (req, res) => {
 
     if (!plan || !PLAN_PRICES[plan]) return res.status(400).json({ error: 'Plan inválido' });
     if (!phone?.trim()) return res.status(400).json({ error: 'Número de WhatsApp requerido' });
-    if (!isValidMealSelection(plan, meals)) return res.status(400).json({ error: 'Selección de comidas inválida' });
+    if (!isValidMealSelection(plan, meals, req.user.id)) return res.status(400).json({ error: 'Selección de comidas inválida' });
 
     const user = await Users.getById(req.user.id);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -441,7 +445,7 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
 
     if (!plan || !PLAN_PRICES[plan] || !PLAN_ACTIVE[plan]) return res.status(400).json({ error: 'Plan inválido' });
     if (!phone?.trim()) return res.status(400).json({ error: 'Número de WhatsApp requerido' });
-    if (!isValidMealSelection(plan, meals)) return res.status(400).json({ error: 'Selección de comidas inválida' });
+    if (!isValidMealSelection(plan, meals, req.user.id)) return res.status(400).json({ error: 'Selección de comidas inválida' });
 
     const cleanAddress = address?.trim() || '';
     const cleanCity     = city?.trim() || '';
@@ -749,17 +753,26 @@ app.post('/api/stripe/webhook', async (req, res) => {
   if (event.type === 'invoice.paid') {
     const invoice = event.data.object;
     try {
-      if (!invoice.subscription) {
-        // Factura suelta sin suscripción asociada — nada que hacer acá.
+      // OJO: con la API dahlia el id de la suscripción NO viene en
+      // `invoice.subscription` sino en `invoice.parent.subscription_details`
+      // (ver stripe-invoice.js) — leerlo directo ignoraba todas las renovaciones.
+      const invoiceSubscriptionId = getInvoiceSubscriptionId(invoice);
+      if (!invoiceSubscriptionId) {
+        // Factura suelta sin suscripción asociada — nada que crear, pero se
+        // deja rastro: antes este ignorado silencioso escondió el bug de arriba.
+        console.log('[invoice.paid] factura sin suscripción asociada, se ignora:', invoice.id, invoice.billing_reason || '');
+      } else if (!isPayableRenewalInvoice(invoice)) {
+        // Factura de $0 (típicamente la de creación de la suscripción): no hay semana que preparar.
+        console.log('[invoice.paid] factura de $0, no genera pedido:', invoice.id, invoice.billing_reason || '');
       } else {
         const existing = await Orders.find(o => o.stripeInvoiceId === invoice.id);
         let orderForOsSync = null;
         let userForOsSync = null;
 
         if (existing.length === 0) {
-          const user = (await Users.getAll()).find(u => u.stripeSubscriptionId === invoice.subscription);
+          const user = (await Users.getAll()).find(u => u.stripeSubscriptionId === invoiceSubscriptionId);
           if (!user) {
-            console.error('invoice.paid: no se encontró ningún usuario para la suscripción', invoice.subscription);
+            console.error('invoice.paid: no se encontró ningún usuario para la suscripción', invoiceSubscriptionId, 'factura', invoice.id);
           } else {
             const [latest] = (await Orders.find(o => o.userId === user.id))
               .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -771,13 +784,13 @@ app.post('/api/stripe/webhook', async (req, res) => {
               userName = latest.userName;
               userPhone = latest.userPhone;
             } else {
-              const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
-              const subMeta = subscription.metadata || {};
+              const subscription = await stripe.subscriptions.retrieve(invoiceSubscriptionId);
+              const subMeta = subscription.metadata || getInvoiceSubscriptionMetadata(invoice);
               plan = subMeta.plan || user.plan;
               preferences = parsePreferencesFromMeta(subMeta);
               userName = subMeta.name ? (subMeta.name + (subMeta.lastName ? ' ' + subMeta.lastName : '')) : (user.name + (user.lastName ? ' ' + user.lastName : ''));
               userPhone = subMeta.phone || user.phone;
-              if (!subMeta.plan) console.error('invoice.paid: primer cobro sin metadata de la suscripción, usando datos del usuario como fallback', invoice.subscription);
+              if (!subMeta.plan) console.error('invoice.paid: primer cobro sin metadata de la suscripción, usando datos del usuario como fallback', invoiceSubscriptionId);
             }
 
             orderForOsSync = await Orders.create({
@@ -860,7 +873,7 @@ app.post('/api/stripe/webhook', async (req, res) => {
     console.error('[invoice.payment_failed] Cobro fallido — no se crea pedido.', {
       invoiceId:     invoice.id,
       customer:      invoice.customer,
-      subscription:  invoice.subscription || null,
+      subscription:  getInvoiceSubscriptionId(invoice),
       amountDue:     invoice.amount_due,
       attemptCount:  invoice.attempt_count,
     });
