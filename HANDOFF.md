@@ -1,6 +1,56 @@
 # HANDOFF — FuelHaus
 
-Última actualización: 2026-09-18 (sync con el FuelHaus OS: shots por plan + primer pago + rotación de token — ver la primera sección, ya en producción. Todo lo anterior sigue vigente)
+Última actualización: 2026-09-27 (marco/placeholder de foto sacado de los meals sin imagen en "Arma tu semana" — ver la primera sección, ya en producción. Todo lo anterior sigue vigente)
+
+## Sacar el marco/placeholder de foto en meals sin imagen (sesión 2026-09-27)
+
+Pedido puntual de Valen: en el paso "Arma tu semana" (`home.html`) cada
+card de meal mostraba un marco con degradé de marca + ícono de
+cubiertos porque los 12 meals de `meals.js` tienen `image: null`
+todavía — se veía feo. Las fotos se van a agregar más adelante, no en
+esta sesión.
+
+**Cambio (solo visual, sin tocar datos ni lógica de selección):**
+`mealMediaHtml(meal)` en `public/home.html` ahora devuelve string
+vacío si `meal.image` es `null` (antes devolvía el placeholder con
+degradé + ícono `fa-utensils`); si el meal tiene `image`, arma el
+`<div class="meal-card-media">` con el `<img>` real. Se sacó también
+la clase CSS `.meal-card-media-placeholder`, ya sin uso. Cuando se
+cargue una foto real en `meals.js`, la card la va a mostrar sola, sin
+tocar nada más.
+
+Probado con el `_preview-server.js` estático (sin backend, sin tocar
+Supabase) — solo confirma que la página carga bien; no se pudo hacer
+verificación visual en Chrome porque la extensión Claude in Chrome no
+estaba conectada en la sesión.
+
+Commit `aa59773` en `main`, pusheado y deployado a producción
+(`fuelhaus-85rcjadqu-valenalias1.vercel.app`, Ready, alias
+`fuelhaus.vercel.app` confirmado con `vercel inspect`).
+
+## Fecha límite de cancelación en el paso de pago: martes → lunes (sesión 2026-09-23)
+
+Pedido puntual de Valen: en el disclaimer del paso de pago (`home.html`,
+paso `payment`) decía "si cancelás antes del martes, no se te cobra ni
+se prepara nada la semana siguiente" — ahora dice **"antes del
+lunes"**. Cambiado en `home.payment_disclaimer` de
+`public/js/i18n.js`, español e inglés (`cancel before Monday`).
+**A propósito no se tocó** la otra mención en la misma frase ("las
+próximas renovaciones caen cada martes" / "renewals fall every
+Tuesday") — Valen solo pidió el cambio de la fecha límite de
+cancelación, no el día de cobro/renovación. Si en algún momento el día
+de renovación también pasa a ser lunes, hay que revisar esa frase
+aparte.
+
+No se tocó la otra política de cancelación del sitio (trust bar de la
+landing, `trust.cancel`: "Cancelás hasta una semana antes del primer
+domingo del mes") — es una política distinta (mensual, no semanal) y
+el pedido fue específicamente sobre el paso de pago.
+
+Commit `9270103` en `main`, pusheado y deployado a producción
+(auto-deploy de Vercel, `fuelhaus-xmuycc98h-valenalias1.vercel.app`,
+Ready). No requirió cambios de código más allá del string ni tests
+nuevos.
 
 ## Sync Web → FuelHaus OS: shots, primer pago y rotación de token (sesión 2026-09-18)
 
