@@ -373,17 +373,15 @@
     }
     .meal-card.has-qty { border-color: var(--sage); box-shadow: 0 0 0 2px rgba(107,138,94,0.14); }
 
-    /* Espacio de foto: sin imagen todavía, se resuelve con un degradé de
-       marca + ícono en vez de un placeholder gris o un ícono roto. Cuando
-       el meal tenga `image`, se reemplaza por un <img> real sin tocar el
-       resto de la card. */
+    /* Sin imagen todavía: no se renderiza ningún marco/placeholder (ver
+       mealMediaHtml). Cuando el meal tenga `image`, se agrega este bloque
+       con el <img> real sin tocar el resto de la card. */
     .meal-card-media {
       aspect-ratio: 4 / 3;
       display: flex; align-items: center; justify-content: center;
       background: linear-gradient(135deg, var(--cream-dark), var(--white));
     }
     .meal-card-media img { width: 100%; height: 100%; object-fit: cover; }
-    .meal-card-media-placeholder { color: var(--sage); opacity: 0.45; font-size: 1.8rem; }
 
     .meal-card-body { padding: 1rem 1.1rem 1.1rem; display: flex; flex-direction: column; flex: 1; gap: 0.3rem; }
     .meal-card-name { font-family: 'Lora', serif; font-size: 1.02rem; font-weight: 600; color: var(--black); }
@@ -1186,8 +1184,8 @@
     }
 
     function mealMediaHtml(meal) {
-      if (meal.image) return `<img src="${meal.image}" alt="${escapeAttr(meal.name)}">`;
-      return `<div class="meal-card-media-placeholder"><i class="fa-solid fa-utensils"></i></div>`;
+      if (!meal.image) return '';
+      return `<div class="meal-card-media"><img src="${meal.image}" alt="${escapeAttr(meal.name)}"></div>`;
     }
 
     function escapeAttr(str) {
@@ -1198,7 +1196,7 @@
       const grid = document.getElementById('meals-grid');
       grid.innerHTML = MEALS_CATALOG.map(meal => `
         <div class="meal-card" data-meal-id="${meal.id}">
-          <div class="meal-card-media">${mealMediaHtml(meal)}</div>
+          ${mealMediaHtml(meal)}
           <div class="meal-card-body">
             <div class="meal-card-name">${escapeAttr(meal.name)}</div>
             <div class="meal-card-desc">${escapeAttr(meal.description)}</div>
