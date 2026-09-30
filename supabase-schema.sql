@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS coupons (
   max_uses          INTEGER,
   uses              INTEGER     NOT NULL DEFAULT 0,
   active            BOOLEAN     NOT NULL DEFAULT TRUE,
+  first_order_only  BOOLEAN     NOT NULL DEFAULT FALSE,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -76,6 +77,15 @@ ON CONFLICT (email) DO NOTHING;
 -- ALTER TABLE coupons ALTER COLUMN discount_value TYPE NUMERIC;
 -- ALTER TABLE coupons ADD COLUMN IF NOT EXISTS discount_type TEXT NOT NULL DEFAULT 'percent';
 -- ALTER TABLE coupons ADD COLUMN IF NOT EXISTS min_order_amount NUMERIC;
+
+-- Cupones de un solo uso por persona (2026-09-30) — CORRER ANTES DE DEPLOYAR.
+-- Un cupón marcado así solo aplica si esa persona no tiene ningún pedido todavía.
+-- Nació con CRUNCHERS20, el código impreso en el flyer de Crunch Fitness: un
+-- código en papel no se puede revocar, y hasta ahora el único freno era el
+-- contador global max_uses, así que el mismo cliente podía redimirlo en cada
+-- compra. El default FALSE deja intactos los cupones que ya existen.
+-- ALTER TABLE coupons ADD COLUMN IF NOT EXISTS first_order_only BOOLEAN NOT NULL DEFAULT FALSE;
+-- UPDATE coupons SET first_order_only = TRUE WHERE code = 'CRUNCHERS20';
 
 -- Autopay semanal (suscripciones de Stripe) — correr también antes de deployar:
 -- ALTER TABLE users  ADD COLUMN IF NOT EXISTS stripe_customer_id                  TEXT;

@@ -102,6 +102,15 @@ const Orders = {
     const all = await Orders.getAll();
     return all.filter(fn);
   },
+  // Cuántos pedidos tiene ya esa persona. Se usa para los cupones marcados
+  // `firstOrderOnly` (ver coupon-eligibility.js). Cuenta en la base con
+  // head:true — no se trae ni una fila.
+  async countByUser(userId) {
+    const { count, error } = await supabase
+      .from('orders').select('id', { count: 'exact', head: true }).eq('user_id', userId);
+    if (error) throw error;
+    return count || 0;
+  },
   async create(orderData) {
     const { data, error } = await supabase.from('orders').insert(toSnake(orderData)).select().single();
     if (error) throw error;

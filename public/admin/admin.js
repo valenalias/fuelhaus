@@ -650,6 +650,7 @@ function renderCouponsTable() {
       <td data-label="Mínimo">${c.minOrderAmount ? '$' + c.minOrderAmount : '—'}</td>
       <td data-label="Usos">${c.uses}</td>
       <td data-label="Usos máx.">${c.maxUses || '∞ Ilimitado'}</td>
+      <td data-label="1ª compra">${c.firstOrderOnly ? 'Sí' : '—'}</td>
       <td data-label="Estado"><span class="${c.active ? 'badge-coupon-active' : 'badge-coupon-inactive'}">${c.active ? 'Activo' : 'Inactivo'}</span></td>
       <td data-label="Creado" class="date-cell">${formatDate(c.createdAt)}</td>
       <td class="td-actions">
@@ -681,10 +682,12 @@ function openCouponModal(id = null) {
     document.getElementById('c-discount').value  = c.discountValue;
     document.getElementById('c-min-order').value = c.minOrderAmount || '';
     document.getElementById('c-maxuses').value   = c.maxUses || '';
+    document.getElementById('c-first-order').checked = !!c.firstOrderOnly;
   } else {
     editingCouponId = null;
     document.getElementById('coupon-modal-title').textContent = 'Nuevo cupón';
     document.getElementById('c-type').value = 'percent';
+    document.getElementById('c-first-order').checked = false;
   }
   updateDiscountFieldUI();
   document.getElementById('coupon-overlay').classList.add('open');
@@ -710,6 +713,7 @@ document.getElementById('coupon-form').addEventListener('submit', async (e) => {
   const discountValue = parseFloat(document.getElementById('c-discount').value);
   const minOrderAmount = parseFloat(document.getElementById('c-min-order').value) || 0;
   const maxUses       = parseInt(document.getElementById('c-maxuses').value) || 0;
+  const firstOrderOnly = document.getElementById('c-first-order').checked;
 
   if (!code || !discountValue) {
     errEl.textContent = 'Código y descuento son obligatorios';
@@ -724,7 +728,8 @@ document.getElementById('coupon-form').addEventListener('submit', async (e) => {
     return;
   }
 
-  const body = { code, discountType, discountValue, minOrderAmount: minOrderAmount || null, maxUses: maxUses || null };
+  const body = { code, discountType, discountValue, minOrderAmount: minOrderAmount || null,
+                 maxUses: maxUses || null, firstOrderOnly };
   const { ok, data } = id
     ? await apiFetch('PUT', '/api/admin/coupons/' + id, body)
     : await apiFetch('POST', '/api/admin/coupons', body);

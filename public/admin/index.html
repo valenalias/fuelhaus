@@ -311,6 +311,7 @@
                 <th>Mínimo</th>
                 <th>Usos</th>
                 <th>Usos máx.</th>
+                <th>1ª compra</th>
                 <th>Estado</th>
                 <th>Creado</th>
                 <th>Acciones</th>
@@ -381,6 +382,13 @@
           <div class="field field-full">
             <label for="c-maxuses">Usos máximos (0 o vacío = ilimitado)</label>
             <input type="number" id="c-maxuses" min="0" placeholder="0">
+          </div>
+          <div class="field field-full">
+            <label class="check-inline" for="c-first-order">
+              <input type="checkbox" id="c-first-order">
+              <span>Solo para la primera compra del cliente</span>
+            </label>
+            <small class="field-hint">Si está tildado, cada persona lo puede usar una sola vez: en su primer pedido. Para códigos impresos o repartidos, que no se pueden dar de baja.</small>
           </div>
         </div>
         <div class="error-msg" id="coupon-error"></div>

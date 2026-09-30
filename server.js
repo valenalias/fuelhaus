@@ -87,21 +87,20 @@ function parsePreferencesFromMeta(meta) {
   return { ...preferences, meals: resolveMealsForStorage(meals) };
 }
 
-// Calcula el descuento en dólares de un cupón sobre el precio de un plan.
-// Devuelve null si el cupón no aplica (no llega al monto mínimo de compra) —
-// eso se trata igual que "cupón inválido" en los callers.
-function calcCouponDiscount(coupon, basePrice) {
-  if (coupon.minOrderAmount && basePrice < coupon.minOrderAmount) return null;
-  if (coupon.discountType === 'fixed') return Math.min(coupon.discountValue, basePrice);
-  return Math.round(basePrice * coupon.discountValue / 100);
-}
+// La lógica de cupones vive en coupon-eligibility.js para poder testearla sin
+// Supabase (ver coupon-eligibility.test.js). `resolveCoupon` es el único lugar
+// donde se decide si un cupón aplica: lo usan los cuatro caminos de abajo, así
+// no pueden discrepar entre ellos.
+const { isValidDiscountFields, findActiveCoupon, resolveCoupon } =
+  require('./coupon-eligibility');
 
-// Valida los campos de descuento de un cupón (alta/edición desde el admin).
-function isValidDiscountFields(discountType, discountValue) {
-  if (discountType !== 'percent' && discountType !== 'fixed') return false;
-  if (!(discountValue > 0)) return false;
-  if (discountType === 'percent' && discountValue > 100) return false;
-  return true;
+// Resuelve un cupón para una persona concreta, yendo a buscar a la base lo que
+// resolveCoupon necesita como dato.
+async function resolveCouponForUser(code, userId, basePrice) {
+  const coupons = await Coupons.getAll();
+  const needsCount = (findActiveCoupon(coupons, code) || {}).firstOrderOnly;
+  const previousOrderCount = needsCount ? await Orders.countByUser(userId) : 0;
+  return resolveCoupon({ coupons, code, basePrice, previousOrderCount });
 }
 
 // Día de corte y de cobro semanal para TODOS los suscriptores (sin importar
@@ -302,16 +301,10 @@ app.post('/api/coupons/validate', auth, async (req, res) => {
     const { code, plan } = req.body || {};
     if (!code) return res.status(400).json({ error: 'Código requerido' });
 
-    const all    = await Coupons.getAll();
-    const coupon = all.find(c => c.code.toUpperCase() === code.toUpperCase() && c.active);
-    if (!coupon) return res.status(404).json({ error: 'Cupón inválido o inactivo' });
-    if (coupon.maxUses && coupon.uses >= coupon.maxUses)
-      return res.status(400).json({ error: 'Este cupón ya alcanzó su límite de usos' });
-
     const basePrice = PLAN_PRICES[plan] || 0;
-    const discount  = calcCouponDiscount(coupon, basePrice);
-    if (discount === null)
-      return res.status(400).json({ error: `Este cupón requiere una compra mínima de $${coupon.minOrderAmount}` });
+    const r = await resolveCouponForUser(code, req.user.id, basePrice);
+    if (r.error) return res.status(r.status).json({ error: r.error });
+    const { coupon, discount } = r;
     const final = basePrice - discount;
 
     res.json({
@@ -342,16 +335,12 @@ app.post('/api/orders', auth, async (req, res) => {
     let couponData  = null, discount = 0, finalPrice = basePrice;
 
     if (couponCode) {
-      const all    = await Coupons.getAll();
-      const coupon = all.find(c => c.code.toUpperCase() === couponCode.toUpperCase() && c.active);
-      if (coupon && (!coupon.maxUses || coupon.uses < coupon.maxUses)) {
-        const calc = calcCouponDiscount(coupon, basePrice);
-        if (calc !== null) {
-          discount   = calc;
-          finalPrice = basePrice - discount;
-          couponData = coupon;
-          await Coupons.update(coupon.id, { uses: coupon.uses + 1 });
-        }
+      const r = await resolveCouponForUser(couponCode, user.id, basePrice);
+      if (!r.error) {
+        discount   = r.discount;
+        finalPrice = basePrice - discount;
+        couponData = r.coupon;
+        await Coupons.update(r.coupon.id, { uses: r.coupon.uses + 1 });
       }
     }
 
@@ -399,15 +388,11 @@ async function finalizeOrder(meta) {
 
   let couponData = null, discount = 0;
   if (meta.couponCode) {
-    const all    = await Coupons.getAll();
-    const coupon = all.find(c => c.code.toUpperCase() === meta.couponCode.toUpperCase() && c.active);
-    if (coupon) {
-      const calc = calcCouponDiscount(coupon, meta.basePrice);
-      if (calc !== null) {
-        discount   = calc;
-        couponData = coupon;
-        await Coupons.update(coupon.id, { uses: coupon.uses + 1 });
-      }
+    const r = await resolveCouponForUser(meta.couponCode, user.id, meta.basePrice);
+    if (!r.error) {
+      discount   = r.discount;
+      couponData = r.coupon;
+      await Coupons.update(r.coupon.id, { uses: r.coupon.uses + 1 });
     }
   }
 
@@ -485,20 +470,26 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
 
     // Precio estimado solo para decidir si hace falta pasar por Stripe — el
     // descuento real (y el consumo del cupón) se aplica siempre en finalizeOrder.
+    //
+    // `appliedCouponCode` viaja en la metadata de la sesión en lugar del código
+    // que mandó el cliente: si el cupón NO aplica (vencido, tope alcanzado, o
+    // `firstOrderOnly` y la persona ya compró antes), tiene que quedar vacío.
+    // Si no, el webhook igual lo encontraría, lo escribiría en el pedido y le
+    // gastaría un uso, aunque el cliente haya pagado el precio entero.
     let estimatedFinal = basePrice;
+    let appliedCouponCode = '';
     if (couponCode) {
-      const all    = await Coupons.getAll();
-      const coupon = all.find(c => c.code.toUpperCase() === couponCode.toUpperCase() && c.active && (!c.maxUses || c.uses < c.maxUses));
-      if (coupon) {
-        const calc = calcCouponDiscount(coupon, basePrice);
-        if (calc !== null) estimatedFinal = basePrice - calc;
+      const r = await resolveCouponForUser(couponCode, user.id, basePrice);
+      if (!r.error) {
+        estimatedFinal    = basePrice - r.discount;
+        appliedCouponCode = r.coupon.code;
       }
     }
 
     if (estimatedFinal <= 0) {
       const order = await finalizeOrder({
         userId: user.id, plan, name: firstName, lastName: cleanLastName, phone: cleanPhone,
-        couponCode, preferences: orderPreferences, meals, basePrice, finalPrice: 0,
+        couponCode: appliedCouponCode, preferences: orderPreferences, meals, basePrice, finalPrice: 0,
       });
       return res.status(201).json({ order: { ...order, orderNumber: orderNumber(order.id) } });
     }
@@ -551,7 +542,7 @@ app.post('/api/orders/checkout', auth, async (req, res) => {
         name:        firstName,
         lastName:    cleanLastName,
         phone:       cleanPhone,
-        couponCode:  couponCode || '',
+        couponCode:  appliedCouponCode,
         basePrice:   String(basePrice),
         finalPrice:  String(estimatedFinal),
         preferences: JSON.stringify(orderPreferences).slice(0, 490),
@@ -1119,7 +1110,7 @@ app.get('/api/admin/coupons', adminOnly, async (req, res) => {
 
 app.post('/api/admin/coupons', adminOnly, async (req, res) => {
   try {
-    const { code, discountType, discountValue, minOrderAmount, maxUses } = req.body || {};
+    const { code, discountType, discountValue, minOrderAmount, maxUses, firstOrderOnly } = req.body || {};
     if (!code?.trim() || !discountValue)
       return res.status(400).json({ error: 'Código y descuento son obligatorios' });
     if (!isValidDiscountFields(discountType, Number(discountValue)))
@@ -1135,6 +1126,7 @@ app.post('/api/admin/coupons', adminOnly, async (req, res) => {
       active: true,
       uses: 0,
       maxUses: maxUses ? parseInt(maxUses) : null,
+      firstOrderOnly: Boolean(firstOrderOnly),
     });
     res.status(201).json({ coupon });
   } catch (err) {
@@ -1148,7 +1140,7 @@ app.put('/api/admin/coupons/:id', adminOnly, async (req, res) => {
     const id = parseInt(req.params.id);
     const c  = await Coupons.getById(id);
     if (!c) return res.status(404).json({ error: 'Cupón no encontrado' });
-    const { code, discountType, discountValue, minOrderAmount, maxUses, active } = req.body || {};
+    const { code, discountType, discountValue, minOrderAmount, maxUses, active, firstOrderOnly } = req.body || {};
     const updates = {};
     if (code) updates.code = code.trim().toUpperCase();
     if (discountType || discountValue) {
@@ -1162,6 +1154,7 @@ app.put('/api/admin/coupons/:id', adminOnly, async (req, res) => {
     if (minOrderAmount !== undefined) updates.minOrderAmount = minOrderAmount ? Number(minOrderAmount) : null;
     if (maxUses !== undefined) updates.maxUses = maxUses ? parseInt(maxUses) : null;
     if (active  !== undefined) updates.active  = Boolean(active);
+    if (firstOrderOnly !== undefined) updates.firstOrderOnly = Boolean(firstOrderOnly);
     res.json({ coupon: await Coupons.update(id, updates) });
   } catch (err) {
     console.error(err);
