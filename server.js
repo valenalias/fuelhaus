@@ -209,6 +209,12 @@ function safeUser(u) {
 app.get('/login', (_req, res) => res.sendFile(path.join(ROOT, 'login.html')));
 app.get('/home',  (_req, res) => res.sendFile(path.join(ROOT, 'home.html')));
 
+// Flyer fisico de Crunch Fitness: el QR impreso apunta aca. 302 (no 301) a
+// proposito: el codigo QR queda impreso para siempre y un 301 se cachea en el
+// navegador, asi que el destino tiene que poder cambiarse despues.
+app.get('/crunch', (_req, res) =>
+  res.redirect(302, '/?utm_source=crunch&utm_medium=flyer&utm_campaign=crunchfuel'));
+
 // ── Catálogo de comidas (público, solo lectura) ───────────────────────────────
 
 app.get('/api/meals', (_req, res) => {
