@@ -1,6 +1,88 @@
 # HANDOFF — FuelHaus
 
-Última actualización: 2026-09-27 (marco/placeholder de foto sacado de los meals sin imagen en "Arma tu semana" — ver la primera sección, ya en producción. Todo lo anterior sigue vigente)
+Última actualización: 2026-10-04 (cupones de un solo uso por persona `first_order_only` EN PRODUCCIÓN + ruta `/crunch` + flyer Crunch listo para imprimir — ver las dos primeras secciones. Todo lo anterior sigue vigente)
+
+## Cupones de un solo uso por persona (`first_order_only`) — EN PRODUCCIÓN (sesiones 2026-09-30 → 2026-10-04)
+
+**Por qué:** el código `CRUNCHERS20` va impreso en el flyer físico de Crunch
+Fitness (ver sección siguiente). Un código en papel no se puede revocar y el
+único freno que existía era el contador global `max_uses`: el mismo cliente
+podía redimirlo en cada compra.
+
+**Qué cambió (commit `2f154e2`, 55/55 tests):**
+- `coupon-eligibility.js` (nuevo): toda la lógica de cupones, testeable sin
+  Supabase ni Stripe. `resolveCoupon` es el único lugar donde se decide si un
+  cupón aplica. 13 tests en `coupon-eligibility.test.js`.
+- Los 4 caminos que aplicaban cupones (`/api/coupons/validate`, `/api/orders`,
+  `/api/orders/checkout`, `finalizeOrder`) pasan por el mismo resolver. Antes
+  cada uno repetía la lógica con condiciones distintas (`finalizeOrder` ni
+  siquiera chequeaba `max_uses`).
+- `Orders.countByUser` en `db.js` (cuenta con `head:true`, no trae filas). Solo
+  se llama si el cupón tiene `firstOrderOnly`.
+- Panel admin: checkbox "Solo para la primera compra del cliente" + columna
+  "1ª compra" en la tabla de cupones.
+- **Bug preexistente arreglado:** el checkout mandaba el código del cupón en la
+  metadata de Stripe aunque el cupón no aplicara; el webhook lo escribía en el
+  pedido y le gastaba un uso con el cliente pagando precio entero. Ahora viaja
+  `appliedCouponCode`, vacío si no aplicó.
+
+**Migración (corrida por Valen a mano el 2026-10-04, antes del push):**
+```sql
+ALTER TABLE coupons ADD COLUMN IF NOT EXISTS first_order_only BOOLEAN NOT NULL DEFAULT FALSE;
+UPDATE coupons SET first_order_only = TRUE WHERE code = 'CRUNCHERS20';
+```
+Verificado: `CRUNCHERS20 = true / max_uses 250 / uses 0`; `AXEL15`, `BIENVENIDA`
+y `FULLHAUS` en `false` (comportamiento intacto a propósito). El orden
+migración → push importa: con el código nuevo y sin la columna, crear/editar
+cupones desde el panel rompe.
+
+**Deploy:** push `ef0da19..2f154e2` a `main`, auto-deploy de Vercel. Verificado
+en producción que `admin.js` ya contiene `firstOrderOnly`. **No se probó una
+compra real de punta a punta** (requiere cuenta de cliente real): la prueba
+definitiva es entrar con un cliente que ya compró y aplicar `CRUNCHERS20`, debe
+rechazarlo.
+
+**Dos cosas que ya costaron una sesión entera — no re-investigar:**
+- **La base de Supabase de FuelHaus es el proyecto `valenalias`, ref
+  `ohnedhcnqcmhaggyddjx`.** El 2026-10-01 se descartó porque "sus tablas estaban
+  en español" (`cupones`, `pedidos`, `usuarios`): era **el traductor automático
+  de Chrome** traduciendo los resultados del SQL Editor. Las tablas reales son
+  `coupons`, `orders`, `users`. Columnas reales de `coupons`: `id, code,
+  discount_type, discount_value, min_order_amount, max_uses, uses, active,
+  first_order_only, created_at` (es `uses`, no `used_count`).
+- `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` están como *Sensitive* en Vercel: no
+  se pueden leer nunca más, solo sobrescribir. Es normal, no es un bug.
+
+Claude Code no puede ejecutar DDL contra producción (lo bloquea el clasificador
+de permisos): las migraciones las pega Valen en el SQL Editor y Claude verifica
+con un `SELECT`.
+
+## Ruta `/crunch` + flyer físico Crunch Fitness (sesiones 2026-09-29 → 2026-10-04)
+
+- `app.get('/crunch')` en `server.js` → **302** a
+  `/?utm_source=crunch&utm_medium=flyer&utm_campaign=crunchfuel`. Es el destino
+  del QR impreso. 302 y no 301 a propósito: el QR queda impreso para siempre y
+  un 301 se cachea en el navegador del que escanea. Commit `ef0da19`, en
+  producción.
+- **`fuelhaus.com` NO es de FuelHaus** (parkeado por un tercero). El dominio
+  real sigue siendo `fuelhaus.vercel.app`. Libres al 2026-09-30:
+  `fuelhausmeals.com`, `getfuelhaus.com`, `fuelhausmiami.com`. Comprar uno
+  destrabaría también los mails de forgot-password (Resend).
+- Cupón `CRUNCHERS20`: `fixed` / `$20` / sin mínimo / 250 usos / primera compra.
+  Creado desde el panel admin, **no en Stripe** (a Stripe se le manda un cupón
+  descartable por checkout).
+- El flyer en sí (arte, PDF/X-1a de imprenta, papel elegido: premium matte
+  110lb cover, acabado matte) vive fuera del código, en
+  `BRANDING/FLYER-CRUNCH/FINAL-V1/` (carpeta **sin trackear a propósito**, igual
+  que `IMAGENES/` y `_preview-server.js`). Todo el detalle está en el vault de
+  Obsidian: `03 Proyectos\FuelHaus Flyer Crunch.md`. Estado al 2026-10-04:
+  **listo para imprimir**, nada lo frena.
+- Medición: el QR mide escaneos (UTM), el código mide pedidos. La brecha entre
+  ambos dice si falla el flyer o el checkout.
+
+**Pregunta abierta:** el 2026-10-04 Valen mencionó un "programa de referidos"
+para FuelHaus. No hay nada documentado ni en el vault ni en el código. Es tema
+nuevo: hay que definirlo con Valen antes de tocar nada.
 
 ## Sacar el marco/placeholder de foto en meals sin imagen (sesión 2026-09-27)
 
