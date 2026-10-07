@@ -18,6 +18,7 @@ const TO_SNAKE = {
   finalPrice:      'final_price',
   readByAdmin:     'read_by_admin',
   maxUses:         'max_uses',
+  firstOrderOnly:  'first_order_only',
   userId:          'user_id',
   userName:        'user_name',
   userEmail:       'user_email',
