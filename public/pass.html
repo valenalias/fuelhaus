@@ -130,6 +130,77 @@
       .value { margin-top: 18px; }
       .cta-block { padding-top: 22px; }
     }
+
+    /* ── Tablet (640–1023px): misma columna, mas ancha y con tipografia mas grande.
+          Todo lo de abajo vive en min-width, asi que mobile queda intacto. ───── */
+    @media (min-width: 640px) {
+      .wrap { max-width: 640px; padding: 48px 40px 36px; }
+      .wordmark { font-size: 30px; }
+      .eyebrow { margin-top: 44px; font-size: 28px; }
+      h1 { font-size: clamp(52px, 8vw, 64px); }
+      .credit { margin-top: 40px; }
+      .credit-top { padding: 26px 28px 22px; }
+      .amount { font-size: clamp(110px, 17vw, 132px); }
+      .amount-label { font-size: 22px; }
+      .credit-stub { padding: 18px 28px 22px; }
+      .ready { font-size: 16px; }
+      .applied { font-size: 15px; }
+      .value { margin-top: 36px; }
+      .protein { font-size: 32px; }
+      .protein em { font-size: 17px; }
+      .cta-block { padding-top: 40px; max-width: 420px; }
+      .fine { font-size: 15px; }
+      footer { margin-top: 40px; }
+    }
+
+    /* ── Desktop (1024px+): composicion horizontal en dos columnas. El DOM no
+          cambia: se reordena con grid. Izquierda = marca + headline; derecha = el
+          credito; debajo, una franja con el valor, el CTA y el pie. ─────────── */
+    @media (min-width: 1024px) {
+      .wrap {
+        max-width: 1160px;
+        padding: 56px 56px 40px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 492px;     /* 420 de credito + 72 de aire */
+        grid-template-rows: auto 1fr 1fr auto auto;
+        grid-template-areas:
+          "top     ."
+          "eyebrow credit"
+          "h1      credit"
+          "value   cta"
+          "foot    foot";
+      }
+      .top      { grid-area: top; }
+      .eyebrow  { grid-area: eyebrow; align-self: end; margin-top: 0; font-size: 30px; }
+      h1        { grid-area: h1; align-self: start; margin-top: 14px; font-size: clamp(48px, 4.5vw, 64px); }
+      h1 span   { white-space: nowrap; }
+
+      .credit   { grid-area: credit; align-self: center; margin: 0 0 0 72px; }
+      .credit-top  { padding: 28px 30px 24px; }
+      .amount      { font-size: 132px; }
+      .amount-label{ font-size: 22px; }
+      .credit-stub { padding: 18px 30px 24px; }
+
+      /* franja inferior: una sola linea fina que cruza las dos columnas */
+      .value {
+        grid-area: value; align-self: stretch;
+        margin-top: 56px; padding-top: 28px;
+        border-top: 1px solid var(--line);
+      }
+      .cta-block {
+        grid-area: cta; align-self: stretch;
+        max-width: none; margin-top: 56px; padding: 28px 0 0 72px;
+        border-top: 1px solid var(--line);
+      }
+      .cta-block .cta { max-width: 420px; }
+      .cta-block .fine { max-width: 420px; }
+      footer { grid-area: foot; margin-top: 36px; padding-top: 0; border-top: 0; }
+    }
+
+    /* pantallas muy altas: que la composicion no quede pegada arriba */
+    @media (min-width: 1024px) and (min-height: 1000px) {
+      .wrap { padding-top: 72px; padding-bottom: 56px; }
+    }
   </style>
 </head>
 <body>
