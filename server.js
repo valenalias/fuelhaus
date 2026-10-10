@@ -214,12 +214,12 @@ app.get('/home',  (_req, res) => res.sendFile(path.join(ROOT, 'home.html')));
 app.get('/crunch', (_req, res) =>
   res.redirect(302, '/?utm_source=crunch&utm_medium=flyer&utm_campaign=crunchfuel'));
 
-// Tarjeta "First Week Pass" (entrega personal): el QR impreso apunta aca. Por
-// ahora es solo un redirect a la web normal con UTM propio; mas adelante /pass
-// puede pasar a ser una landing breve. 302 por la misma razon que /crunch: el
-// QR queda impreso y el destino tiene que poder cambiar.
-app.get('/pass', (_req, res) =>
-  res.redirect(302, '/?utm_source=firstweekpass&utm_medium=card&utm_campaign=firstweek20'));
+// Tarjeta "First Week Pass" (entrega personal): el QR impreso apunta aca. Sirve
+// una landing breve (public/pass.html) que guarda el cupon FIRSTWEEK20 en el
+// navegador para aplicarlo en el pago y manda a #planes con el UTM propio. El
+// QR queda impreso para siempre, asi que el destino se resuelve aca y puede
+// cambiar sin reimprimir.
+app.get('/pass', (_req, res) => res.sendFile(path.join(ROOT, 'pass.html')));
 
 // ── Catálogo de comidas (público, solo lectura) ───────────────────────────────
 

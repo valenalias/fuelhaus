@@ -1296,6 +1296,7 @@
       flow.userData = { name, lastName, phone };
       updatePaymentSummary();
       goStep('payment');
+      applyStoredPromo();
     });
 
     /* ── Fecha de la primera entrega ─────────────────────────────────────────*/
@@ -1354,6 +1355,34 @@
         discRow.style.display = 'none';
       }
       document.getElementById('pay-total').textContent = '$' + flow.finalPrice + t('home.per_week_suffix');
+    }
+
+    /* ── Cupón guardado desde /pass (First Week Pass) ────────────────────────
+       /pass deja { code, ts } en localStorage 30 días. Acá solo se lee: se aplica
+       con el mismo applyCoupon() de siempre (validación del servidor incluida).
+       Sin código guardado, nada de esto hace nada. */
+    const PROMO_KEY = 'fh_promo';
+    const PROMO_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+    function readStoredPromo() {
+      try {
+        const p = JSON.parse(localStorage.getItem(PROMO_KEY) || 'null');
+        if (!p || !p.code || !(Date.now() - p.ts < PROMO_TTL_MS)) {
+          if (p) localStorage.removeItem(PROMO_KEY);
+          return null;
+        }
+        return p;
+      } catch { return null; }
+    }
+    function clearStoredPromo() {
+      try { localStorage.removeItem(PROMO_KEY); } catch { /* sin storage: nada que limpiar */ }
+    }
+    async function applyStoredPromo() {
+      const promo = readStoredPromo();
+      const inp = document.getElementById('coupon-input');
+      if (!promo || flow.appliedCoupon || inp.value.trim()) return;
+      inp.value = promo.code;
+      await applyCoupon();
+      if (!flow.appliedCoupon) clearStoredPromo();   // falló: error normal en pantalla y se borra
     }
 
     /* ── Aplicar cupón ───────────────────────────────────────────────────────*/
@@ -1425,6 +1454,7 @@
     }
 
     function showConfirmScreen(order) {
+      clearStoredPromo();
       const orderNum = order.orderNumber;
       document.getElementById('confirm-order-num').textContent = orderNum;
 
