@@ -66,3 +66,31 @@ test('sin código -> 404, no rompe', () => {
 test('previousOrderCount por defecto es 0: no bloquea a quien nunca compró', () => {
   assert.equal(resolveCoupon({ coupons: [CRUNCH], code: 'CRUNCHERS20', basePrice: 190 }).discount, 20);
 });
+
+// ── FIRSTWEEK20: tarjeta First Week Pass (impresa, entrega personal) ───────────
+const FIRSTWEEK = { id: 3, code: 'FIRSTWEEK20', discountType: 'fixed', discountValue: 20,
+                    minOrderAmount: null, maxUses: 200, uses: 0, active: true, firstOrderOnly: true };
+
+test('FIRSTWEEK20: $20 off en la primera compra, con cualquier plan', () => {
+  for (const price of [120, 190, 225, 265]) {
+    const r = resolveCoupon({ coupons: [FIRSTWEEK], code: 'firstweek20', basePrice: price, previousOrderCount: 0 });
+    assert.equal(r.discount, 20);
+  }
+});
+
+test('FIRSTWEEK20: una persona que ya compró no puede usarlo', () => {
+  const r = resolveCoupon({ coupons: [FIRSTWEEK], code: 'FIRSTWEEK20', basePrice: 190, previousOrderCount: 1 });
+  assert.equal(r.status, 400);
+  assert.match(r.error, /primera compra/);
+});
+
+test('FIRSTWEEK20: se corta al llegar al límite de usos', () => {
+  const r = resolveCoupon({ coupons: [{ ...FIRSTWEEK, uses: 200 }], code: 'FIRSTWEEK20', basePrice: 190, previousOrderCount: 0 });
+  assert.equal(r.status, 400);
+  assert.match(r.error, /límite de usos/);
+});
+
+test('FIRSTWEEK20: desactivado desde el admin deja de valer', () => {
+  const r = resolveCoupon({ coupons: [{ ...FIRSTWEEK, active: false }], code: 'FIRSTWEEK20', basePrice: 190, previousOrderCount: 0 });
+  assert.equal(r.status, 404);
+});
