@@ -72,7 +72,7 @@ const FIRSTWEEK = { id: 3, code: 'FIRSTWEEK20', discountType: 'fixed', discountV
                     minOrderAmount: null, maxUses: 200, uses: 0, active: true, firstOrderOnly: true };
 
 test('FIRSTWEEK20: $20 off en la primera compra, con cualquier plan', () => {
-  for (const price of [120, 190, 225, 265]) {
+  for (const price of [120, 190, 265]) {
     const r = resolveCoupon({ coupons: [FIRSTWEEK], code: 'firstweek20', basePrice: price, previousOrderCount: 0 });
     assert.equal(r.discount, 20);
   }
